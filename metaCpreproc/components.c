@@ -810,94 +810,368 @@ int macroargs_peekset( size_t off,  tokhdptr_parr **dest )
 
 
 	/*
-		(
-				macro_call* tokenheadptr_pascalarray*
-			--
-				macro_call* tokenheadptr_pascalarray*
-		)
+			shufflecount shuffle:token*[shufflecount]
+		--
+			arglist*
 	*/
-retframe shufflequeue_generify_macro_call( stackpair *stkp, void *v )
+int pack_arglist( stackpair *stkp,  uintptr_t *refid, int errgate )
 {
+	uintptr_t shufcount;
+	token *tmp;
+	tokenheadptr_pascalarray *a;
+	
 	if( !stkp )
 	{
-		searchstack_ERREXIT( REFID_SUBIDS_searchstack__components_shufflequeue_entry_macro_call, 1,  stkp, v );
+		searchstack_ALERT( refid, errgate, 1,  stkp, (void*)0 );
+		return( -1 );
+	}
+
+	if( !pop_uintptr( &( stkp->data ),  &shufcount ) )
+	{
+		searchstack_ALERT( refid, errgate, 2,  stkp, (void*)0,  &shufcount );
+		return( -2 );
 	}
 	
-		/* This function ONLY exists to setup the call stack correctly. */
-	CALL_FRAMEFUNC(
-		&shufflequeue_generify_macro_call_conclude,
-		(void*)0,
-		
-		&shufflequeue_entry_macro_call,
-		(void*)0
-	);
+#define pack_arglist_FAIL( err ) \
+		searchstack_ALERT( refid, errgate, 3,  stkp, (void*)0,  &shufcount, (err) ); \
+		return( -3 );
+	tokenheadptr_pascalarray_result res = tokenheadptr_pascalarray_build( shufcount );
+	LIB4_DEFINE_PASCALARRAY_RESULT_BODYMATCH( res, LIB4_OP_SETa, pack_arglist_FAIL );
+	
+	while( shufcount )
+	{
+		--shufcount;
+		int res = token_queue_shufflepop( &tmp );
+		if( !res )
+		{
+			searchstack_ALERT( refid, errgate, 4,  stkp, (void*)0,  &shufcount, &a, res, &tmp );
+			return( -4 );
+		}
+		if( !tmp )
+		{
+			searchstack_ALERT( refid, errgate, 5,  stkp, (void*)0,  &shufcount, &a );
+			return( -5 );
+		}
+		a->body[ shufcount ] = &( tmp->header );
+	}
+	
+	if( !push_uintptr( &( stkp->data ),  (uintptr_t)a ) )
+	{
+		searchstack_ALERT( refid, errgate, 6,  stkp, (void*)0, &shufcount, &a );
+		return( -6 );
+	}
+	
+	return( 1 );
 }
-	/* ( shuffledlength --  ) */
-retframe shufflequeue_generify_macro_call_conclude( stackpair *stkp, void *v )
+retframe vm_pop_macroarg( stackpair *stkp, void *v )
 {
-	uintptr_t  a;
+	STACKCHECK( stkp, REFID_SUBIDS_searchstack__components_shufflequeue_macro_link, 1, stkp, v );
 	
-	if( !stkp )
+	POP_MACROARGS( (tokhdptr_parr**)0,  refid, err1, err2, ... );
+	
+	RET_FRAMEFUNC( REFID_???, -12, &th );
+}
+
+
+
+	/*
+			*macro_link macro_args:tokenheadptr_pascalarray* shuffle:token*[]
+		--
+			macro_args:tokenheadptr_pascalarray* shuffle:token*[]+(arglist[subcall->link])
+	*/
+	/* A pointer to a macro_link should be on top of the stack, and a */
+	/*  pointer to the tokhdptr_parr pascal array of actual arguments TO */
+	/*  the macro should be on "macro_args". */
+retframe shufflequeue_macro_link( stackpair *stkp, void *v )
+{
+	uintptr_t a;
+	macro_link *mlink;
+	tokhdptr_parr *thdptpr;
+	int res;
+	
+	STACKCHECK( stkp, REFID_SUBIDS_searchstack__components_shufflequeue_macro_link, 1, stkp, v );
+	
+	POP_UINT( &( stkp->data ), a, REFID_SUBIDS_searchstack__components_shufflequeue_macro_link, 2, 3, stkp, v );
+	mlink = (macro_link*)a;
+	if( mlink->header.toktype != TOKTYPE_TOKENGROUP_MACROLINK )
 	{
-		searchstack_ERREXIT( REFID_SUBIDS_searchstack__components_shufflequeue_entry_macro_call, 1,  stkp, v );
+		searchstack_ERREXIT( REFID_SUBIDS_searchstack__components_shufflequeue_macro_link, 4,  stkp, v,  &mlink );
 	}
 	
-		/* We only jumped into this function because we knew ahead of time */
-		/*  that we didn't care how many tokens had been shuffled. So, we're */
-		/*  just discarding that number. */
-	if( !pop_uintptr( stk,  &a ) )
+	PEEK_MACROARGS( 0, thdptpr, REFID_SUBIDS_searchstack__components_shufflequeue_macro_link, 5, 6, stkp, v,  &mlink );
+	if( thdptpr->len <= mlink->args_offset )
 	{
-		searchstack_ERREXIT( REFID_SUBIDS_searchstack__components_shufflequeue_entry_macro_call, 2,  stkp, v,  &arg_parr );
+		searchstack_ERREXIT( REFID_SUBIDS_searchstack__components_shufflequeue_macro_link, 7,  stkp, v,  &mlink, &thdptpr );
 	}
+		???
+		/* Note that OUTWARDLY ONE token should be pushed here. This is a */
+		/*  SINGLE arg that we're dealing with, NOT multiple. */
+	PUSH_SHUFFLE( res, thdptpr->body[ mlink->args_offset ],  REFID_SUBIDS_searchstack__components_shufflequeue_macro_link, 8,  stkp, v,  &mlink, &thdptpr );
 	
 	RET_FRAMEFUNC( head_lex_refid, -12, &th );
 }
+	/*
+			*subcall args:*arglist shuffle:token*[]
+		--
+			args:*arglist shuffle:token*[]+(subcall->link)
+	*/
+retframe shufflequeue_macro_token( stackpair *stkp, void *v )
+{
+	uintptr_t a;
+	macro_token *mtok;
+	int res;
+	
+	STACKCHECK( stkp, REFID_SUBIDS_searchstack__components_shufflequeue_macro_token, 1, stkp, v );
+	
+	POP_UINT( &( stkp->data ), a, REFID_SUBIDS_searchstack__components_shufflequeue_macro_token, 2, 3, stkp, v );
+	mtok = (macro_token*)a;
+	if( mtok->header.toktype != TOKTYPE_TOKENGROUP_MACROTOKEN )
+	{
+		searchstack_ERREXIT( REFID_SUBIDS_searchstack__components_shufflequeue_macro_token, 4,  stkp, v,  &mtok );
+	}
+	if( !( mtok->tok ) )
+	{
+		searchstack_ERREXIT( REFID_SUBIDS_searchstack__components_shufflequeue_macro_token, 5,  stkp, v,  &mtok );
+	}
+		???
+		/* Is this actually enough? Might need to ensure that a */
+		/*  tokengroup is present, and push it's elements individually, */
+		/*  or something similar. */
+	PUSH_SHUFFLE( res, mtok->tok,  REFID_SUBIDS_searchstack__components_shufflequeue_macro_token, 6,  stkp, v,  &mtok );
+	
+	RET_FRAMEFUNC( head_lex_refid, -12, &th );
+}
+	/*
+		(
+				macro_run* macro_args:tokenheadptr_pascalarray*
+			--
+				macro_run* shufflebookmark tokhdptr_parr* 0 macro_args:tokenheadptr_pascalarray*
+		)
+	*/
+	/*
+		This entire sub-sequence of calls roughly produces this:
+		(
+				macro_run* macro_args:tokenheadptr_pascalarray*
+			--
+				macro_run* shufflebookmark tokhdptr_parr* 0 macro_args:tokenheadptr_pascalarray*
+			--
+				macro_run* shuffledlength shufflestack:token*[shuffledlength] macro_args:tokenheadptr_pascalarray*
+			--
+				macro_call* tokenheadptr_pascalarray* macro_args:tokenheadptr_pascalarray*
+			--
+				shuffledlength shufflestack:token*[?] macro_args:
+		)
+	*/
+retframe shufflequeue_macro_run( stackpair *stkp, void *v )
+{
+	uintptr_t a;
+	macro_run *mr;
+	
+	STACKCHECK( stkp, REFID_SUBIDS_searchstack__???, 1, stkp, v );
+	
+	PEEK_UINT( &( stkp->data ), 0, a,  REFID_SUBIDS_searchstack__???, 3, 4, stkp, v );
+	mr = (macro_run*)a;
+	if( mr->header.toktype != TOKTYPE_TOKENGROUP_MACRORUN || !( mr->mac ) || !( mr->args ) )
+	{
+		searchstack_ERREXIT( REFID_SUBIDS_searchstack__???, 5,  stkp, v,  &mr );
+	}
+	
+		/* Prep for the call to shufflequeue_step_macro_call(). */
+	{
+		size_t used = token_queue_shuffleused();
+		
+		PUSH_UINT( &( stkp->data ), used,  REFID_SUBIDS_searchstack__???, 6,  stkp, v,  &mr );
+	}
+	PUSH_UINT( &( stkp->data ), mr->args,  REFID_SUBIDS_searchstack__???, 7,  stkp, v,  &mr );
+	PUSH_UINT( &( stkp->data ), 0,  REFID_SUBIDS_searchstack__???, 8,  stkp, v,  &mr );
+	
+	CALL_FRAMEFUNC(
+		&shufflequeue_macro_run_continue,
+		(void*)0,
+		
+		&shufflequeue_step_macro_call,
+		(void*)0
+	);
+}
+		/*
+				(
+						macro_run* shuffledlength shufflestack:token*[shuffledlength] macro_args:tokenheadptr_pascalarray*
+					--
+						macro_call* tokenheadptr_pascalarray* macro_args:tokenheadptr_pascalarray*
+					--
+						shuffledlength shufflestack:token*[?] macro_args:
+				)
+		*/
+	retframe shufflequeue_macro_run_continue( stackpair *stkp, void *v )
+	{
+		uintptr_t args, b;
+		macro_run *mr;
+		
+		STACKCHECK( stkp, REFID_SUBIDS_searchstack__???, 1, stkp, v );
+		
+			/*
+					shuffledlength shufflestack:token*[shuffledlength]
+				--
+					arglist*
+			*/
+		if( !pack_arglist( stkp,  REFID_SUBIDS_searchstack__???, 2 ) )
+		{
+			searchstack_ERREXIT( REFID_SUBIDS_searchstack__???, 3,  stkp, v,   );
+		}
+		POP_UINT( &( stkp->data ), args,  REFID_SUBIDS_searchstack__???, 4, 5, stkp, v );
+		
+		POP_UINT( &( stkp->data ), b,  REFID_SUBIDS_searchstack__???, 6, 7, stkp, v,  &args );
+		mr = (macro_run*)b;
+		if( mr->header.toktype != TOKTYPE_TOKENGROUP_MACRORUN || !( mr->mac ) )
+		{
+			searchstack_ERREXIT( REFID_SUBIDS_searchstack__???, 8,  stkp, v,  &args, &mr );
+		}
+		PUSH_UINT( &( stkp->data ), mr->mac,  REFID_SUBIDS_searchstack__???, 9,  stkp, v,  &args, &mr );
+		
+		PUSH_UINT( &( stkp->data ), args,  REFID_SUBIDS_searchstack__???, 10,  stkp, v );
+		
+		CALL_FRAMEFUNC(
+			&vm_pop_macroarg,
+			(void*)0,
+			
+			&shufflequeue_entry_macro_call,
+			(void*)0
+		);
+	}
+		/*
+			(
+					macro_directive* macro_args:tokenheadptr_pascalarray*
+				--
+					macro_directive* shufflebookmark tokhdptr_parr* 0 macro_args:tokenheadptr_pascalarray*
+			)
+		*/
+		/*
+			This entire sub-sequence of calls roughly produces this:
+			(
+					macro_directive* macro_args:tokenheadptr_pascalarray*
+				--
+					macro_directive* shufflebookmark tokhdptr_parr* 0 macro_args:tokenheadptr_pascalarray*
+				--
+					macro_directive* shuffledlength shufflestack:token*[shuffledlength] macro_args:tokenheadptr_pascalarray*
+				--
+					tokenheadptr_pascalarray* macro_args:tokenheadptr_pascalarray*
+				--
+					shuffledlength shufflestack:token*[?] macro_args:
+			)
+		*/
+retframe shufflequeue_macro_directive( stackpair *stkp, void *v )
+{
+	uintptr_t a;
+	macro_directive *mdir;
+	
+	STACKCHECK( stkp, REFID_SUBIDS_searchstack__???, 1, stkp, v );
+	
+	PEEK_UINT( &( stkp->data ), 0, a,  REFID_SUBIDS_searchstack__???, 3, 4, stkp, v );
+	mdir = (macro_directive*)a;
+	if( mdir->header.toktype != TOKTYPE_TOKENGROUP_MACRODIRECTIVE || !( mdir->handler ) || !( mdir->args ) )
+	{
+		searchstack_ERREXIT( REFID_SUBIDS_searchstack__???, 5,  stkp, v,  &mdir );
+	}
+	
+		/* Prep for the call to shufflequeue_step_macro_call(). */
+	{
+		size_t used = token_queue_shuffleused();
+		
+		PUSH_UINT( &( stkp->data ), used,  REFID_SUBIDS_searchstack__???, 6,  stkp, v,  &mdir );
+	}
+	PUSH_UINT( &( stkp->data ), mdir->args,  REFID_SUBIDS_searchstack__???, 7,  stkp, v,  &mdir );
+	PUSH_UINT( &( stkp->data ), 0,  REFID_SUBIDS_searchstack__???, 8,  stkp, v,  &mdir );
+	
+	CALL_FRAMEFUNC(
+		&shufflequeue_macro_directive_continue,
+		(void*)0,
+		
+		&shufflequeue_step_macro_call,
+		(void*)0
+	);
+}
+		/*
+				(
+						macro_directive* shuffledlength shufflestack:token*[shuffledlength] macro_args:tokenheadptr_pascalarray*
+					--
+						tokenheadptr_pascalarray* macro_args:tokenheadptr_pascalarray*
+					--
+						shuffledlength shufflestack:token*[?] macro_args:
+				)
+		*/
+	retframe shufflequeue_macro_directive_continue( stackpair *stkp, void *v )
+	{
+		uintptr_t args, b;
+		macro_directive *mdir;
+		
+		STACKCHECK( stkp, REFID_SUBIDS_searchstack__???, 1, stkp, v );
+		
+			/*
+					shuffledlength shufflestack:token*[shuffledlength]
+				--
+					arglist*
+			*/
+		if( !pack_arglist( stkp,  REFID_SUBIDS_searchstack__???, 2 ) )
+		{
+			searchstack_ERREXIT( REFID_SUBIDS_searchstack__???, 3,  stkp, v,   );
+		}
+		POP_UINT( &( stkp->data ), args,  REFID_SUBIDS_searchstack__???, 4, 5, stkp, v );
+		
+		POP_UINT( &( stkp->data ), b,  REFID_SUBIDS_searchstack__???, 6, 7, stkp, v,  &args );
+		mdir = (macro_directive*)b;
+		if( mdir->header.toktype != TOKTYPE_TOKENGROUP_MACRODIRECTIVE || !( mdir->handler ) )
+		{
+			searchstack_ERREXIT( REFID_SUBIDS_searchstack__???, 8,  stkp, v,  &args, &mdir );
+		}
+		
+		PUSH_UINT( &( stkp->data ), args,  REFID_SUBIDS_searchstack__???, 9,  stkp, v, &dir );
+		
+		CALL_FRAMEFUNC(
+			&vm_pop_macroarg,
+			(void*)0,
+			
+			mdir->handler.handler,
+			mdir->handler.data
+		);
+	}
 
+
+
+/*
+	The signature of the whole call sequence:
+	(
+			*callbody args:*arglist
+		--
+			shufflecount shuffle:token*[shufflecount]
+	)
+*/
 	/*
 		Forth stack notation:
 			(
 					macro_call* tokenheadptr_pascalarray*
 				--
-					shufflebookmark macro_call* '0' macro_args:tokenheadptr_pascalarray*
+					shufflebookmark tokhdptr_parr* '0' macro_args:tokenheadptr_pascalarray*
 			)
 		Note that the tokenheadptr_pascalarray* is specifically a pointer to
 		the pascal array that holds the actual arguments provided TO the macro
 		in the macro call (as opposed to the names that those arguments are
 		associated with within the body of the macro).
 	*/
-	/*
-		Note also that the stack notation for the ENTIRE sequence of calls
-		looks something like this:
-			(
-					macro_call* tokenheadptr_pascalarray*
-				--
-					shuffledlength tokensource:token*[]
-			)
-		with shuffledlength specifically identifying the total number of
-		tokens that have been ADDED to the START of the standard token source.
-	*/
 retframe shufflequeue_entry_macro_call( stackpair *stkp, void *v )
 {
-	uintptr_t arg_parr, mcall;
+	uintptr_t mcall;
 	
-	if( !stkp )
-	{
-		searchstack_ERREXIT( REFID_SUBIDS_searchstack__components_shufflequeue_entry_macro_call, 1,  stkp, v );
-	}
+	STACKCHECK( stkp, REFID_SUBIDS_searchstack__components_shufflequeue_entry_macro_call, 1, stkp, v );
 	
-		/* Pull these two from the stack, since we need to preserve them. */
-	if( !pop_uintptr( stk,  &arg_parr ) )
-	{
-		searchstack_ERREXIT( REFID_SUBIDS_searchstack__components_shufflequeue_entry_macro_call, 2,  stkp, v,  &arg_parr );
-	}
-	if( !pop_uintptr( stk,  &mcall ) )
-	{
-		searchstack_ERREXIT( REFID_SUBIDS_searchstack__components_shufflequeue_entry_macro_call, 3,  stkp, v,  &arg_parr, &mcall );
-	}
+		/* Move the arguments to the argument stack. */
+	POP_UINT( &( stkp->data ), mcall, REFID_SUBIDS_searchstack__components_shufflequeue_entry_macro_call, 3, 4, stkp, v );
+	PUSH_MACROARGS( mcall,  REFID_SUBIDS_searchstack__components_shufflequeue_entry_macro_call, 5, stkp, v );
+	
+	POP_UINT( &( stkp->data ), mcall, REFID_SUBIDS_searchstack__components_shufflequeue_entry_macro_call, 6, 7, stkp, v );
 		/* Just verification. */
 	if( ( (token_head*)mcall )->toktype != TOKTYPE_TOKENGROUP_MACROCALL )
 	{
-		searchstack_ERREXIT( REFID_SUBIDS_searchstack__components_shufflequeue_entry_macro_call, 4,  stkp, v,  &arg_parr, &mcall );
+		searchstack_ERREXIT( REFID_SUBIDS_searchstack__components_shufflequeue_entry_macro_call, 8,  stkp, v,  &arg_parr, &mcall );
 	}
 	
 		/* Push a bookmark for where the tokenqueue shuffle stack currently */
@@ -907,94 +1181,57 @@ retframe shufflequeue_entry_macro_call( stackpair *stkp, void *v )
 	{
 		size_t used = token_queue_shuffleused();
 		
-		if( !push_uintptr( &( stkp->data ),  used ) )
-		{
-			searchstack_ERREXIT( REFID_SUBIDS_searchstack__components_shufflequeue_entry_macro_call, 5,  stkp, v,  &arg_parr, &mcall, &used );
-		}
+		PUSH_UINT( &( stkp->data ), used, REFID_SUBIDS_searchstack__components_shufflequeue_entry_macro_call, 9,  stkp, v,  &mcall );
 	}
 	
-		/* Restore these two values back to the top of the stack, in the */
-		/*  same order, with a "progress" indicator between them. */
-	if( !push_uintptr( &( stkp->data ),  mcall ) )
-	{
-		searchstack_ERREXIT( REFID_SUBIDS_searchstack__components_shufflequeue_entry_macro_call, 6,  stkp, v,  &arg_parr, &mcall );
-	}
-			/* Our progress? None! Because we haven't really started. */
-		if( !push_uintptr( &( stkp->data ),  0 ) )
-		{
-			searchstack_ERREXIT( REFID_SUBIDS_searchstack__components_shufflequeue_entry_macro_call, 7,  stkp, v,  &arg_parr );
-		}
-	if( !macroargs_pushset( arg_parr ) )
-	{
-		searchstack_ERREXIT( REFID_SUBIDS_searchstack__components_shufflequeue_entry_macro_call, 8,  stkp, v,  &arg_parr );
-	}
+		/* Push the body element from mcall instead of mcall itself, and */
+		/*  then push a "0" progress indicator, since we haven't processed */
+		/*  anything yet. */
+	PUSH_UINT( &( stkp->data ), mcall->body,  REFID_SUBIDS_searchstack__components_shufflequeue_entry_macro_call, 10,  stkp, v,  &mcall );
+		/* Our progress? None! Because we haven't really started. */
+	PUSH_UINT( &( stkp->data ), 0,  REFID_SUBIDS_searchstack__components_shufflequeue_entry_macro_call, 11,  stkp, v,  &mcall );
 	
-		/* We need to start executing the macro, so just returning is a no-no. */
+	
 	return( (retframe){ &shufflequeue_step_macro_call, (void*)0 } );
 }
 
 	/*
 		Forth stack notation:
 			(
-					shufflebookmark macro_call* x macro_args:tokenheadptr_pascalarray*
+					shufflebookmark tokhdptr_parr* x macro_args:tokenheadptr_pascalarray* shuffle:token*[?]
 				--
-					shufflebookmark macro_call* x+1 ( token_header* |  ) macro_args:tokenheadptr_pascalarray*
+					shufflebookmark tokhdptr_parr* x+1 ( token_header* |  ) macro_args:tokenheadptr_pascalarray* shuffle:token*[?]
 			)
 	*/
-retframe shufflequeue_step_macro_call( stackpair *stkp, void *v )
+retframe shufflequeue_step_macro_calltool( stackpair *stkp, void *v,  retframe loop, retframe ret )
 {
-	uintptr_t prog, mcall;
+	uintptr_t prog, ops_;
 	tokhdptr_parr *arg_parr;
 	
-	if( !stkp )
-	{
-		searchstack_ERREXIT( REFID_SUBIDS_searchstack__components_shufflequeue_step_macro_call, 1,  stkp, v );
-	}
+	STACKCHECK( stkp,  REFID_SUBIDS_searchstack__components_shufflequeue_step_macro_call, 1,  stkp, v );
 	
 		/* Pull these two from the stack, since we need to use and modify */
 		/*  the "deeper" one, while otherwise preserving both. */
-	if( !macroargs_peekset( 0,  arg_parr ) )
+	PEEK_MACROARGS( 0, arg_parr,  REFID_SUBIDS_searchstack__components_shufflequeue_step_macro_call, 2, 3, stkp, v );
+		/* "0" is actually valid, so we can't use the usual macro. */
+	if( !pop_uintptr( stk,  prog ) )
 	{
-		searchstack_ERREXIT( REFID_SUBIDS_searchstack__components_shufflequeue_step_macro_call, 2,  stkp, v,  arg_parr );
-	}
-	if( !pop_uintptr( stk,  &prog ) )
-	{
-		searchstack_ERREXIT( REFID_SUBIDS_searchstack__components_shufflequeue_step_macro_call, 3,  stkp, v,  arg_parr, &prog );
+		searchstack_ERREXIT( REFID_SUBIDS_searchstack__components_shufflequeue_step_macro_call, 4,  stkp, v,  arg_parr, &prog );
 	}
 	
-	if( !peek_uintptr( stk,  0,  &mcall ) )
-	{
-		searchstack_ERREXIT( REFID_SUBIDS_searchstack__components_shufflequeue_step_macro_call, 4,  stkp, v,  arg_parr, &prog, &mcall );
-	}
+	PEEK_UINT( stk,  0,  ops_,  REFID_SUBIDS_searchstack__components_shufflequeue_step_macro_call, 5, 6,  stkp, v,  arg_parr, &prog );
+	tokhdptr_parr *ops = (tokhdptr_parr*)ops_;
 	
 	++prog;
-	if( !push_uintptr( &( stkp->data ),  prog ) )
-	{
-		searchstack_ERREXIT( REFID_SUBIDS_searchstack__components_shufflequeue_step_macro_call, 5,  stkp, v,  arg_parr, &prog, &mcall );
-	}
+	PUSH_UINT( &( stkp->data ), prog,  REFID_SUBIDS_searchstack__components_shufflequeue_step_macro_call, 7,  stkp, v,  arg_parr, &prog, &ops );
 	
-	macro_call *mc = (macro_call*)mcall;
-	
-	if( !mc )
+	if( ops->len >= prog )
 	{
-		searchstack_ERREXIT( REFID_SUBIDS_searchstack__components_shufflequeue_step_macro_call, 7,  stkp, v,  arg_parr, &prog, &mc );
-	}
-	if( !( mc->body ) )
-	{
-		searchstack_ERREXIT( REFID_SUBIDS_searchstack__components_shufflequeue_step_macro_call, 8,  stkp, v,  arg_parr, &prog, &mc );
-	}
-	
-	if( mc->body->len >= prog )
-	{
-		token_header *th = ( mc->body->body[ prog - 1 ] );
+		token_header *th = ( ops->body[ prog - 1 ] );
 		
-		if( !push_uintptr( &( stkp->data ),  (uintptr_t)th ) )
-		{
-			searchstack_ERREXIT( REFID_SUBIDS_searchstack__components_shufflequeue_step_macro_call, 9,  stkp, v,  arg_parr, &prog, &mc );
-		}
+		PUSH_UINT( &( stkp->data ),  (uintptr_t)th,  REFID_SUBIDS_searchstack__components_shufflequeue_step_macro_call, 8,  stkp, v,  arg_parr, &prog, &ops );
 		
 		framefunc hand = &end_run;
-		
 		switch( th->toktype )
 		{
 			case TOKTYPE_TOKENGROUP_MACROLINK:
@@ -1011,15 +1248,15 @@ retframe shufflequeue_step_macro_call( stackpair *stkp, void *v )
 				break;
 			
 			default:
-				searchstack_ALERT( REFID_SUBIDS_searchstack__components_shufflequeue_step_macro_call, 9,  stkp, v,  arg_parr, &prog, &mc, &th );
+				searchstack_ALERT( REFID_SUBIDS_searchstack__components_shufflequeue_step_macro_call, 9,  stkp, v,  arg_parr, &prog, &ops, &th );
 					/* "hand" contains a reference to end_run, so no need to */
 					/*  do anything other than break out of the switch. */
 				break;
 		}
 		
 		CALL_FRAMEFUNC(
-			&shufflequeue_step_macro_call,
-			(void*)0,
+			loop.handler,
+			loop.data,
 			
 			hand,
 			(void*)0
@@ -1027,348 +1264,59 @@ retframe shufflequeue_step_macro_call( stackpair *stkp, void *v )
 		
 	} else {
 		
-		return( (retframe){ &shufflequeue_exit_macro_call, (void*)0 } );
+		return( ret );
 	}
 }
-
-	/* These should ONLY be executed within (and as a result of) an */
-	/*  enclosing shufflequeue_entry_macro_call()/ */
-	/*  shufflequeue_exit_macro_call() call pair: they configure and then */
-	/*  de-configure the stack so that this will work correctly, and */
-	/*  *_exit_*() also moves the stuff pushed onto the token shufflequeue */
-	/*  onto the normal token get/unget queue so that they'll both be */
-	/*  available for immediate usage, AND in the correct order for */
-	/*  immediate usage. */
-	
-		/* A pointer to a macro_link should be on top of the stack, and a */
-		/*  pointer to the tokhdptr_parr pascal array of actual arguments TO */
-		/*  the macro should be on "macro_args". */
-	retframe shufflequeue_macro_link( stackpair *stkp, void *v )
-	{
-		uintptr_t a;
-		macro_link *mlink;
-		tokhdptr_parr *thdptpr;
-		int res;
-		
-		if( !stkp )
-		{
-			searchstack_ERREXIT( REFID_SUBIDS_searchstack__components_shufflequeue_macro_link, 1,  stkp, v );
-		}
-		
-		if( !pop_uintptr( stk,  &a ) )
-		{
-			searchstack_ERREXIT( REFID_SUBIDS_searchstack__components_shufflequeue_macro_link, 2,  stkp, v,  &a );
-		}
-		if( !a )
-		{
-			searchstack_ERREXIT( REFID_SUBIDS_searchstack__components_shufflequeue_macro_link, 3,  stkp, v,  &a );
-		}
-		mlink = (macro_link*)a;
-		if( mlink->header.toktype != TOKTYPE_TOKENGROUP_MACROLINK )
-		{
-			searchstack_ERREXIT( REFID_SUBIDS_searchstack__components_shufflequeue_macro_link, 4,  stkp, v,  &mlink );
-		}
-		
-		if( !macroargs_peekset( 0,  &thdptpr ) )
-		{
-			searchstack_ERREXIT( REFID_SUBIDS_searchstack__components_shufflequeue_macro_link, 5,  stkp, v,  &mlink, &thdptpr );
-		}
-		if( !thdptpr )
-		{
-			searchstack_ERREXIT( REFID_SUBIDS_searchstack__components_shufflequeue_macro_link, 6,  stkp, v,  &mlink, &thdptpr );
-		}
-		
-		if( thdptpr->len <= mlink->args_offset )
-		{
-			searchstack_ERREXIT( REFID_SUBIDS_searchstack__components_shufflequeue_macro_link, 7,  stkp, v,  &mlink, &thdptpr );
-		}
-			???
-			/* Note that OUTWARDLY ONE token should be pused here. This is a */
-			/*  SINGLE arg that we're dealing with, NOT multiple. */
-		res = token_queue_shufflepush( (token*)( thdptpr->body[ mlink->args_offset ] ) );
-		if( !res )
-		{
-			searchstack_ERREXIT( REFID_SUBIDS_searchstack__components_shufflequeue_macro_link, 8,  stkp, v,  &mlink, &thdptpr, &res );
-		}
-		
-		RET_FRAMEFUNC( head_lex_refid, -12, &th );
-	}
-	
-	retframe shufflequeue_macro_token( stackpair *stkp, void *v )
-	{
-		uintptr_t a;
-		macro_token *mtok;
-		int res;
-		
-		if( !stkp )
-		{
-			searchstack_ERREXIT( REFID_SUBIDS_searchstack__components_shufflequeue_macro_token, 1,  stkp, v );
-		}
-		
-		if( !pop_uintptr( stk,  &a ) )
-		{
-			searchstack_ERREXIT( REFID_SUBIDS_searchstack__components_shufflequeue_macro_token, 2,  stkp, v,  &a );
-		}
-		if( !a )
-		{
-			searchstack_ERREXIT( REFID_SUBIDS_searchstack__components_shufflequeue_macro_token, 3,  stkp, v,  &a );
-		}
-		mtok = (macro_token*)a;
-		if( mtok->header.toktype != TOKTYPE_TOKENGROUP_MACROTOKEN )
-		{
-			searchstack_ERREXIT( REFID_SUBIDS_searchstack__components_shufflequeue_macro_token, 4,  stkp, v,  &mtok );
-		}
-		if( !( mtok->tok ) )
-		{
-			searchstack_ERREXIT( REFID_SUBIDS_searchstack__components_shufflequeue_macro_token, 5,  stkp, v,  &mtok );
-		}
-			???
-			/* Is this actually enough? Might need to ensure that a */
-			/*  tokengroup is present, and push it's elements individually, */
-			/*  or something similar. */
-		res = token_queue_shufflepush( (token*)( mtok->tok ) );
-		if( !res )
-		{
-			searchstack_ERREXIT( REFID_SUBIDS_searchstack__components_shufflequeue_macro_token, 6,  stkp, v,  &mtok, &res );
-		}
-		
-		RET_FRAMEFUNC( head_lex_refid, -12, &th );
-	}
-	
-		/* This is an adapter used to make macro calls from outside the */
-		/*  scope of the shufflequeue_*_macro_call() functions. Very */
-		/*  important for actually executing macros. Does still require */
-			/* ( macro_run* macro_args:tokenheadptr_pascalarray* --) */
-		/*  so that it'll have the arguments that the macro actually */
-		/*  needs... */
-	retframe shufflequeue_macro_runANDcollapse( stackpair *stkp, void *v )
-	{
-		???
-		
-			/* Setup *_conclude() as the return route, then proceed on */
-			/*  to the actual macro execution. */
-		CALL_FRAMEFUNC(
-			&shufflequeue_macro_runANDcollapse_conclude,
-			(void*)0,
+	/* Just a wrapper. Will need an imitator for directives. */
+retframe shufflequeue_step_macro_call( stackpair *stkp, void *v )
+{
+	return
+	(
+		shufflequeue_step_macro_calltool
+		(
+			stkp, v,
 			
-			&shufflequeue_macro_run,
-			(void*)0
-		);
-	}
-		/* Should only be entered from shufflequeue_macro_run_conclude(). */
-	retframe shufflequeue_macro_runANDcollapse_conclude( stackpair *stkp, void *v )
-	{
-			/* Something, something, return to caller... */
-		???
-		
-		return( (retframe){ echo_tokens_entrypoint, (void*)0} );
-	}
+			(retframe){ &shufflequeue_step_macro_call, (void*)0 },
+			retframe ret /* Should be shufflequeue_exit_macro_call() or similar. */
+		)
+	);
+}
+	
 		/*
-			(
-					macro_run* macro_args:tokenheadptr_pascalarray*
-				--
-					macro_run* x args* macro_args:tokenheadptr_pascalarray*
-			)
+				shufflebookmark shuffle:token*[shufflecount]
+			--
+				shufflecount shuffle:token*[shufflecount]
 		*/
-		/*
-			This entire sub-sequence of calls produces this:
-			(
-					macro_run* macro_args:tokenheadptr_pascalarray*
-				--
-					shufflestack:token* macro_args:tokenheadptr_pascalarray*
-			)
-		*/
-	retframe shufflequeue_macro_run( stackpair *stkp, void *v )
-	{
-		uintptr_t a;
-		tokenheadptr_pascalarray *args = ???;
-		macro_run *mrun;
-		
-		if( !stkp )
-		{
-			searchstack_ERREXIT( REFID_SUBIDS_searchstack__components_shufflequeue_entry_macro_call, 1,  stkp, v );
-		}
-		
-		
-		if( !peek_uintptr( stk,  0,  &a ) )
-		{
-			searchstack_ERREXIT( REFID_SUBIDS_searchstack__components_shufflequeue_macro_run, 2,  stkp, v,  &a );
-		}
-		mrun = (macro_run*)a;
-		if( !mrun || !( mrun->mac ) || !( mrun->args ) )
-		{
-			/* Error. */
-		}
-		if( mrun->header.toktype != TOKTYPE_TOKENGROUP_MACRORUN )
-		{
-			searchstack_ERREXIT( REFID_SUBIDS_searchstack__components_shufflequeue_macro_run, 4,  stkp, v,  &a );
-		}
-		
-		if( mrun->args->len == 0 )
-		{
-			/* Early exit: no args needed, so just prep for the call. */
-			
-			push( args );
-			return( (retframe){ & ???, (void*)0 } );
-		}
-		
-		???
-		
-		if( !push_uintptr( &( stkp->data ),  0 ) )
-		{
-			searchstack_ERREXIT( REFID_SUBIDS_searchstack__components_shufflequeue_step_macro_call, 9,  stkp, v,  arg_parr, &prog, &mc );
-		}
-		push( args );
-		
-		???
-		
-		return( (retframe){ &shufflequeue_macro_run_body, (void*)0 } );
-	}
-		/*
-			(
-					macro_run* x args* macro_args:tokenheadptr_pascalarray*
-				--
-					(macro_run* x args* | macro_run* macro_call* args* ) macro_args:tokenheadptr_pascalarray*
-			)
-		*/
-	retframe shufflequeue_macro_run_body( stackpair *stkp, void *v )
-	{
-		tokenheadptr_pascalarray *args;
-		uintptr_t iter;
-		macro_run *mr;
-		
-		if( !stkp )
-		{
-			searchstack_ERREXIT( REFID_SUBIDS_searchstack__components_shufflequeue_entry_macro_call, 1,  stkp, v );
-		}
-		
-		
-		pop( &args );
-		if !args )
-		{
-			/* Error. */
-		}
-		
-		pop( &iter );
-		
-		peek( &mr );
-		if( !mr || !( mr->mac ) || !( mr->args ) || mr->args->len < iter )
-		{
-			/* Error. */
-		}
-		if( mr->args->len == iter )
-		{
-			/* Done, proceed on to actual call. */
-			
-			if( !push_uintptr( &( stkp->data ),  (uintptr_t)( mr->mac ) ) )
-			{
-				searchstack_ERREXIT( REFID_SUBIDS_searchstack__components_shufflequeue_step_macro_call, 9,  stkp, v,  arg_parr, &prog, &mc );
-			}
-			if( !push_uintptr( &( stkp->data ),  (uintptr_t)args ) )
-			{
-				searchstack_ERREXIT( REFID_SUBIDS_searchstack__components_shufflequeue_step_macro_call, 9,  stkp, v,  arg_parr, &prog, &mc );
-			}
-			
-			/*
-				Total result of this CALL_FRAMEFUNC():
-				(
-						macro_call* tokenheadptr_pascalarray* macro_args:tokenheadptr_pascalarray*
-					--
-						shuffledlength tokensource:token*[] macro_args:tokenheadptr_pascalarray*
-				)
-			*/
-			/*
-				Note that *_entry_macro_call has roughly the following
-				signature:
-				(
-						macro_call* tokenheadptr_pascalarray*
-					--
-						shuffledlength tokensource:token*[]
-				)
-			*/
-				/* Setup *_conclude() as the return route, then proceed on */
-				/*  to the actual macro execution. */
-			CALL_FRAMEFUNC(
-				&shufflequeue_macro_run_conclude,
-				(void*)0,
-				
-				&shufflequeue_entry_macro_call,
-				(void*)0
-			);
-		}
-		
-		
-		++iter;
-		push( iter );
-		
-		push( args );
-		
-			/* Does... something? */
-		???( mr->args->body[ iter ] );
-		
-		???
-		
-			/* One of these gets used to grab arguments from the "parent" */
-			/*  arguments. Also, all but the lone "else" handle the macro_* */
-			/*  token types, since that handles all of the stuff that we */
-			/*  should need. */
-		if( ??? )
-		{
-			return( (retframe){ ???, (void*)0 } );
-			
-		} else if( ??? )
-		{
-			return( (retframe){ ???, (void*)0 } );
-			
-		} else if( ??? )
-		{
-			return( (retframe){ ???, (void*)0 } );
-			
-		} else {
-			
-			/* Error. */
-		}
-	}
-		/*
-			(
-					shuffledlength tokensource:token*[] macro_args:tokenheadptr_pascalarray*
-				--
-					shufflestack:token* macro_args:tokenheadptr_pascalarray*
-			)
-		*/
-	retframe shufflequeue_macro_run_conclude( stackpair *stkp, void *v )
-	{
-		???
-		
-		/* Package everything up into a single token, then push back onto */
-		/*  the token source? */
-		
-		???
-		
-		res = token_queue_shufflepush( (token*)( thdptpr->body[ mlink->args_offset ] ) );
-		if( !res )
-		{
-			searchstack_ERREXIT( REFID_SUBIDS_searchstack__components_shufflequeue_macro_link, 8,  stkp, v,  &mlink, &thdptpr, &res );
-		}
-		
-		???
-	}
+retframe shufflequeue_exit_macro_calltool( stackpair *stkp, void *v )
+{
+	uintptr_t shufflebookmark;
 	
-	retframe shufflequeue_macro_directive( stackpair *stkp, void *v )
-	{
-		macro_directive *mdir;
-		
-		TOKTYPE_TOKENGROUP_MACRODIRECTIVE
-		
-		???
-	}
+	STACKCHECK( stkp,  REFID_SUBIDS_???, 1,  stkp, v );
 	
+		/* And now pop the shuffle stack/queue/whatever's bookmark, so that */
+		/*  we'll know how many token pointers need to be moved from */
+		/*  "shuffle" to the token get/unget stack. These will be */
+		/*  deallocated elsewhere, so no need to do it here. */
+	if( !pop_uintptr( stk,  &shufflebookmark ) )
+	{
+		searchstack_ERREXIT( REFID_SUBIDS_???, 5,  stkp, v,  &shufflebookmark );
+	}
+	??? /* Actually, where DO these get freed? That might be a source of */
+		/*  errors. */
+	
+	size_t used = token_queue_shuffleused() - shufflebookmark;
+		/* Push the number of tokens on the shuffle stack: some */
+		/*  things need to know this for their own purposes. */
+	PUSH_UINT( &( stkp->data ), shufflebookmark,  REFID_SUBIDS_???, 9,  stkp, v,  arg_parr, &prog, &mc );
+	
+	RET_FRAMEFUNC( refname, errnum, ... );
+}
 	/*
 		Forth stack notation:
 			(
-					shufflebookmark macro_call* x macro_args:tokenheadptr_pascalarray* shufflestack:token*[]
+					shufflebookmark tokhdptr_parr* x macro_args:tokenheadptr_pascalarray* shufflestack:token*[shuffledlength]
 				--
-					shuffledlength tokensource:token*[]
+					shuffledlength shufflestack:token*[shuffledlength]
 			)
 		Yes, upon exit, all of that stuff will be gone.
 	*/
@@ -1376,19 +1324,12 @@ retframe shufflequeue_exit_macro_call( stackpair *stkp, void *v )
 {
 	uintptr_t a;
 	tokhdptr_parr *args;
-	int res;
 	
-	if( !stkp )
-	{
-		searchstack_ERREXIT( REFID_SUBIDS_searchstack__components_shufflequeue_exit_macro_call, 1,  stkp, v );
-	}
+	STACKCHECK( stkp,  REFID_SUBIDS_searchstack__components_shufflequeue_exit_macro_call, 1,  stkp, v );
 	
 		/* Pop the pascal array of arguments provided to the macro first: */
 		/*  these will need to be deallocated at some point. */
-	if( !macroargs_popset( &args ) )
-	{
-		searchstack_ERREXIT( REFID_SUBIDS_searchstack__components_shufflequeue_exit_macro_call, 2,  stkp, v,  &a );
-	}
+	POP_MACROARGS( args,  REFID_SUBIDS_searchstack__components_shufflequeue_exit_macro_call, 2, 3, stkp, v );
 		/* Do something to deallocate those tokens. */
 	???
 	
@@ -1399,7 +1340,7 @@ retframe shufflequeue_exit_macro_call( stackpair *stkp, void *v )
 		searchstack_ERREXIT( REFID_SUBIDS_searchstack__components_shufflequeue_exit_macro_call, 3,  stkp, v,  &a );
 	}
 	
-		/* Now the macro_call structure pointer. The macro_call itself is */
+		/* Now the operations array. The array itself is */
 		/*  owned elsewhere, so no need to deallocate. Also, deallocating */
 		/*  now could break something later. */
 	if( !pop_uintptr( stk,  &a ) )
@@ -1407,41 +1348,56 @@ retframe shufflequeue_exit_macro_call( stackpair *stkp, void *v )
 		searchstack_ERREXIT( REFID_SUBIDS_searchstack__components_shufflequeue_exit_macro_call, 4,  stkp, v,  &a );
 	}
 	
-		/* And now pop the shuffle stack/queue/whatever's bookmark, so that */
-		/*  we'll know how many token pointers need to be moved from */
-		/*  "shuffle" to the token get/unget stack. These will be */
-		/*  deallocated elsewhere, so no need to do it here. */
-	if( !pop_uintptr( stk,  &a ) )
+	return( shufflequeue_exit_macro_calltool( stkp, v ) );
+}
+
+
+
+	/*
+			macro_call* tokenheadptr_pascalarray*
+		--
+			shuffledlength shufflestack:token*[shuffledlength]
+		--
+			source:token*
+	*/
+retframe shufflequeue_entry_macro_wrapper( stackpair *stkp, void *v )
+{
+	CALL_FRAMEFUNC(
+		&shufflequeue_entry_macro_call,
+		(void*)0,
+		
+		&shufflequeue_exit_macro_wrapper,
+		(void*)0
+	);
+}
+		/*
+				shufflecount shuffle:token*[shufflecount]
+			--
+				source:token*
+		*/
+	retframe shufflequeue_exit_macro_wrapper( stackpair *stkp, void *v )
 	{
-		searchstack_ERREXIT( REFID_SUBIDS_searchstack__components_shufflequeue_exit_macro_call, 5,  stkp, v,  &a );
-	}
-	??? /* Actually, where DO these get freed? That might be a source of */
-		/*  errors. */
-	
-	size_t used = token_queue_shuffleused(), moved = 0;
-	while( used - moved > a )
-	{
-		res = token_queue_shuffle2queue();
-		if( !res )
+		uintptr_t count;
+		
+		STACKCHECK( stkp,  REFID_SUBIDS_searchstack__components_shufflequeue_exit_macro_call, 1,  stkp, v );
+		
+		POP_UINT( &( stkp->data ), count,  refid, err1, err2, ... )
+		
+		while( count )
 		{
-			searchstack_ERREXIT( REFID_SUBIDS_searchstack__components_shufflequeue_exit_macro_call, 6,  stkp, v,  &a, &used, &res );
+			--count;
+			int res = token_queue_shuffle2queue();
+			if( !res )
+			{
+				searchstack_ERREXIT( REFID_SUBIDS_searchstack__components_shufflequeue_exit_macro_call, 6,  stkp, v,  count, res );
+			}
 		}
 		
-		++moved;
+		/* The various produced tokens should now be in the token stream, */
+		/*  AND in the correct order. */
+		
+		RET_FRAMEFUNC( refname, errnum, ... );
 	}
-		/* All of the tokens that got queued up should now be in the token */
-		/*  source stream, and in correct order to boot. */
-	
-		/* Push the number of tokens that we shuffled onto the stack: some */
-		/*  things need to know this for their own purposes. */
-	if( !push_uintptr( &( stkp->data ),  (uintptr_t)moved ) )
-	{
-		searchstack_ERREXIT( REFID_SUBIDS_searchstack__components_shufflequeue_step_macro_call, 9,  stkp, v,  arg_parr, &prog, &mc );
-	}
-	
-		/* Unlike the *_entry_*() function, we CAN just return like normal. */
-	RET_FRAMEFUNC( head_lex_refid, -12, &th );
-}
 
 
 
