@@ -107,8 +107,6 @@ GENNAMETYPE_RETFRAMEFUNC
 
 
 
-retframe preproc_search2( stackpair *stkp, void *table );
-retframe gentyped_search( stackpair *stkp, gentyped_parr *table, retframe (*tablehand)( stackpair*, void* ) );
 retframe preproc_search1( stackpair *stkp, void *v )
 {
 	return( gentyped_search( stkp, preproc_basic_gentyping, &preproc_search2 ) );

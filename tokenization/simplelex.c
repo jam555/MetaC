@@ -1,13 +1,6 @@
 #include "headers.h"
 
 
-
-retframe space_lex( stackpair*, void* );
-retframe newline_lex( stackpair*, void* );
-
-retframe name_lex( stackpair*, void* );
-retframe numberentry_lex( stackpair*, void* );
-
 #define head_lex_ERREXIT( key, ... ) \
 	err_interface( &head_lex_refid, (lib4_failure_result){ (key) }, __VA_ARGS__ ); \
 	return( (retframe){ &end_run, (void*)0 } )
@@ -365,10 +358,6 @@ retframe name_lex( stackpair *stkp, void *v )
 #define number_lex_ERREXIT( key, ... ) \
 		err_interface( &number_lex_refid, (lib4_failure_result){ (key) }, __VA_ARGS__ ); \
 		return( (retframe){ &end_run, (void*)0 } )
-retframe numberdecimal_lex( stackpair*, void* );
-retframe numberhexadecimal_lex( stackpair*, void* );
-retframe numberoctal_lex( stackpair*, void* );
-retframe numberbinary_lex( stackpair*, void* );
 retframe numberentry_lex( stackpair *stkp, void *v )
 {
 	token_head th;
@@ -839,7 +828,6 @@ retframe brackop_lex( stackpair *stkp, void *v )
 #define str_lex_ERREXIT( key, ... ) \
 		err_interface( &str_lex_refid, (lib4_failure_result){ (key) }, __VA_ARGS__ ); \
 		return( (retframe){ &end_run, (void*)0 } )
-retframe escstr_lex( stackpair*, void* );
 retframe str_lex( stackpair *stkp, void *v )
 {
 	token_head th;
@@ -951,8 +939,6 @@ retframe escstr_lex( stackpair *stkp, void *v )
 #define syms_lex_ERREXIT( key, ... ) \
 		err_interface( &syms_lex_refid, (lib4_failure_result){ (key) }, __VA_ARGS__ ); \
 		return( (retframe){ &end_run, (void*)0 } )
-retframe symssinglet_lex( stackpair*, void*, token_head*, char, char );
-retframe symsext_lex( stackpair*, void*, token_head*, char, char );
 retframe syms_lex( stackpair *stkp, v )
 {
 	token_head th;
