@@ -590,6 +590,9 @@ void err_interface( uintptr_t source, lib4_failure_result err, ... );
 
 
 
+#include "stack.h"
+#include "tokenmatching.h"
+
 #include "input/source.h"
 #include "input/lexalike.h"
 
@@ -605,4 +608,3 @@ void err_interface( uintptr_t source, lib4_failure_result err, ... );
 
 
 
-#include "tokenmatching.h"
