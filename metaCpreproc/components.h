@@ -167,33 +167,18 @@
 	
 	
 	/* Where do these defines even belong? */
+	#define PEEK_MACROARGS( offset, var,  errfunc, err1, err2,  ... ) \
+		if( !macroargs_peekset( ( offset ),  &( var ) ) ) { errfunc( ( err1 ),  __VA_ARGS__, &( var ) ); } \
+		if( !( var ) ) { errfunc( ( err2 ),  __VA_ARGS__, &( var ) ); }
+	#define POP_MACROARGS( destptr,  errfunc, err1, err2,  ... ) \
+		if( !macroargs_popset( destptr ) ) { errfunc( ( err1 ),  __VA_ARGS__, &( var ) ); } \
+		if( !( var ) ) { errfunc( ( err2 ),  __VA_ARGS__, &( var ) ); }
+	#define PUSH_MACROARGS( val,  errfunc, err,  ... ) \
+		if( !macroargs_pushset( val ) ) { errfunc( ( err ),  __VA_ARGS__, ( val ) ); }
 	
-	#define STACKCHECK( stack,  refid, errnum, ... ) \
-		if( !( stack ) ){ searchstack_ERREXIT( ( refid ), ( errnum ),  __VA_ARGS__  ); }
-	
-	#define PEEK_UINT( stk, offset, var,  refid, err1, err2, ... ) \
-		if( !peek_uintptr( ( stk ),  ( offset ),  &( var ) ) ) { searchstack_ERREXIT( ( refid ), ( err1 ),  __VA_ARGS__,  &( var ) ); } \
-		if( !( var ) ) { searchstack_ERREXIT( ( refid ), ( err2 ),  __VA_ARGS__,  &( var ) ); }
-	#define POP_UINT( stk, var,  refid, err1, err2, ... ) \
-		if( !pop_uintptr( ( stk ),  &( var ) ) ) { searchstack_ERREXIT( ( refid ), ( err1 ),  __VA_ARGS__,  &( var ) ); } \
-		if( !( var ) ) { searchstack_ERREXIT( ( refid ), ( err2 ),  __VA_ARGS__,  &( var ) ); }
-	#define PUSH_UINT( stk, val,  refid, err, ... ) \
-		if( !push_uintptr( ( stk ),  ( val ) ) ) { searchstack_ERREXIT( ( refid ), ( err ),  __VA_ARGS__, ( val ) ); }
-	
-	#define PEEK_MACROARGS( offset, var,  refid, err1, err2, ... ) \
-		if( !macroargs_peekset( ( offset ),  &( var ) ) ) { searchstack_ERREXIT( ( refid ), ( err1 ),  __VA_ARGS__, &( var ) ); } \
-		if( !( var ) ) { searchstack_ERREXIT( ( refid ), ( err2 ),  __VA_ARGS__, &( var ) ); }
-	#define POP_MACROARGS( var,  refid, err1, err2, ... ) \
-		if( !macroargs_popset( &( var ) ) ) { searchstack_ERREXIT( ( refid ), ( err1 ),  __VA_ARGS__, &( var ) ); } \
-		if( !( var ) ) { searchstack_ERREXIT( ( refid ), ( err2 ),  __VA_ARGS__, &( var ) ); }
-	#define PUSH_MACROARGS( val,  refid, err, ... ) \
-		if( !macroargs_pushset( val ) ) { searchstack_ERREXIT( ( refid ), ( err ),  __VA_ARGS__, ( val ) ); }
-	
-		/* This expects to be used within the context of a function which */
-		/*  returns a retframe value. */
-	#define PUSH_SHUFFLE( res, token,  refid, err, ... ) \
-		( res ) = token_queue_shufflepush( (token*)( token ) ); \
-		if( !( res ) ) { searchstack_ERREXIT( ( refid ), ( err ),  __VA_ARGS__, &( res ) ); }
+	#define PUSH_SHUFFLE( scratchint, token,  errfunc, err,  ... ) \
+		( scratchint ) = token_queue_shufflepush( (token*)( token ) ); \
+		if( !( scratchint ) ) { errfunc( ( err ),  __VA_ARGS__, &( scratchint ) ); }
 	
 	
 	
