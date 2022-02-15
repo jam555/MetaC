@@ -39,8 +39,15 @@
 	retframe token_queue_fetch( stackpair *stkp, void *v );
 	
 	size_t token_queue_shuffleused();
-	int token_queue_shufflepush( token *tok );
 	int token_queue_shufflepop( token **tok );
+	int token_queue_shufflepush( token *tok );
+	
+	#define POP_SHUFFLE( scratchint, destptrptr,  errfunc, err,  ... ) \
+		( scratchint ) = token_queue_shufflepop( destptrptr ); \
+		if( !( scratchint ) ) { errfunc( ( err ),  __VA_ARGS__, &( scratchint ) ); }
+	#define PUSH_SHUFFLE( scratchint, token,  errfunc, err,  ... ) \
+		( scratchint ) = token_queue_shufflepush( (token*)( token ) ); \
+		if( !( scratchint ) ) { errfunc( ( err ),  __VA_ARGS__, &( scratchint ) ); }
 	
 	int token_queue_shuffle2queue();
 	
