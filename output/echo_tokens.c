@@ -25,10 +25,6 @@ int echo_tokenhead( stackpair *stkp, void *v,  token_head **th )
 }
 
 
-retframe echo_token( stackpair *stkp, void *v );
-retframe echo_tokengroup( stackpair *stkp, void *v );
-retframe echo_tokenbranch( stackpair *stkp, void *v );
-
 uintptr_t echo_tokens_refid;
 	/* I had four cases that needed a warning, but aren't necessarily an */
 	/*  error... */

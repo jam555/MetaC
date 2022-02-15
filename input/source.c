@@ -157,20 +157,6 @@ struct
 	
 } inbuf;
 
-LIB4_MONAD_EITHER_BUILDTYPE_DEFINITION(
-		char_result,
-		
-		char,
-		lib4_failure_result
-	);
-		/* Note: the on* args must be the names of either functions or */
-		/*  function macros, that take one arg of the relevant type. Use of */
-		/*  the set* macros is advised, for simplicity. */
-#define CHAR_RESULT_BODYMATCH( var, onsucc, onfail ) \
-	LIB4_MONAD_EITHER_BODYMATCH( var, onsucc, onfail )
-#define CHAR_RESULT_EXPRMATCH( var, onsucc, onfail ) \
-	LIB4_MONAD_EITHER_EXPRMATCH( var, onsucc, onfail )
-
 
 char_result charin()
 {
@@ -188,7 +174,7 @@ char_result charin()
 			tmp->prev = (source*)0;
 			if( !discard_source( tmp ) )
 			{
-				LIB4_MONAD_EITHER_RETURNRIGHT( char_result, lib4_failure_result, LIB4_RESULT_FAILURE_UNDIFFERENTIATED );
+				LIB4_CHARRESULT_RETURNFAILURE( LIB4_RESULT_FAILURE_UNDIFFERENTIATED );
 			}
 			
 			res = fgetc( sources->file );
@@ -196,7 +182,7 @@ char_result charin()
 		if( res == EOF )
 		{
 				/* Failure. */
-			LIB4_MONAD_EITHER_RETURNRIGHT( char_result, lib4_failure_result, LIB4_RESULT_FAILURE_UNDIFFERENTIATED );
+			LIB4_CHARRESULT_RETURNFAILURE( LIB4_RESULT_FAILURE_UNDIFFERENTIATED );
 		}
 		
 		++( sources->progress );
@@ -209,7 +195,7 @@ char_result charin()
 	}
 	
 		/* Success. */
-	LIB4_MONAD_EITHER_RETURNLEFT( char_result, char, val );
+	LIB4_CHARRESULT_RETURNSUCCESS( val );
 }
 int charback( char val )
 {

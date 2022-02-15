@@ -590,4 +590,19 @@ void err_interface( uintptr_t source, lib4_failure_result err, ... );
 
 
 
+#include "input/source.h"
+#include "input/lexalike.h"
+
+#include "metaCpreproc/basics.h"
+#include "metaCpreproc/components.h"
+
+#include "output/echo_tokens.h"
+
+#include "tokenization/simplelex.h"
+#include "tokenization/complexlex.h"
+
+
+
+
+
 #include "tokenmatching.h"

@@ -543,95 +543,7 @@ retframe components_skipendersearchdeinit( stackpair *stkp, void *v_ )
 
 
 
-typedef struct macro_link macro_link;
-struct macro_link
-{
-	token_head header;
-	
-		/* This identifies which element in the argument list should be */
-		/*  used. */
-	size_t args_offset;
-};
-typedef struct macro_token macro_token;
-struct macro_token
-{
-	token_head header;
-	
-	token_head *tok;
-};
-typedef struct macro_run macro_run;
-struct macro_run
-{
-	token_head header;
-	
-	macro_call *mac;
-		/* The tokens should all be macro_link, macro_token, macro_run, or */
-		/*  macro_directive instances. Each one represents a single */
-		/*  argument. For the macro_run and macro_directive arguments, their */
-		/*  own arguments are obtained from the same context as the */
-		/*  macro_run or macro_directive they're being used as arguments */
-		/*  FOR. */
-	tokhdptr_parr *args;
-};
-typedef struct macro_directive macro_directive;
-struct macro_directive
-{
-	token_head header;
-	
-		/* The handler will find it's arguments in the tokhdptr_parr* on the */
-		/*  top of the stkp->data stack, but by the time of it's return MUST */
-		/*  HAVE MOVED that pointer to the top of the macro_args stack- any */
-		/*  actual deallocation will be donme elsewhere. It also MUST push a */
-		/*  uintptr_t to the stkp->data stack saying how many token_head* */
-		/*  instances it pushed onto the shuffle stack (whether it pushes */
-		/*  anything to the shuffle stack is optional, but the top of the */
-		/*  data stack MUST say how many token header pointers were pushed, */
-		/*  regardless of the numbers): the directive should otherwise leave */
-		/*  the stacks alone unless that is EXPLICITLY it's purpose. It's */
-		/*  stack signature should thusly be as follows:*/
-			/*
-					tokenheadptr_pascalarray*
-				--
-					shuffledlength shufflestack:token*[shuffledlength] macro_args:tokenheadptr_pascalarray*
-			*/
-		/* By doing this set of actions, the handler will have fully */
-		/*  duplicated the required set of actions from the */
-		/*  shufflequeue_entry_macro_call() sequence of functions. */
-	retframe handler;
-		/* Same as macro_run. */
-	tokhdptr_parr *args;
-};
-
-typedef struct macro_call_argval macro_call_argval;
-struct macro_call_argval
-{
-		/* One and ONLY one of these should be non-null. */
-		/* ... */
-		/* Actually, does args_offset even belong here? */
-	size_t args_offset;
-	char_pascalarray *text;
-};
-LIB4_DEFINE_PASCALARRAY_STDDEFINE( macrocallargval_, macro_call_argval );
-typedef macrocallargval_pascalarray macrocllaval_parr;
-typedef struct macro_call macro_call;
-struct macro_call
-{
-	token_head header;
-	
-		/* This gets used while a macro is first getting parsed to figure */
-		/*  out if a particular token corresponds to a macro arg or not, and */
-		/*  furthermore WHICH arg. */
-	macrocllaval_parr *args;
-	
-		/* This gets used to hold the tokens that represent the macro's */
-		/*  body. */
-	tokhdptr_parr *body;
-	
-	???;
-};
-
-
-
+/* These macroargs_* things really belong in their own pair of files. */
 
 LIB4_DEFINE_PASCALARRAY_STDDEFINE( tokhdptparpt_, tokhdptr_parr* );
 typedef tokhdptparpt_pascalarray tokhdptparpt_parr;
@@ -781,33 +693,6 @@ int macroargs_peekset( size_t off,  tokhdptr_parr **dest )
 	return( 1 );
 }
 
-#define STACKCHECK( stack,  refid, errnum, ... ) \
-	if( !( stack ) ){ searchstack_ERREXIT( ( refid ), ( errnum ),  __VA_ARGS__  ); }
-
-#define PEEK_UINT( stk, offset, var,  refid, err1, err2, ... ) \
-	if( !peek_uintptr( ( stk ),  ( offset ),  &( var ) ) ) { searchstack_ERREXIT( ( refid ), ( err1 ),  __VA_ARGS__,  &( var ) ); } \
-	if( !( var ) ) { searchstack_ERREXIT( ( refid ), ( err2 ),  __VA_ARGS__,  &( var ) ); }
-#define POP_UINT( stk, var,  refid, err1, err2, ... ) \
-	if( !pop_uintptr( ( stk ),  &( var ) ) ) { searchstack_ERREXIT( ( refid ), ( err1 ),  __VA_ARGS__,  &( var ) ); } \
-	if( !( var ) ) { searchstack_ERREXIT( ( refid ), ( err2 ),  __VA_ARGS__,  &( var ) ); }
-#define PUSH_UINT( stk, val,  refid, err, ... ) \
-	if( !push_uintptr( ( stk ),  ( val ) ) ) { searchstack_ERREXIT( ( refid ), ( err ),  __VA_ARGS__, ( val ) ); }
-
-#define PEEK_MACROARGS( offset, var,  refid, err1, err2, ... ) \
-	if( !macroargs_peekset( ( offset ),  &( var ) ) ) { searchstack_ERREXIT( ( refid ), ( err1 ),  __VA_ARGS__, &( var ) ); } \
-	if( !( var ) ) { searchstack_ERREXIT( ( refid ), ( err2 ),  __VA_ARGS__, &( var ) ); }
-#define POP_MACROARGS( var,  refid, err1, err2, ... ) \
-	if( !macroargs_popset( &( var ) ) ) { searchstack_ERREXIT( ( refid ), ( err1 ),  __VA_ARGS__, &( var ) ); } \
-	if( !( var ) ) { searchstack_ERREXIT( ( refid ), ( err2 ),  __VA_ARGS__, &( var ) ); }
-#define PUSH_MACROARGS( val,  refid, err, ... ) \
-	if( !macroargs_pushset( val ) ) { searchstack_ERREXIT( ( refid ), ( err ),  __VA_ARGS__, ( val ) ); }
-
-	/* This expects to be used within the context of a function which */
-	/*  returns a retframe value. */
-#define PUSH_SHUFFLE( res, token,  refid, err, ... ) \
-	( res ) = token_queue_shufflepush( (token*)( token ) ); \
-	if( !( res ) ) { searchstack_ERREXIT( ( refid ), ( err ),  __VA_ARGS__, &( res ) ); }
-
 
 	/*
 			shufflecount shuffle:token*[shufflecount]
@@ -911,7 +796,7 @@ retframe shufflequeue_macro_link( stackpair *stkp, void *v )
 	RET_FRAMEFUNC( head_lex_refid, -12, &th );
 }
 	/*
-			*subcall args:*arglist shuffle:token*[]
+			macro_token* args:*arglist shuffle:token*[]
 		--
 			args:*arglist shuffle:token*[]+(subcall->link)
 	*/
