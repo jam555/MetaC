@@ -4,6 +4,34 @@
 	#include "headers.h"
 	
 	
+	
+	typedef struct stackframe stackframe;
+	struct stackframe
+	{
+		char_pascalarray *stack;
+		size_t used;
+		
+	};
+	
+	typedef struct stackpair stackpair;
+	struct stackpair
+	{
+		stackframe ret, data;
+		
+	};
+	extern stackpair std_stacks;
+	
+	
+	typedef struct retframe retframe;
+	typedef retframe (*framefunc)( stackpair*, void* );
+	struct retframe
+	{
+		framefunc handler;
+		void *data;
+	};
+	
+	
+	
 	stackpair std_stacks;
 	
 	int init_stack( stackframe *stk );
@@ -53,5 +81,33 @@
 		if( !( var ) ) { errfunc( ( err2 ),  __VA_ARGS__,  &( var ) ); }
 	#define STACK_PUSH_UINT( stk, val,  errfunc, err,  ... ) \
 		if( !push_uintptr( ( stk ),  ( val ) ) ) { errfunc( ( err ),  __VA_ARGS__, ( val ) ); }
+	
+	
+		/* I think these need to be MAJORLY reworked. Among other things, I */
+		/*  think push_frame() was from a C-ish "single stack" era, whereas */
+		/*  I'm currently using a Forth-style multiple-stack system (albeit */
+		/*  with more than just two stacks). */
+	#define CALL_FRAMEFUNC( rethand, retval, fhand, fval ) \
+		if( push_retframe( (retframe){ (rethand), (retval) } ) ) { \
+			if( push_frame() ) { \
+				return( (retframe){ (fhand), (fval) } ); } \
+			else { return( (retframe){ &end_run, (void*)0 } ); } }\
+		else { return( (retframe){ &end_run, (void*)0 } ); }
+	#define RET_FRAMEFUNC( refname, errnum, ... ) \
+		if( 1 ) { \
+			stackframe *csf = stack; stack = stack->prev; \
+			retframe ret;  int res = pop_retframe( &ret ); \
+			if( !res ) { \
+				err_interface( &( refname ), (lib4_failure_result){ (errnum) }, __VA_ARGS__ ); \
+				return( (retframe){ &end_run, (void*)0 } ); } \
+			stack = csf; return( ret ); }
+	#define RET_FRAMEFUNC2( refname, subrefnum, ... ) \
+		if( 1 ) { \
+			stackframe *csf = stack; stack = stack->prev; \
+			retframe ret;  int res = pop_retframe( &ret ); \
+			if( !res ) { \
+				err_interface( &( refname ), ( subrefnum ), __VA_ARGS__ ); \
+				return( (retframe){ &end_run, (void*)0 } ); } \
+			stack = csf; return( ret ); }
 	
 #endif

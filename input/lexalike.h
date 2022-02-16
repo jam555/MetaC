@@ -12,6 +12,31 @@
 	
 	
 	
+	typedef struct extrachar
+	{
+		char c;
+		int was_freshline;
+		int is_delimited;
+	};
+	
+	LIB4_MONAD_EITHER_BUILDTYPE_DEFINITION(
+		extrachar_result,
+		
+		extrachar,
+		lib4_failure_result
+	);
+	
+	
+	
+	extern uintptr_t lexalike_refid;
+		#define REFID_SUBIDS_lexalike__tokenize_char 1, 0
+			#define REFID_SUBIDS_lexalike__tokenize_char__accumulate 1, 1
+		#define REFID_SUBIDS_lexalike__stack_testchar 2, 0
+			#define REFID_SUBIDS_lexalike__stack_testchar2 2, 1
+		#define REFID_SUBIDS_lexalike__get_extrachar 3
+	
+	
+	
 	/* The purpose of lexalike.c is to provide wrappers for charin(), */
 	/*  isspace(), etc., but which convert stuff to tokens so that there's */
 	/*  an easier way to support character delimiting, by moving it before */
@@ -22,22 +47,48 @@
 	/*  sticking it elsewhere. */
 	
 	
+	/* Defined in simplelex.c */
+	/* If either the last token was a newline, or only whitespace came after */
+	/*  the most recent newline, then this returns 1, else returns 0. */
 	int is_freshline();
 	
 	
 	
+	/* Note that set_lexentry() is the only one that you should probably use, as */
+	/*  token_queue_fetch() uses them while also supporting an "unget" facility. */
+	
+	/* Technically you might want a lexer other than head_lex(), so this is */
+	/*  how you set that override. Returns 0 for "null argument", otherwise */
+	/*  returns the PREVIOUS lexer function pointer. Note that the "output" */
+	/*  of your lexer needs to follow the pattern of head_lex(), so look at */
+	/*  either that family of functions, or */
+	/*  assemble_token()/getANDassemble_token() to understand the */
+	/*  communication route and format. */
 	intptr_t set_lexentry( lexentry lentry );
+	
 	retframe assemble_token( stackpair *stkp, void *v );
+	
+	/* This functions as a deallocator for only the simplest of tokens- the */
+	/*  leaf tokens which don't have pointers. */
 	retframe dealloc_token( stackpair *stkp, void *v );
+	
 	retframe getANDassemble_token( stackpair *stkp, void *v );
+	
+	
 	
 	int token_queue_init();
 	
+		/* These implement an "unget" capability for tokens: use */
+		/*  token_queue_fetch() if you want a token, token_queue_push() if you */
+		/*  want to give it back. */
 	size_t token_queue_used();
 	int token_queue_push( token *tok );
 	int token_queue_pop( token **tok );
 	retframe token_queue_fetch( stackpair *stkp, void *v );
 	
+		/* Provides a way to temporarily store tokens that WILL be going onto */
+		/*  the token's "unget" stack, for those cases when you need to reverse */
+		/*  the order that they'll be pulled back off. */
 	size_t token_queue_shuffleused();
 	int token_queue_shufflepop( token **tok );
 	int token_queue_shufflepush( token *tok );
@@ -49,6 +100,8 @@
 		( scratchint ) = token_queue_shufflepush( (token*)( token ) ); \
 		if( !( scratchint ) ) { errfunc( ( err ),  __VA_ARGS__, &( scratchint ) ); }
 	
+		/* Moves one token pointer from the "shuffle" stack to the "unget" */
+		/*  stack. */
 	int token_queue_shuffle2queue();
 	
 		/* Note: this DOES NOT attempt to deallocate any tokens, just the */
@@ -84,19 +137,51 @@
 		/* A helper function to handle most of the conversion between normal */
 		/*  character operations & stackpair operations. Unlike some stuff */
 		/*  in this file, this should pretty much be complete. */
+	/* Provided by lexalike.c. Pops a token_head from stkp->data, tests the */
+	/*  length (and possibly errors out), peeks at a char on the same stack, */
+	/*  pushes the token_head back on top, and returns the output of the */
+	/*  provided function when given the char value. */
 	lib4_result stack_testchar( stackpair *stkp, void *v,  int (*testfunc)( int ),  int fail_on_multichar );
 	retframe stack_testchar2( stackpair *stkp, void *v,  int (*testfunc)( int ), char *funcname );
 	
 	int popas_extrachar( stackpair *stkp, void *v,  extrachar *ec );
 	
+	/* These function as "enriched" equivalents of the normal C IO */
+	/*  functions. They specifically handle characters that are output by an */
+	/*  EARLY lexing stage, which currently handles delimiting, but in the */
+	/*  future will probably be expanded to handle trigraphs as well. */
 	extrachar_result get_extrachar( stackpair *stkp, void *v );
 	extrachar_result peek_extrachar( stackpair *stkp, void *v );
 	int unget_extrachar( extrachar ec );
 	
 	
+	#define EXTRACHAR_BUILDSUCCESS( val ) \
+		LIB4_MONAD_EITHER_BUILDLEFT( extrachar_result, extrachar, (val) )
+	#define EXTRACHAR_BUILDFAILURE( val ) \
+		LIB4_MONAD_EITHER_BUILDRIGHT( extrachar_result, lib4_failure_result, (val) )
+	
+		/* The *BODY* version takes statements, *EXPR* takes expressions. */
+		/*  The matches must be function-style, though function macros are */
+		/*  allowed. */
+	#define EXTRACHAR_BODYMATCH( var, succ, fail ) \
+		LIB4_MONAD_EITHER_BODYMATCH( var, succ, fail )
+	#define EXTRACHAR_EXPRMATCH( var, succ, fail ) \
+		LIB4_MONAD_EITHER_EXPRMATCH( var, succ, fail )
+	
+		/* Convenience wrappers. See monads.h for more details. */
+	#define EXTRACHAR_RETURNSUCCESS( val ) \
+		LIB4_MONAD_EITHER_RETURNLEFT( extrachar_result, extrachar, val )
+	#define EXTRACHAR_RETURNFAILURE( val ) \
+		LIB4_MONAD_EITHER_RETURNRIGHT( extrachar_result, lib4_failure_result, val )
+	
+	
+	
 	/* None of these pop anything (technicaly they do, but then put it */
 	/*  back). */
 	
+	/* These all expect a token_head on top of a char on the stkp->data */
+	/*  stack: these values will be restored to that stack, and an integer */
+	/*  representing the associated C function's return placed on top. */
 	retframe stack_isalnum( stackpair *stkp, void *v );
 	retframe stack_isalpha( stackpair *stkp, void *v );
 	retframe stack_isblank( stackpair *stkp, void *v );

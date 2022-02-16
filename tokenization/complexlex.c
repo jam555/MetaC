@@ -2,8 +2,13 @@
 
 
 
+uintptr_t aggregate_tokens_refid;
+uintptr_t tokenbranch_refid;
+uintptr_t tokengroup_refid;
 uintptr_t complexlex_refid;
+
 retframe complexlex_dealloctoken = (retframe){ &smart_dealloc_token, (void*)0 };
+
 retframe set_dealloctoken( retframe dealc_ )
 {
 	retframe ret = (retframe){ 0, 0 };
@@ -166,7 +171,6 @@ retframe smart_dealloc_token( stackpair *stkp, void *v )
 
 
 
-uintptr_t tokengroup_refid;
 tokengroup* build_tokengroup
 (
 	uintptr_t *refid,
@@ -423,7 +427,6 @@ retframe dealloc_tokengroup
 }
 
 
-uintptr_t tokenbranch_refid;
 tokenbranch* build_tokenbranch
 (
 	uintptr_t *refid,
@@ -592,7 +595,6 @@ retframe dealloc_tokenbranch
 /*  include te whitespace AFTER the token, which we now have the function */
 /*  for. */
 
-uintptr_t complexlex_refid;
 	/* You must enter with a pointer to a token_head (and, honestly, */
 	/*  probably something more complex) on the top of the data stack. When */
 	/*  this returns, it'll have a pointer to a non-whitespace token on the */
@@ -676,7 +678,6 @@ retframe accumulate_whitespace( stackpair *stkp, void *v )
 	
 	CALL_FRAMEFUNC( &accumulate_whitespace, 0, &getANDassemble_token, 0 );
 }
-retframe conclude_accumulate_token( stackpair*, void* );
 	/* This function expects an already ASSEMBLED token to be pointed to by */
 	/*  a pointer on the top of the data stack. It will then either directly */
 	/*  defer to accumulate_whitespace() (if that token is a SPACE, NEWLINE, */

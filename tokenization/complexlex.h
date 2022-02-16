@@ -1,7 +1,45 @@
 #ifndef METAC_TOKENIZATION_COMPLEXLEX_H
  #define METAC_TOKENIZATION_COMPLEXLEX_H
 	
+	
+	
 	#include "headers.h"
+	
+	
+	
+	extern uintptr_t complexlex_refid;
+		#define REFID_SUBIDS_complexlex__set_dealloctoken (lib4_failure_result){ 1 }, 0
+		#define REFID_SUBIDS_complexlex__invoke_dealloctoken (lib4_failure_result){ 2 }, 0
+		#define REFID_SUBIDS_complexlex__smart_dealloc_token (lib4_failure_result){ 3 }, 0
+			#define REFID_SUBIDS_complexlex__smart_dealloc_token__innerfunc1 (lib4_failure_result){ 3 }, 1
+			#define REFID_SUBIDS_complexlex__smart_dealloc_token__innerfunc2 (lib4_failure_result){ 3 }, 2
+	extern uintptr_t tokengroup_refid;
+	extern uintptr_t tokenbranch_refid;
+	extern uintptr_t aggregatetokens_refid;
+	
+	
+	
+	typedef struct tokengroup tokengroup;
+	typedef struct tokenbranch tokenbranch;
+	
+	
+	
+	struct tokengroup
+	{
+		token_head header;
+			/* Takes the same values as token_head.toktype */
+		uintptr_t subtype;
+		
+		tokhdptr_parr *arr;
+		size_t used;
+	};
+	struct tokenbranch
+	{
+		token_head header;
+		uintptr_t subtype;
+		
+		token_head *lead, *body, *tail;
+	};
 	
 	
 	

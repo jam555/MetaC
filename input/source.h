@@ -5,6 +5,12 @@
 	
 	#include "headers.h"
 	
+	
+	
+	typedef struct source source;
+	
+	
+	
 	typedef lib4_charresult char_result;
 		/* Note: the on* args must be the names of either functions or */
 		/*  function macros, that take one arg of the relevant type. Use of */

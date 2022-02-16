@@ -2,7 +2,6 @@
 
 
 
-typedef struct source source;
 struct source
 {
 	source *prev;

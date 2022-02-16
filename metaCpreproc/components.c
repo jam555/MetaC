@@ -3,7 +3,11 @@
 /* This file exists for "component parses" that get built up into more full */
 /*  preprocessor parsing runs. */
 
+uintptr_t gennamearr_refid;
 uintptr_t searchstack_refid;
+uintptr_t lexparse1_refid;
+uintptr_t gentypedarr_refid;
+
 genname_parrparr *searchstack = (genname_parrparr*)0;
 size_t searchstack_used = 0;
 genname_parr default =
@@ -16,6 +20,12 @@ genname_parr default =
 		...
 	}
 };
+
+
+genname_parrparr *std_entry_keys;
+size_t std_entry_keys_used;
+uintptr_t std_entry_refid;
+
 
 int searchstack_init()
 {
