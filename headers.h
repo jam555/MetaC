@@ -18,11 +18,7 @@
 	
 	
 	
-	extern void err_interface( uintptr_t source, lib4_failure_result err, ... );
-	
-	void err_interface( uintptr_t source, lib4_failure_result err, ... );
-	
-	
+	#include "err/err.h"
 	
 	#include "input/source.h"
 	#include "input/lexalike.h"
