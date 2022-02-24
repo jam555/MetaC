@@ -10,8 +10,6 @@
 	struct msg_style
 	{
 		char *layout;
-			/* What was recep() for? */
-		void (*recep)( msg_styleset*, int,  );
 	};
 	typedef struct
 	{
@@ -102,6 +100,99 @@
 	
 	
 	
-	msg_piece_result styleset_getelem( msg_styleset *set, int elem );
+	#define STDMSG_BADNULL_WRAPPER( stylesetptr, funcname, objaddr ) \
+		msg_interface( \
+			( stylesetptr ), LIB4_RETURN_1ST( STDMSG_BADNULL ), \
+			(char*)( __FILE__ ), (uintmax_t)&( funcname ), (unsigned)( __LINE__ ), \
+			(uintmax_t)( objaddr ) \
+		)
+	#define STDMSG_BADNONNULL_WRAPPER( stylesetptr, funcname, objaddr ) \
+		msg_interface( \
+			( stylesetptr ), LIB4_RETURN_1ST( STDMSG_BADNONNULL ), \
+			(char*)( __FILE__ ), (uintmax_t)&( funcname ), (unsigned)( __LINE__ ), \
+			(uintmax_t)( objaddr ) \
+		)
+	
+	#define STDMSG_BADNULL2_WRAPPER( stylesetptr, funcname, obj1addr, obj2addr ) \
+		msg_interface( \
+			( stylesetptr ), LIB4_RETURN_1ST( STDMSG_BADNULL2 ), \
+			(char*)( __FILE__ ), (uintmax_t)&( funcname ), (unsigned)( __LINE__ ), \
+			(uintmax_t)( obj1addr ), (uintmax_t)( obj2addr ) \
+		)
+	#define STDMSG_BADNONNULL2_WRAPPER( stylesetptr, funcname, obj1addr, obj2addr ) \
+		msg_interface( \
+			( stylesetptr ), LIB4_RETURN_1ST( STDMSG_BADNONNULL2 ), \
+			(char*)( __FILE__ ), (uintmax_t)&( funcname ), (unsigned)( __LINE__ ), \
+			(uintmax_t)( obj1addr ), (uintmax_t)( obj2addr ) \
+		)
+	
+	#define STDMSG_MONADICFAILURE_WRAPPER( stylesetptr, funcname, failmsg, failval ) \
+		msg_interface( \
+			( stylesetptr ), LIB4_RETURN_1ST( MONADICFAILURE ), \
+			(char*)( __FILE__ ), (uintmax_t)&( funcname ), (unsigned)( __LINE__ ), \
+			(char*)( failmsg ), (intmax_t)( failval ) \
+		)
+		#define STDMSG_NOTELINE_WRAPPER( stylesetptr ) \
+			msg_interface( ( stylesetptr ), LIB4_RETURN_1ST( STDMSG_NOTELINE ) )
+		#define STDMSG_NOTESPACE_WRAPPER( stylesetptr ) \
+			msg_interface( ( stylesetptr ), LIB4_RETURN_1ST( STDMSG_NOTESPACE ) )
+		#define STDMSG_SIGNEDARG_WRAPPER( stylesetptr, val ) \
+			msg_interface( \
+				( stylesetptr ), LIB4_RETURN_1ST( STDMSG_SIGNEDARG ), \
+				(intmax_t)( val ) \
+			)
+		#define STDMSG_DECARG_WRAPPER( stylesetptr, val ) \
+			msg_interface( \
+				( stylesetptr ), LIB4_RETURN_1ST( STDMSG_DECARG ), \
+				(uintmax_t)( val ) \
+			)
+		#define STDMSG_HEXARG_WRAPPER( stylesetptr, val ) \
+			msg_interface( \
+				( stylesetptr ), LIB4_RETURN_1ST( STDMSG_HEXARG ), \
+				(uintmax_t)( val ) \
+			)
+		#define STDMSG_LDOUBLEARG_WRAPPER( stylesetptr, val ) \
+			msg_interface( \
+				( stylesetptr ), LIB4_RETURN_1ST( STDMSG_LDOUBLEARG ), \
+				(long double)( val ) \
+			)
+		#define STDMSG_CHARARG_WRAPPER( stylesetptr, val ) \
+			msg_interface( \
+				( stylesetptr ), LIB4_RETURN_1ST( STDMSG_CHARARG ), \
+				(int)( val ) \
+			)
+		#define STDMSG_STRARG_WRAPPER( stylesetptr, val ) \
+			msg_interface( \
+				( stylesetptr ), LIB4_RETURN_1ST( STDMSG_STRARG ), \
+				(char*)( val ) \
+			)
+		#define STDMSG_DATAPTRARG_WRAPPER( stylesetptr, val ) \
+			msg_interface( \
+				( stylesetptr ), LIB4_RETURN_1ST( STDMSG_DATAPTRARG ), \
+				(void*)( val ) \
+			)
+	
+	
+		/* If you want to use these, then the trivial way is to include */
+		/*  lib4's "macrotime/arraccess.h", and use the LIB4_RETURN_1ST() */
+		/*  macro to extract the index number. Then you just use it as the */
+		/*  second argument to msg_interface(), and follow it with the */
+		/*  relevant arguments. */
+	#define STDMSG_BADNULL 0, "\nError in %s:%jx(), file line %x : %jx == null.", dummyarg
+	#define STDMSG_BADNONNULL -1, "\nError in %s:%jx(), file line %x : %jx != null.", dummyarg
+	
+	#define STDMSG_BADNULL2 -2, "\nError in %s:%jx(), file line %x : %jx or %jx == null.", dummyarg
+	#define STDMSG_BADNONNULL2 -3, "\nError in %s:%jx(), file line %x : %jx or %jx != null.", dummyarg
+	
+	#define STDMSG_MONADICFAILURE -4, "\nError in %s:%jx(), file line %x : %s call failed with %jd.", dummyarg
+		#define STDMSG_NOTELINE -5, "\n\t", dummyarg
+		#define STDMSG_NOTESPACE -6, " \t", dummyarg
+		#define STDMSG_SIGNEDARG -7, "Arg %s: %jd.", dummyarg
+		#define STDMSG_DECARG -8, "Arg %s: %ju.", dummyarg
+		#define STDMSG_HEXARG -9, "Arg %s: %jx.", dummyarg
+		#define STDMSG_LDOUBLEARG -10, "Arg %s: %Lg.", dummyarg
+		#define STDMSG_CHARARG -11, "Arg %s: %c.", dummyarg
+		#define STDMSG_STRARG -12, "Arg %s: %s.", dummyarg
+		#define STDMSG_DATAPTRARG -13, "Arg %s: %p.", dummyarg
 	
 #endif

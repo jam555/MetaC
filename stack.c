@@ -1,26 +1,53 @@
 #include "headers.h"
 
+#include "macrotime/arraccess.h"
+
+#include "err/inner_err.h"
+
 
 
 stackpair std_stacks;
+
+#if defined( __cplusplus ) && __cplusplus >= 199711L
+	namespace
+	{
+		static msg_styleset errs;
+	};
+#elif defined( __STDC__ ) && __STDC_VERSION__ >= 199901L
+	static msg_styleset errs;
+#else
+	#error "The file " __FILE__ " requires at least C99 or C++98."
+#endif
+
+#define STACK_BADNULL( funcname, ptr ) STDMSG_BADNULL_WRAPPER( &errs, funcname, ( ptr ) )
+#define STACK_BADNULL2( funcname, ptr1, ptr2 ) STDMSG_BADNULL2_WRAPPER( &errs, funcname, ( ptr1 ), ( ptr2 ) )
+
+#define STACK_MONADICFAILURE( funcname, msgstr, err ) STDMSG_MONADICFAILURE_WRAPPER( &errs, funcname, ( msgstr ), ( err ) )
+	#define STACK_NOTELINE() STDMSG_NOTELINE_WRAPPER( &errs )
+	#define STACK_NOTESPACE() STDMSG_NOTESPACE_WRAPPER( &errs )
+	
+	#define STACK_DECARG( uint ) STDMSG_DECARG_WRAPPER( &errs, ( uint ) )
+	#define STACK_DATAPTR( ptr ) STDMSG_DATAPTRARG_WRAPPER( &errs, ( ptr ) )
+
+
 
 int init_stack( stackframe *stk )
 {
 	if( !stk )
 	{
-		err_interface( (uintptr_t)&std_stacks, (lib4_failure_result){ -1 }, (int)-1, &stk );
+		STACK_BADNULL( init_stack, &stk );
 		return( -1 );
 	}
 	if( stk->stack || stk->used )
 	{
-		err_interface( (uintptr_t)&std_stacks, (lib4_failure_result){ -1 }, (int)-2, &stk );
+		STACK_BADNULL2( init_stack, &( stk->stack ), &( stk->used ) );
 		return( -2 );
 	}
 	
 #define init_stack_SUCCESS( arr ) \
 		stk->stack = ( arr ); stk->used = 0;
 #define init_stack_FAILURE( err ) \
-		err_interface( (uintptr_t)&std_stacks, (lib4_failure_result){ -1 }, (int)-3, &stk, (err) ); \
+		STACK_MONADICFAILURE( init_stack, "char_pascalarray_build( 64 )", ( err ) ); \
 		return( -3 );
 	
 	char_pascalarray_result res =
@@ -33,9 +60,9 @@ int resize_stack( stackframe *stk,  int deltaChars )
 {
 	int len = stk->stack->len + deltaChars;
 	
-	if( len < 0 )
+	if( !stk || len < 0 )
 	{
-		err_interface( (uintptr_t)&std_stacks, (lib4_failure_result){ -2 }, (int)-1, &stk, &len );
+		STACK_BADNULL2( resize_stack, &stk, &len );
 		return( -1 );
 	}
 	
@@ -43,7 +70,9 @@ int resize_stack( stackframe *stk,  int deltaChars )
 		char_pascalarray_rebuild( stk->stack, len );
 #define resize_stack_SUCCESS( arr ) stk->stack = ( arr );
 #define resize_stack_FAILURE( err ) \
-		err_interface( (uintptr_t)&std_stacks, (lib4_failure_result){ -2 }, (int)-2, &stk, &len, &res, (err) ); \
+		STACK_MONADICFAILURE( resize_stack, "char_pascalarray_rebuild()", ( err ) ); \
+		STACK_NOTELINE(); STACK_DATAPTRARG( stk->stack ); \
+		STACK_NOTESPACE(); STACK_DECARG( len ); \
 		return( err );
 	LIB4_DEFINE_PASCALARRAY_RESULT_BODYMATCH( res, resize_stack_SUCCESS, resize_stack_FAILURE )
 	
@@ -58,14 +87,15 @@ int clear_stack( stackframe *stk )
 {
 	if( !stk )
 	{
-		err_interface( (uintptr_t)&std_stacks, (lib4_failure_result){ -3 }, (int)-1, &stk );
+		STACK_BADNULL( clear_stack, &stk );
 		return( -1 );
 	}
 	
 	lib4_result res = char_pascalarray_destroy( stk->stack );
 #define pop_frame_SUCCESS( var ) ;
 #define pop_frame_FAILURE( err ) \
-		err_interface( (uintptr_t)&std_stacks, (lib4_failure_result){ -3 }, (int)-2, &stk, &res, (err) ); \
+		STACK_MONADICFAILURE( clear_stack, "char_pascalarray_destroy()", ( err ) ); \
+		STACK_NOTELINE(); STACK_DATAPTRARG( stk->stack ); \
 		return( err );
 	LIB4_RESULT_BODYMATCH( res, pop_frame_SUCCESS, pop_frame_FAILURE )
 	
@@ -508,7 +538,7 @@ int push_token( stackframe *stk,  token_head *src )
 {
 	if( !src )
 	{
-		err_interface( &stack_token_refid, (uintptr_t)0, 0, &res, &dest );
+		STACK_BADNULL( push_token, &src );
 		return( -1 );
 	}
 	
@@ -518,13 +548,13 @@ int push_token( stackframe *stk,  token_head *src )
 	int res = push_block( stk,  ( (const char*)src ) + sizeof( token_head ), src->length );
 	if( !res )
 	{
-		err_interface( &stack_token_refid, (uintptr_t)0, 1, &src );
+		STACK_BADNULL( push_token, &res );
 		return( -2 );
 	}
 	res = push_tokenhead( stk,  *src );
 	if( !res )
 	{
-		err_interface( &stack_token_refid, (uintptr_t)0, 2, &src );
+		STACK_BADNULL( push_token, &res );
 		return( -3 );
 	}
 	
@@ -536,25 +566,29 @@ int pop_token( stackframe *stk,  token_head **dest )
 	
 	if( !dest )
 	{
-		err_interface( &stack_token_refid, (uintptr_t)1, 0, &res, &dest );
+		STACK_BADNULL( pop_token, &dest );
 		return( -1 );
 	}
 	
 	int res = pop_tokenhead( stk,  &tmp );
 	if( !res )
 	{
-		err_interface( &stack_token_refid, (uintptr_t)1, 1, &res, &dest );
+		STACK_BADNULL( pop_token, &res );
 		return( -2 );
 	}
 	
-#define pop_token_FAIL( err ) err_interface( &stack_token_refid, (uintptr_t)1, 2, &dest, (err) ); return( -3 );
+	size_t len = sizeof( token ) + ( sizeof( char ) * tmp.length );
+#define pop_token_FAIL( err ) \
+		STACK_MONADICFAILURE( pop_token, "lib4_stdmemfuncs.alloc()", ( err ) ); \
+		STACK_NOTELINE(); STACK_DATAPTR( lib4_stdmemfuncs.data ); \
+		STACK_NOTESPACE(); STACK_DECARG( len ); \
+		return( -3 );
 	lib4_ptrresult ptrres =
-		lib4_stdmemfuncs.alloc
-			( lib4_stdmemfuncs.data, sizeof( token ) + ( sizeof( char ) * tmp.length ) );
+		lib4_stdmemfuncs.alloc( lib4_stdmemfuncs.data, len );
 	LIB4_PTRRESULT_BODYMATCH( ptrres, LIB4_OP_SETa, pop_token_FAIL )
 	if( !a )
 	{
-		err_interface( &stack_token_refid, (uintptr_t)1, 3, &ptrres, &dest );
+		STACK_BADNULL( pop_token, &a );
 		return( -4 );
 	}
 	
@@ -563,7 +597,7 @@ int pop_token( stackframe *stk,  token_head **dest )
 		a->length = tmp.length;
 	if( !res )
 	{
-		err_interface( &stack_token_refid, (uintptr_t)1, 4, &res, &a, &dest );
+		STACK_BADNULL( pop_token, &res );
 		return( -5 );
 	}
 	
@@ -571,3 +605,14 @@ int pop_token( stackframe *stk,  token_head **dest )
 	
 	return( 1 );
 }
+
+
+
+#if defined( __cplusplus ) && __cplusplus >= 199711L
+	namespace
+	{
+		msg_styleset errs = { 0 };
+	};
+#elif defined( __STDC__ ) && __STDC_VERSION__ >= 199901L
+	static msg_styleset errs = (msg_styleset){ 0, 0 };
+#endif

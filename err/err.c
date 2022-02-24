@@ -8,6 +8,7 @@
 #include "../headers.h"
 
 #include "../pascalarray.h"
+#include "../macrotime/arraccess.h"
 
 #include "stdmonads.h"
 #include "inner_err.h"
@@ -715,6 +716,11 @@ static int countprint( printf_spec *ps, char *tspec, intmax_t *progress,  va_lis
 
 
 
+LIB4_DEFINE_PASCALARRAY_STDDEFINE( msgstyleptr_, msg_style* );
+static msgstyleptr_pascalarray std_messages;
+
+
+
 static int msg_inner( msg_style *style, va_list vals )
 {
 	LIB4_DEFINE_PASCALARRAY_STDDEFINE( dynchar_, char );
@@ -977,9 +983,9 @@ void msg_interface( msg_styleset *source, ERR_KEYTYPE first_key, ... )
 		
 		if( curkey )
 		{
-			if( source->members[ curkey ].is_set )
+			if( source->members[ curkey - 1 ].is_set )
 			{
-				source = source->members[ curkey ].data.set;
+				source = source->members[ curkey - 1 ].data.set;
 				curkey = va_arg( vals, ERR_KEYTYPE );
 				
 				if( !source )
@@ -990,18 +996,70 @@ void msg_interface( msg_styleset *source, ERR_KEYTYPE first_key, ... )
 				
 			} else {
 				
-				if( !msg_inner( source->members[ curkey ].data.style, args ) )
+				if( !msg_inner( source->members[ curkey - 1 ].data.style, args ) )
 				{
 					/* Error, but how to report it? */
 				}
 				source = (msg_styleset*)0;
 			}
 			
+		} else if( -curkey < std_messages.len )
+		{
+				/* Standard hardwired handlers? */
+			if( !msg_inner( std_messages.body[ -curkey ], va_list vals ) )
+			{
+				/* Error, but how to report it? */
+			}
+			source = (msg_styleset*)0;
+			
 		} else {
 			
-			/* Standard hardwired handlers? */
+			???
 		}
 	}
 	
 	va_end( args );
 }
+
+
+
+static msg_style
+	stdmsg_badnull = { LIB4_RETURN_2ND( STDMSG_BADNULL ) },
+	stdmsg_badnonnull = { LIB4_RETURN_2ND( STDMSG_BADNONNULL ) },
+	
+	stdmsg_badnull2 = { LIB4_RETURN_2ND( STDMSG_BADNULL2 ) },
+	stdmsg_badnonnull2 = { LIB4_RETURN_2ND( STDMSG_BADNONNULL2 ) },
+	
+	stdmsg_monadicfailure = { LIB4_RETURN_2ND( STDMSG_MONADICFAILURE ) },
+		stdmsg_noteline = { LIB4_RETURN_2ND( STDMSG_NOTELINE ) },
+		stdmsg_notespace = { LIB4_RETURN_2ND( STDMSG_NOTESPACE ) },
+		stdmsg_signedarg = { LIB4_RETURN_2ND( STDMSG_SIGNEDARG ) },
+		stdmsg_decarg = { LIB4_RETURN_2ND( STDMSG_DECARG ) },
+		stdmsg_hexarg = { LIB4_RETURN_2ND( STDMSG_HEXARG ) },
+		stdmsg_ldoublearg = { LIB4_RETURN_2ND( STDMSG_LDOUBLEARG ) },
+		stdmsg_chararg = { LIB4_RETURN_2ND( STDMSG_CHARARG ) },
+		stdmsg_strarg = { LIB4_RETURN_2ND( STDMSG_STRARG ) },
+		stdmsg_dataptrarg = { LIB4_RETURN_2ND( STDMSG_DATAPTRARG ) };
+
+static msgstyleptr_pascalarray std_messages =
+	LIB4_DEFINE_PASCALARRAY_LITERAL2(
+		msgstyleptr_,
+		msg_style*,
+		
+		&stdmsg_badnull,
+		&stdmsg_badnonnull,
+		
+		&stdmsg_badnull2,
+		&stdmsg_badnonnull2,
+		
+		&stdmsg_monadicfailure,
+			&stdmsg_noteline,
+			&stdmsg_notespace,
+			&stdmsg_signedarg,
+			&stdmsg_decarg,
+			&stdmsg_hexarg,
+			&stdmsg_ldoublearg,
+			&stdmsg_chararg,
+			&stdmsg_strarg,
+			&stdmsg_dataptrarg
+	);
