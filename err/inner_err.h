@@ -172,6 +172,35 @@
 				(void*)( val ) \
 			)
 	
+	#define STDMSG_FAILEDINTFUNC_WRAPPER( stylesetptr, calleestr, callername, val ) \
+		msg_interface( \
+			( stylesetptr ), LIB4_RETURN_1ST( STDMSG_FAILEDINTFUNC ), \
+			(char*)( calleestr ), \
+			(char*)( __FILE__ ), (uintmax_t)&( callername ), (unsigned)( __LINE__ ), \
+			(intmax_t)( val ) \
+		)
+	#define STDMSG_FAILEDUINTFUNC_WRAPPER( stylesetptr, calleestr, callername, val ) \
+		msg_interface( \
+			( stylesetptr ), LIB4_RETURN_1ST( STDMSG_FAILEDUINTFUNC ), \
+			(char*)( calleestr ), \
+			(char*)( __FILE__ ), (uintmax_t)&( callername ), (unsigned)( __LINE__ ), \
+			(uintmax_t)( val ) \
+		)
+	#define STDMSG_FAILEDPTRFUNC_WRAPPER( stylesetptr, calleestr, callername, val ) \
+		msg_interface( \
+			( stylesetptr ), LIB4_RETURN_1ST( STDMSG_FAILEDPTRFUNC ), \
+			(char*)( calleestr ), \
+			(char*)( __FILE__ ), (uintmax_t)&( callername ), (unsigned)( __LINE__ ), \
+			(uintmax_t)( val ) \
+		)
+	
+	#define STDMSG_TRESPASSPATH_WRAPPER( stylesetptr, funcname, msgstr ) \
+		msg_interface( \
+			( stylesetptr ), LIB4_RETURN_1ST( STDMSG_TRESPASSPATH ), \
+			(char*)( __FILE__ ), (uintmax_t)&( callername ), (unsigned)( __LINE__ ), \
+			(char*)( msgstr ) \
+		)
+	
 	
 		/* If you want to use these, then the trivial way is to include */
 		/*  lib4's "macrotime/arraccess.h", and use the LIB4_RETURN_1ST() */
@@ -194,5 +223,11 @@
 		#define STDMSG_CHARARG -11, "Arg %s: %c.", dummyarg
 		#define STDMSG_STRARG -12, "Arg %s: %s.", dummyarg
 		#define STDMSG_DATAPTRARG -13, "Arg %s: %p.", dummyarg
+	
+	#define STDMSG_FAILEDINTFUNC -14, "\nCall to %s() in %s:%jx(), file line %x, failed : returned( %jd ). Args:", dummyarg
+	#define STDMSG_FAILEDUINTFUNC -15, "\nCall to %s() in %s:%jx(), file line %x, failed : returned( %ju ). Args:", dummyarg
+	#define STDMSG_FAILEDPTRFUNC -16, "\nCall to %s() in %s:%jx(), file line %x, failed : returned( %p ). Args:", dummyarg
+	
+	#define STDMSG_TRESPASSPATH -17, "\nInvalid execution path in %s:%jx(), file line %x: %s", dummyarg
 	
 #endif

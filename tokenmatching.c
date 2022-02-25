@@ -2,6 +2,40 @@
 
 
 
+#if defined( __cplusplus ) && __cplusplus >= 199711L
+	namespace
+	{
+		static msg_styleset errs;
+	};
+#elif defined( __STDC__ ) && __STDC_VERSION__ >= 199901L
+	static msg_styleset errs;
+#else
+	#error "The file " __FILE__ " requires at least C99 or C++98."
+#endif
+
+
+#define STACK_BADNULL( funcname, ptr ) \
+	STDMSG_BADNULL_WRAPPER( &errs, funcname, ( ptr ) )
+#define STACK_BADNULL2( funcname, ptr1, ptr2 ) \
+	STDMSG_BADNULL2_WRAPPER( &errs, funcname, ( ptr1 ), ( ptr2 ) )
+
+#define STACK_MONADICFAILURE( funcname, calltext, err ) \
+		STDMSG_MONADICFAILURE_WRAPPER( &errs, funcname, ( calltext ), ( err ) )
+	#define STACK_NOTELINE() STDMSG_NOTELINE_WRAPPER( &errs )
+	#define STACK_NOTESPACE() STDMSG_NOTESPACE_WRAPPER( &errs )
+	
+	#define STACK_DECARG( uint ) STDMSG_DECARG_WRAPPER( &errs, ( uint ) )
+	#define STACK_DATAPTR( ptr ) STDMSG_DATAPTRARG_WRAPPER( &errs, ( ptr ) )
+
+#define STACK_FAILEDINTFUNC( calleestr, callername, val ) \
+	STDMSG_FAILEDINTFUNC_WRAPPER( &errs, ( calleestr ), callername, ( val ) )
+#define STACK_FAILEDPTRFUNC( calleestr, callername, val ) \
+	STDMSG_FAILEDPTRFUNC_WRAPPER( &errs, ( calleestr ), callername, ( val ) )
+
+#define STACK_TRESPASSPATH( funcname, msgstr ) \
+	STDMSG_TRESPASSPATH_WRAPPER( &errs, funcname, ( msgstr ) )
+
+
 int match_token( token *tok,  unsigned char *str, size_t len )
 {
 	if( len && !str )
@@ -119,9 +153,11 @@ genname_parr* build_gennamearr( size_t count, uintptr_t *errkey )
 	genname_parr *a = (genericnamed_pascalarray*)0;
 	
 #define build_gennamearr_ONERR( err ) \
-		err_interface( &gennamearr_refid, (lib4_failure_result){ 0 }, errkey, err );
+		STACK_MONADICFAILURE( build_gennamearr, "genericnamed_pascalarray_build()", err ); \
+		STACK_NOTELINE(); STACK_DATAPTR( errkey ); \
+		STACK_NOTESPACE(); STACK_DECARG( count );
 	genericnamed_pascalarray_result res =
-		genericnamed_pascalarray_build( len );
+		genericnamed_pascalarray_build( count );
 	LIB4_DEFINE_PASCALARRAY_RESULT_BODYMATCH( res, LIB4_OP_SETa,  build_gennamearr_ONERR )
 	
 	if( a )
@@ -144,7 +180,9 @@ genname_parr* resize_gennamearr( genname_parr *parr, size_t newlen )
 	genericnamed_pascalarray_result res =
 		genericnamed_pascalarray_rebuild( parr, newlen );
 #define resize_gennamearr_ONERR( err ) \
-		err_interface( &gennamearr_refid, (lib4_failure_result){ 1 }, errkey, err );
+		STACK_MONADICFAILURE( resize_gennamearr, "genericnamed_pascalarray_rebuild()", err ); \
+		STACK_NOTELINE(); STACK_DATAPTR( parr ); \
+		STACK_NOTESPACE(); STACK_DECARG( newlen );
 	LIB4_DEFINE_PASCALARRAY_RESULT_BODYMATCH( res, LIB4_OP_SETa, resize_gennamearr_ONERR )
 	
 	if( a )
@@ -176,7 +214,8 @@ void destroy_gennamearr( genname_parr *parr,  void (*release_ref)( genericnamed*
 		
 #define destroy_gennamearr_SUCCESS( var ) ;
 #define destroy_gennamearr_ONERR( err ) \
-	err_interface( &gennamearr_refid, (lib4_failure_result){ 2 }, errkey, err );
+	STACK_MONADICFAILURE( destroy_gennamearr, "genericnamed_pascalarray_destroy()", err ); \
+	STACK_NOTELINE(); STACK_DATAPTR( parr );
 		lib4_result res = genericnamed_pascalarray_destroy( parr );
 		LIB4_RESULT_BODYMATCH( res, destroy_gennamearr_SUCCESS, destroy_gennamearr_ONERR )
 	}
@@ -205,7 +244,7 @@ int lexparse1_pushsearchtable( uintptr_t *refid, genname_parrparr **keys, size_t
 {
 	if( !keys || !keys_used )
 	{
-		err_interface( refid, err_subsource, (lib4_failure_result){ keys }, errsubsub, 0, keys_used );
+		STACK_BADNULL2( lexparse1_pushsearchtable, &keys, &keys_used );
 		return( -1 );
 	}
 	
@@ -217,7 +256,10 @@ int lexparse1_pushsearchtable( uintptr_t *refid, genname_parrparr **keys, size_t
 			genericnamedparr_pascalarray_rebuild( *keys, ( *keys )->len + 1 );
 #define lexparse1_tokensearch_SUCCESS( arr ) *keys = ( arr );
 #define lexparse1_tokensearch_FAILURE( err ) \
-	err_interface( refid, err_subsource, (lib4_failure_result){ keys }, errsubsub, 1, pushable, (err) ); \
+	STACK_MONADICFAILURE( lexparse1_pushsearchtable, "genericnamedparr_pascalarray_rebuild()", err ); \
+	STACK_NOTELINE(); STACK_DATAPTR( *keys ); \
+	STACK_NOTESPACE(); STACK_DECARG( ( *keys )->len + 1 ); \
+	STACK_NOTESPACE(); STACK_NOTESPACE(); STACK_DATAPTR( pushable ); \
 	return( -2 );
 		LIB4_DEFINE_PASCALARRAY_RESULT_BODYMATCH( res, lexparse1_tokensearch_SUCCESS, lexparse1_tokensearch_FAILURE )
 	}
@@ -231,7 +273,7 @@ int lexparse1_popsearchtable( uintptr_t *refid, genname_parrparr **keys, size_t 
 {
 	if( !keys || !keys_used )
 	{
-		err_interface( refid, err_subsource, (lib4_failure_result){ keys }, errsubsub, keys_used );
+		STACK_BADNULL2( lexparse1_popsearchtable, &keys, &keys_used );
 		return( -1 );
 	}
 	
@@ -257,23 +299,31 @@ retframe lexparse1_tokensearch
 	
 	if( !keys || !( *keys ) || ( *keys )->len < 1 || !keys_used )
 	{
-		err_interface( refid, err_subsource, (lib4_failure_result){ keys }, 1, keys_used );
+		STACK_BADNULL2( lexparse1_tokensearch, &keys, &keys_used );
+		STACK_NOTESPACE(); STACK_DATAPTR( keys );
+		if( keys )
+		{
+			STACK_NOTESPACE();
+			STACK_DATAPTR( &( ( *keys )->len ) );
+		}
+		
 		return( (retframe){ &end_run, (void*)0 } );
 	}
 	if( *keys_used <= 0 )
 	{
-		err_interface( refid, err_subsource, (lib4_failure_result){ keys }, 2 );
+		STACK_BADNULL( lexparse1_tokensearch, keys_used );
 		return( (retframe){ &end_run, (void*)0 } );
 	}
 	if( !( ( *keys )->body[ *keys_used ] ) )
 	{
-		err_interface( refid, err_subsource, (lib4_failure_result){ keys }, 3 );
+		STACK_BADNULL( lexparse1_tokensearch, &( ( *keys )->body[ *keys_used ] ) );
 		return( (retframe){ &end_run, (void*)0 } );
 	}
 	
-	if( !peek_uintptr( stk,  &a ) )
+	int res = peek_uintptr( stk,  &a );
+	if( !res )
 	{
-		err_interface( refid, err_subsource, (lib4_failure_result){ keys }, 4 );
+		STACK_FAILEDUINTFUNC( "peek_uintptr", lexparse1_tokensearch, res );
 		return( (retframe){ &end_run, (void*)0 } );
 	}
 	
@@ -285,7 +335,7 @@ retframe lexparse1_tokensearch
 		);
 	if( !found )
 	{
-		err_interface( refid, err_subsource, (lib4_failure_result){ keys }, 5, &a );
+		STACK_FAILEDPTRFUNC( "bsearch1_gennamearr", lexparse1_tokensearch, (void*)found );
 		return( (retframe){ &end_run, (void*)0 } );
 	}
 	
@@ -327,9 +377,22 @@ retframe lexparse1_tokensearch
 	}
 	
 		/* Shouldn't ever get here, but whatever. */
-	err_interface( refid, err_subsource, (lib4_failure_result){ keys }, 8, found );
+	STACK_TRESPASSPATH( lexparse1_tokensearch, "lexparse1_tokensearch() is meant to exit in the final switch()!" );
 	return( (retframe){ &end_run, (void*)0 } );
 }
+
+
+
+#if defined( __cplusplus ) && __cplusplus >= 199711L
+	namespace
+	{
+		msg_styleset errs = { 0 };
+	};
+#elif defined( __STDC__ ) && __STDC_VERSION__ >= 199901L
+	static msg_styleset errs = (msg_styleset){ 0, 0 };
+#endif
+
+
 
 /****************************************************************************/
 /****************************************************************************/

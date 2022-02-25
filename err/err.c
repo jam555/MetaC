@@ -1039,7 +1039,13 @@ static msg_style
 		stdmsg_ldoublearg = { LIB4_RETURN_2ND( STDMSG_LDOUBLEARG ) },
 		stdmsg_chararg = { LIB4_RETURN_2ND( STDMSG_CHARARG ) },
 		stdmsg_strarg = { LIB4_RETURN_2ND( STDMSG_STRARG ) },
-		stdmsg_dataptrarg = { LIB4_RETURN_2ND( STDMSG_DATAPTRARG ) };
+		stdmsg_dataptrarg = { LIB4_RETURN_2ND( STDMSG_DATAPTRARG ) },
+	
+	stdmsg_failedintfunc = { LIB4_RETURN_2ND( STDMSG_FAILEDINTFUNC ) },
+	stdmsg_faileduintfunc = { LIB4_RETURN_2ND( STDMSG_FAILEDUINTFUNC ) },
+	stdmsg_failedptrfunc = { LIB4_RETURN_2ND( STDMSG_FAILEDPTRFUNC ) },
+	
+	stdmsg_trespasspath = { LIB4_RETURN_2ND( STDMSG_TRESPASSPATH ) };
 
 static msgstyleptr_pascalarray std_messages =
 	LIB4_DEFINE_PASCALARRAY_LITERAL2(
@@ -1061,5 +1067,11 @@ static msgstyleptr_pascalarray std_messages =
 			&stdmsg_ldoublearg,
 			&stdmsg_chararg,
 			&stdmsg_strarg,
-			&stdmsg_dataptrarg
+			&stdmsg_dataptrarg,
+		
+		&stdmsg_failedintfunc,
+		&stdmsg_faileduintfunc,
+		&stdmsg_failedptrfunc,
+		
+		&stdmsg_trespasspath
 	);
