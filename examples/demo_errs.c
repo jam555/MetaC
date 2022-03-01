@@ -50,8 +50,22 @@ stackpair std_stacks;
 	#define STACK_NOTELINE() STDMSG_NOTELINE_WRAPPER( &errs )
 	#define STACK_NOTESPACE() STDMSG_NOTESPACE_WRAPPER( &errs )
 	
+	#define STACK_SIGNEDARG( integer ) STDMSG_SIGNEDARG_WRAPPER( &errs, integer )
 	#define STACK_DECARG( uint ) STDMSG_DECARG_WRAPPER( &errs, ( uint ) )
+	#define STACK_HEXARG( hex ) STDMSG_HEXARG_WRAPPER( &errs, hex )
+	#define STACK_CHARARG( chara ) STDMSG_CHARARG_WRAPPER( &errs, ( chara ) )
 	#define STACK_DATAPTR( ptr ) STDMSG_DATAPTRARG_WRAPPER( &errs, ( ptr ) )
+
+	/* These are differentiated on 'type' of "val". */
+#define STACK_FAILEDINTFUNC( calleestr, callername, val ) \
+	STDMSG_FAILEDINTFUNC_WRAPPER( &errs, ( calleestr ), callername, ( val ) )
+#define STACK_FAILEDPTRFUNC( calleestr, callername, val ) \
+	STDMSG_FAILEDPTRFUNC_WRAPPER( &errs, ( calleestr ), callername, ( val ) )
+
+	/* Used for areas in code that SHOULD never be traversed, but might be */
+	/*  for unforeseen reasons. */
+#define STACK_TRESPASSPATH( funcname, msgstr ) \
+	STDMSG_TRESPASSPATH_WRAPPER( &errs, funcname, ( msgstr ) )
 
 
 

@@ -201,6 +201,38 @@
 			(char*)( msgstr ) \
 		)
 	
+	#define STDMSG_BADCHAR_WRAPPER( stylesetptr, funcname, objaddr, expected ) \
+		msg_interface( \
+			( stylesetptr ), LIB4_RETURN_1ST( STDMSG_BADCHAR ), \
+			(char*)( __FILE__ ), (uintmax_t)&( funcname ), (unsigned)( __LINE__ ), \
+			(void*)( objaddr ), (char)*( objaddr ), (char)( expected ) \
+		)
+	#define STDMSG_BADINT_WRAPPER( stylesetptr, funcname, objaddr, expected ) \
+		msg_interface( \
+			( stylesetptr ), LIB4_RETURN_1ST( STDMSG_BADINT ), \
+			(char*)( __FILE__ ), (uintmax_t)&( funcname ), (unsigned)( __LINE__ ), \
+			(void*)( objaddr ), (intmax_t)*( objaddr ), (intmax_t)( expected ) \
+		)
+	#define STDMSG_BADUINT_WRAPPER( stylesetptr, funcname, objaddr, expected ) \
+		msg_interface( \
+			( stylesetptr ), LIB4_RETURN_1ST( STDMSG_BADUINT ), \
+			(char*)( __FILE__ ), (uintmax_t)&( funcname ), (unsigned)( __LINE__ ), \
+			(void*)( objaddr ), (uintmax_t)*( objaddr ), (uintmax_t)( expected ) \
+		)
+	
+	#define STDMSG_I_UNDERFLOW_WRAPPER( stylesetptr, funcname, objaddr, limit ) \
+		msg_interface( \
+			( stylesetptr ), LIB4_RETURN_1ST( STDMSG_I_UNDERFLOW ), \
+			(char*)( __FILE__ ), (uintmax_t)&( funcname ), (unsigned)( __LINE__ ), \
+			(void*)( objaddr ), (uintmax_t)*( objaddr ), (uintmax_t)( limit ) \
+		)
+	#define STDMSG_I_OVERFLOW_WRAPPER( stylesetptr, funcname, objaddr, limit ) \
+		msg_interface( \
+			( stylesetptr ), LIB4_RETURN_1ST( STDMSG_I_OVERFLOW ), \
+			(char*)( __FILE__ ), (uintmax_t)&( funcname ), (unsigned)( __LINE__ ), \
+			(void*)( objaddr ), (uintmax_t)*( objaddr ), (uintmax_t)( limit ) \
+		)
+	
 	
 		/* If you want to use these, then the trivial way is to include */
 		/*  lib4's "macrotime/arraccess.h", and use the LIB4_RETURN_1ST() */
@@ -229,5 +261,12 @@
 	#define STDMSG_FAILEDPTRFUNC -16, "\nCall to %s() in %s:%jx(), file line %x, failed : returned( %p ). Args:", dummyarg
 	
 	#define STDMSG_TRESPASSPATH -17, "\nInvalid execution path in %s:%jx(), file line %x: %s", dummyarg
+	
+	#define STDMSG_BADCHAR -18, "\nError in %s:%jx(), file line %x : *%p == %c, expected %c.", dummyarg
+	#define STDMSG_BADINT -19, "\nError in %s:%jx(), file line %x : *%p == %jd, expected %jd.", dummyarg
+	#define STDMSG_BADUINT -20, "\nError in %s:%jx(), file line %x : *%p == %jd, expected %jd.", dummyarg
+	
+	#define STDMSG_I_UNDERFLOW -21, "\nUnderflow in %s:%jx(), file line %x : *%p == %jd, expected above %jd.", dummyarg
+	#define STDMSG_I_OVERFLOW -22, "\nOverflow in %s:%jx(), file line %x : *%p == %jd, expected below %jd.", dummyarg
 	
 #endif

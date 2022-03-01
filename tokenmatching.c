@@ -1,5 +1,7 @@
 #include "headers.h"
 
+#include "err/inner_err.h"
+
 
 
 #if defined( __cplusplus ) && __cplusplus >= 199711L
@@ -237,9 +239,6 @@ genericnamed* bsearch1_gennamearr( genname_parr *parr, token *tok )
 
 
 
-#define lexparse1_ERREXIT( key, ... ) \
-		err_interface( &lexparse1_refid, (lib4_failure_result){ (key) }, __VA_ARGS__ ); \
-		return( (retframe){ &end_run, (void*)0 } )
 int lexparse1_pushsearchtable( uintptr_t *refid, genname_parrparr **keys, size_t *keys_used, int err_subsource, int errsubsub, genname_parr *pushable )
 {
 	if( !keys || !keys_used )
