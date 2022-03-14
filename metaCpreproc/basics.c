@@ -1,5 +1,38 @@
 #include "../headers.h"
 
+#include "err/inner_err.h"
+
+
+#if defined( __cplusplus ) && __cplusplus >= 199711L
+	namespace
+	{
+		static msg_styleset errs;
+	};
+#elif defined( __STDC__ ) && __STDC_VERSION__ >= 199901L
+	static msg_styleset errs;
+#else
+	#error "The file " __FILE__ " requires at least C99 or C++98."
+#endif
+
+
+#define BADNULL( funcname, ptr ) \
+	STDMSG_BADNULL_WRAPPER( &errs, funcname, ( ptr ) )
+#define BADNULL2( funcname, ptr1, ptr2 ) \
+	STDMSG_BADNULL2_WRAPPER( &errs, funcname, ( ptr1 ), ( ptr2 ) )
+
+#define NOTELINE() STDMSG_NOTELINE_WRAPPER( &errs )
+#define NOTESPACE() STDMSG_NOTESPACE_WRAPPER( &errs )
+#define HEXARG( hex ) STDMSG_HEXARG_WRAPPER( &errs, hex )
+
+#define FAILEDINTFUNC( calleestr, callername, val ) \
+	STDMSG_FAILEDINTFUNC_WRAPPER( &errs, ( calleestr ), callername, ( val ) )
+#define FAILEDPTRFUNC( calleestr, callername, val ) \
+	STDMSG_FAILEDPTRFUNC_WRAPPER( &errs, ( calleestr ), callername, ( val ) )
+
+#define TRESPASSPATH( funcname, msgstr ) \
+	STDMSG_TRESPASSPATH_WRAPPER( &errs, funcname, ( msgstr ) )
+
+
 
 int gentyped_tokencomp( const void *key_, const void *elem_ )
 {
@@ -52,12 +85,6 @@ generictyped* gentyped_bsearch( gentyped_parr *parr, token *tok )
 }
 
 
-uintptr_t gentypedarr_refid;
-
-
-#define preproc_ERREXIT( key, ... ) \
-		err_interface( &gentypedarr_refid, (lib4_failure_result){ (key) }, __VA_ARGS__ ); \
-		return( (retframe){ &end_run, (void*)0 } )
 	/* This is the actual basal lookup table. Searching is based on */
 	/*  token_head's toktype value. If an entry's reftype is *_RETFRAMEFUNC */
 	/*  then it'll get used directly as the return value of the search */
@@ -87,6 +114,11 @@ gentyped_parr *preproc_basic_gentyping =
 				/*  checking for "line freshness". */
 			(generictyped){ TOKTYPE_OCTO, (void*)ref, reftype },
 			
+			/*
+				GENNAMETYPE_NAMEONLY
+				GENNAMETYPE_TABLEENTRY
+				GENNAMETYPE_RETFRAMEFUNC
+			*/
 			
 			(generictyped){ toktype, (void*)ref, reftype },
 			(generictyped){ toktype, (void*)ref, reftype },
@@ -98,9 +130,6 @@ gentyped_parr *preproc_basic_gentyping =
 			(generictyped){ TOKTYPE_INVALID, (void*)0, GENNAMETYPE_INVALID }
 		}
 	}
-GENNAMETYPE_NAMEONLY
-GENNAMETYPE_TABLEENTRY
-GENNAMETYPE_RETFRAMEFUNC
 );
 
 
@@ -119,24 +148,29 @@ retframe preproc_search2( stackpair *stkp, void *table_ )
 	genname_parr *table = (genname_parr*)table_;
 	uintptr_t a;
 	
-	if( !stkp )
+	if( !stkp || !table )
 	{
-		preproc_ERREXIT( 2, (uintptr_t)1, &stkp, &table );
+		STACK_BADNULL2( preproc_search2, &stkp, &table_ );
+		return( (retframe){ &end_run, (void*)0 } );
 	}
-	if( !table || table->len < 1 )
+	if( table->len < 1 )
 	{
-		preproc_ERREXIT( 2, (uintptr_t)2, &stkp, &table );
+		BADNULL( preproc_search2, &( table_len ) );
+		return( (retframe){ &end_run, (void*)0 } );
 	}
 	
-	if( !peek_uintptr( stk,  &a ) )
+	int res = peek_uintptr( stk,  &a );
+	if( !res )
 	{
-		preproc_ERREXIT( 2, (uintptr_t)3, &stkp, &table, &a );
+		FAILEDINTFUNC( "peek_uintptr", preproc_search2, res );
+		return( (retframe){ &end_run, (void*)0 } );
 	}
 	
 	genericnamed *found = bsearch1_gennamearr( table->body, (token*)a );
 	if( !found )
 	{
-		preproc_ERREXIT( 2, (uintptr_t)4, &stkp, &table, &a, &found );
+		FAILEDPTRFUNC( "bsearch1_gennamearr", preproc_search2, found );
+		return( (retframe){ &end_run, (void*)0 } );
 	}
 	
 	switch( found->reftype )
@@ -155,7 +189,10 @@ retframe preproc_search2( stackpair *stkp, void *table_ )
 			return( seekother );
 	}
 	
-	preproc_ERREXIT( 2, (uintptr_t)5, &stkp, &table, &a, &found );
+	TRESPASSPATH( preproc_search2, "preproc_search2() returned from end instead of via switch. Should have defaulted to calling:" );
+		NOTELINE(); HEXARG( (uintptr_t)( seekother.func ) );
+		NOTESPACE(); HEXARG( (uintptr_t)( seekother.data ) );
+	return( (retframe){ &end_run, (void*)0 } );
 }
 
 retframe gentyped_search( stackpair *stkp, gentyped_parr *table, retframe (*tablehand)( stackpair*, void* ) )
@@ -167,23 +204,27 @@ retframe gentyped_search( stackpair *stkp, gentyped_parr *table, retframe (*tabl
 	
 	if( !stkp || !tablehand )
 	{
-		preproc_ERREXIT( 1, (uintptr_t)1, &stkp, &v );
+		BADNULL2( gentyped_search, &stkp, &tablehand );
+		return( (retframe){ &end_run, (void*)0 } );
 	}
-	
 	if( !table || table->len < 1 )
 	{
-		preproc_ERREXIT( 1, (uintptr_t)2, &stkp, &v, &table );
+		BADNULL2( gentyped_search, &table, &( table->len ) );
+		return( (retframe){ &end_run, (void*)0 } );
 	}
 	
-	if( !peek_uintptr( stk,  &a ) )
+	int res = peek_uintptr( stk,  &a );
+	if( !res )
 	{
-		preproc_ERREXIT( 1, (uintptr_t)3, &stkp, &v, &table,  &a );
+		FAILEDINTFUNC( "peek_uintptr", gentyped_search, res );
+		return( (retframe){ &end_run, (void*)0 } );
 	}
 	
 	generictyped *found = gentyped_bsearch( table, (token*)a );
 	if( !found )
 	{
-		preproc_ERREXIT( 1, (uintptr_t)4, &stkp, &v, &table,  &a, &found );
+		FAILEDPTRFUNC( "gentyped_bsearch", gentyped_search, found );
+		return( (retframe){ &end_run, (void*)0 } );
 	}
 	
 	switch( found->reftype )
@@ -206,4 +247,20 @@ retframe gentyped_search( stackpair *stkp, gentyped_parr *table, retframe (*tabl
 	
 		/* Shouldn't ever get here, but whatever. */
 	preproc_ERREXIT( 1, (uintptr_t)8, &stkp, &v, &table,  &a, &found );
+	
+	TRESPASSPATH( gentyped_search, "gentyped_search() returned from end instead of via switch. Should have defaulted to calling:" );
+		NOTELINE(); HEXARG( (uintptr_t)( seekother.func ) );
+		NOTESPACE(); HEXARG( (uintptr_t)( seekother.data ) );
+	return( (retframe){ &end_run, (void*)0 } );
 }
+
+
+
+#if defined( __cplusplus ) && __cplusplus >= 199711L
+	namespace
+	{
+		msg_styleset errs = { 0 };
+	};
+#elif defined( __STDC__ ) && __STDC_VERSION__ >= 199901L
+	static msg_styleset errs = (msg_styleset){ 0, 0 };
+#endif

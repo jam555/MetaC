@@ -1,12 +1,23 @@
 #include "../headers.h"
 
+#include "err/inner_err.h"
+
+
+#if defined( __cplusplus ) && __cplusplus >= 199711L
+	namespace
+	{
+		static msg_styleset errs;
+	};
+#elif defined( __STDC__ ) && __STDC_VERSION__ >= 199901L
+	static msg_styleset errs;
+#else
+	#error "The file " __FILE__ " requires at least C99 or C++98."
+#endif
+
+
+
 /* This file exists for "component parses" that get built up into more full */
 /*  preprocessor parsing runs. */
-
-uintptr_t gennamearr_refid;
-uintptr_t searchstack_refid;
-uintptr_t lexparse1_refid;
-uintptr_t gentypedarr_refid;
 
 genname_parrparr *searchstack = (genname_parrparr*)0;
 size_t searchstack_used = 0;
@@ -1303,3 +1314,14 @@ retframe accumulate_whitespace( stackpair *stkp, void *v );
 retframe accumulate_token( stackpair *stkp, void *v );
 
 */
+
+
+
+#if defined( __cplusplus ) && __cplusplus >= 199711L
+	namespace
+	{
+		msg_styleset errs = { 0 };
+	};
+#elif defined( __STDC__ ) && __STDC_VERSION__ >= 199901L
+	static msg_styleset errs = (msg_styleset){ 0, 0 };
+#endif

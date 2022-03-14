@@ -1,11 +1,44 @@
 #include "headers.h"
 
+#include "err/inner_err.h"
 
 
-uintptr_t aggregate_tokens_refid;
-uintptr_t tokenbranch_refid;
-uintptr_t tokengroup_refid;
-uintptr_t complexlex_refid;
+
+stackpair std_stacks;
+
+#if defined( __cplusplus ) && __cplusplus >= 199711L
+	namespace
+	{
+		static msg_styleset errs;
+	};
+#elif defined( __STDC__ ) && __STDC_VERSION__ >= 199901L
+	static msg_styleset errs;
+#else
+	#error "The file " __FILE__ " requires at least C99 or C++98."
+#endif
+
+
+#define BADNULL( funcname, ptr ) \
+	STDMSG_BADNULL_WRAPPER( &errs, funcname, ( ptr ) )
+#define BADNULL2( funcname, ptr1, ptr2 ) \
+	STDMSG_BADNULL2_WRAPPER( &errs, funcname, ( ptr1 ), ( ptr2 ) )
+#define BADNONULL( funcname, ptr ) \
+	STDMSG_BADNONNULL_WRAPPER( &errs, funcname, ( ptr ) )
+
+#define MONADICFAILURE( funcname, calltext, err ) \
+		STDMSG_MONADICFAILURE_WRAPPER( &errs, funcname, ( calltext ), ( err ) )
+		
+		#define DECARG( uint ) STDMSG_DECARG_WRAPPER( &errs, ( uint ) )
+
+#define FAILEDINTFUNC( calleestr, callername, val ) \
+	STDMSG_FAILEDINTFUNC_WRAPPER( &errs, ( calleestr ), callername, ( val ) )
+#define FAILEDPTRFUNC( calleestr, callername, val ) \
+	STDMSG_FAILEDPTRFUNC_WRAPPER( &errs, ( calleestr ), callername, ( val ) )
+
+#define TRESPASSPATH( funcname, msgstr ) \
+	STDMSG_TRESPASSPATH_WRAPPER( &errs, funcname, ( msgstr ) )
+
+
 
 retframe complexlex_dealloctoken = (retframe){ &smart_dealloc_token, (void*)0 };
 
@@ -20,7 +53,7 @@ retframe set_dealloctoken( retframe dealc_ )
 		
 	} else {
 		
-		err_interface( &complexlex_refid, REFID_SUBIDS_complexlex__set_dealloctoken,  &complexlex_dealloctoken );
+		BADNULL( set_dealloctoken, &( dealc_.handler ) );
 	}
 	
 	return( ret );
@@ -29,7 +62,7 @@ retframe invoke_dealloctoken( stackpair *stkp, void *v )
 {
 	if( complexlex_dealloctoken.handler )
 	{
-		err_interface( &complexlex_refid, REFID_SUBIDS_complexlex__invoke_dealloctoken,  &complexlex_dealloctoken );
+		BADNONULL( invoke_dealloctoken, &( complexlex_dealloctoken.handler ) );
 		return( (retframe){ (framefunc)&end_run, (void*)0 } );
 	}
 	
@@ -45,23 +78,14 @@ retframe smart_dealloc_token( stackpair *stkp, void *v )
 	
 	if( !stkp )
 	{
-		err_interface( &complexlex_refid, REFID_SUBIDS_complexlex__smart_dealloc_token, 1,  stkp, v );
+		BADNULL( smart_dealloc_token, &stkp );
 		return( (retframe){ (framefunc)&end_run, (void*)0 } );
 	}
 	
-	if( !peek_uintptr( stk->data,  0,  &a ) )
+	int res = peek_uintptr( stk->data,  0,  &a );
+	if( !res )
 	{
-		err_interface
-		(
-			&complexlex_refid,
-			REFID_SUBIDS_complexlex__smart_dealloc_token,
-			2,
-			
-			stkp,
-			v,
-			
-			&a
-		);
+		FAILEDINTFUNC( "peek_uintptr", smart_dealloc_token, res );
 		return( (retframe){ (framefunc)&end_run, (void*)0 } );
 	}
 	th = (token_head*)a;
@@ -82,17 +106,7 @@ retframe smart_dealloc_token( stackpair *stkp, void *v )
 			);
 		if( !ret.handler && !ret.data )
 		{
-			err_interface
-			(
-				&complexlex_refid,
-				REFID_SUBIDS_complexlex__smart_dealloc_token,
-				3,
-				
-				stkp,
-				v,
-				
-				th
-			);
+			BADNULL2( smart_dealloc_token, &( ret.handler ), &( ret.data ) );
 			return( (retframe){ (framefunc)&end_run, (void*)0 } );
 		}
 		
@@ -112,17 +126,7 @@ retframe smart_dealloc_token( stackpair *stkp, void *v )
 			);
 		if( !ret.handler && !ret.data )
 		{
-			err_interface
-			(
-				&complexlex_refid,
-				REFID_SUBIDS_complexlex__smart_dealloc_token,
-				4,
-				
-				stkp,
-				v,
-				
-				th
-			);
+			BADNULL2( smart_dealloc_token, &( ret.handler ), &( ret.data ) );
 			return( (retframe){ (framefunc)&end_run, (void*)0 } );
 		}
 		
@@ -184,7 +188,7 @@ tokengroup* build_tokengroup
 	/* Build a new tokengroup, and default it's arr & subtype. */
 			
 #define build_tokengroup_FAILURE1( err ) \
-		err_interface( &tokengroup_refid, (uintptr_t)1, refid, 1, ( err ) ); \
+		MONADICFAILURE( build_tokengroup, "lib4_stdmemfuncs.alloc", err ); \
 		return( (tokengroup*)0 );
 	lib4_ptrresult ptrres =
 		lib4_stdmemfuncs.alloc
@@ -192,7 +196,7 @@ tokengroup* build_tokengroup
 	LIB4_PTRRESULT_BODYMATCH( ptrres, LIB4_OP_SETa, build_tokengroup_FAILURE1 )
 	if( !a )
 	{
-		err_interface( &tokengroup_refid, (uintptr_t)1, refid, 2, &ptrres );
+		STACK_BADNULL( build_tokengroup, &a );
 		return( (tokengroup*)0 );
 	}
 	
@@ -200,7 +204,7 @@ tokengroup* build_tokengroup
 			
 #define build_tokengroup_SUCCESS1( val ) ret->arr = (tokhdptr_parr*)( val );
 #define build_tokengroup_FAILURE2( err ) \
-		err_interface( &tokengroup_refid, (uintptr_t)1, refid, 3, &ret, ( err ) ); \
+		MONADICFAILURE( build_tokengroup, "tokenheadptr_pascalarray_build", err ); \
 		return( (tokengroup*)0 );
 	tokenheadptr_pascalarray_result res =
 		tokenheadptr_pascalarray_build( elems );
@@ -225,10 +229,15 @@ int regrow_tokengroup
 	size_t newlen
 )
 {
-	if( !refid || !tgrp || newlen < tgrp->used )
+	if( !tgrp )
 	{
-		err_interface( &tokengroup_refid, (uintptr_t)2, refid, 0 );
+		BADNULL( regrow_tokengroup, &tgrp );
 		return( -1 );
+	}
+	if( newlen < tgrp->used )
+	{
+		TRESPASSPATH( regrow_tokengroup, "ERROR: regrow_tokengroup was given a new size below the used size." );
+		return( -2 );
 	}
 	
 	tokenheadptr_pascalarray_result res =
@@ -236,7 +245,7 @@ int regrow_tokengroup
 	
 #define regrow_tokengroup_SUCC( narr ) tgrp->arr = ( narr );
 #define regrow_tokengroup_FAIL( err ) \
-		err_interface( &tokengroup_refid, (uintptr_t)2, refid, 1, &res, ( err ) ); \
+		MONADICFAILURE( regrow_tokengroup, "tokenheadptr_pascalarray_rebuild", err ); \
 		return( -2 );
 	LIB4_DEFINE_PASCALARRAY_RESULT_BODYMATCH(
 		res,
@@ -255,9 +264,9 @@ int pushto_tokengroup
 	token_head *thd
 )
 {
-	if( !refid || !tgrp || !thd )
+	if( !tgrp || !thd )
 	{
-		err_interface( &tokengroup_refid, (uintptr_t)3, refid, 0 );
+		BADNULL2( pushto_tokengroup, &tgrp, &thd );
 		return( -1 );
 	}
 	
@@ -269,22 +278,17 @@ int pushto_tokengroup
 			newlen = 1;
 		}
 		
-		if
-		(
-			!regrow_tokengroup
-			(
-				refid,  tgrp, newlen
-			)
-		)
+		int res = regrow_tokengroup( refid,  tgrp, newlen );
+		if( !res )
 		{
-			err_interface( &tokengroup_refid, (uintptr_t)3, refid, 1 );
+			FAILEDINTFUNC( "regrow_tokengroup", pushto_tokengroup, res );
 			return( -2 );
 		}
 	}
 	
 	if( tgrp->used >= tgrp->arr->len )
 	{
-		err_interface( &tokengroup_refid, (uintptr_t)3, refid, 2 );
+		TRESPASSPATH( pushto_tokengroup, "ERROR: pushto_tokengroup retained a used size larger than the available size." );
 		return( -3 );
 	}
 	
@@ -295,10 +299,12 @@ int pushto_tokengroup
 }
 int place_tokenhead( uintptr_t *refid, token_head **dest, token_head *tok )
 {
+	int res;
+	
 		/* We actually DON'T CARE if refid is set. */
 	if( !dest || !tok )
 	{
-		err_interface( &tokengroup_refid, (uintptr_t)4, refid, 0, dest, tok );
+		BADNULL2( place_tokenhead, &dest, &tok );
 		return( -1 );
 	}
 	
@@ -314,18 +320,20 @@ int place_tokenhead( uintptr_t *refid, token_head **dest, token_head *tok )
 		tokengroup *tg = build_tokengroup( refid, 2 );
 		if( !tg )
 		{
-			err_interface( &tokengroup_refid, (uintptr_t)4, refid, 1, dest, tok );
+			FAILEDPTRFUNC( "build_tokengroup", place_tokenhead, tg );
 			return( -2 );
 		}
 		
-		if( !pushto_tokengroup( refid, 0,  tg, *dest ) )
+		res = pushto_tokengroup( refid, 0,  tg, *dest );
+		if( !res )
 		{
-			err_interface( &tokengroup_refid, (uintptr_t)4, refid, 2, dest, tok, tg );
+			FAILEDINTFUNC( "pushto_tokengroup", place_tokenhead, res );
 			return( -3 );
 		}
-		if( !pushto_tokengroup( refid, 0,  tg, tok ) )
+		res = pushto_tokengroup( refid, 0,  tg, tok );
+		if( !res )
 		{
-			err_interface( &tokengroup_refid, (uintptr_t)4, refid, 3, tok, tg );
+			FAILEDINTFUNC( "pushto_tokengroup", place_tokenhead, res );
 			return( -4 );
 		}
 		
@@ -335,9 +343,10 @@ int place_tokenhead( uintptr_t *refid, token_head **dest, token_head *tok )
 		
 		/* *dest is a tokengroup, so just push tok to the end of it. */
 		
-		if( !pushto_tokengroup( refid, 0,  (tokengroup*)( *dest ), tok ) )
+		res = pushto_tokengroup( refid, 0,  (tokengroup*)( *dest ), tok );
+		if( !res )
 		{
-			err_interface( &tokengroup_refid, (uintptr_t)4, refid, 4, dest, tok );
+			FAILEDINTFUNC( "pushto_tokengroup", place_tokenhead, res );
 			return( -5 );
 		}
 	}
@@ -356,25 +365,27 @@ retframe dealloc_tokengroup
 )
 {
 	retframe ret = (retframe){ 0, 0 };
+	int res;
 	
 	if( !tgrp )
 	{
 			/* Error! */
-		err_interface( refid, err_source, err_subsource,  1,  stkp, v );
+		BADNULL( dealloc_tokengroup, &tgrp );
 		return( (retframe){ 0, 0 } );
 	}
 	if( !( tgrp->arr ) )
 	{
 			/* Error! */
-		err_interface( refid, err_source, err_subsource,  2,  stkp, v, tgrp );
+		BADNULL( dealloc_tokengroup, &( tgrp->arr ) );
 		return( (retframe){ 0, 0 } );
 	}
 	
 	if( tgrp->used )
 	{
-		if( !push_uintptr( &( stkp->data ),  (uintptr_t)( tgrp->arr ) ) )
+		res = push_uintptr( &( stkp->data ),  (uintptr_t)( tgrp->arr ) );
+		if( !res )
 		{
-			err_interface( refid, err_source, err_subsource,  3,  stkp, v, tgrp );
+			FAILEDINTFUNC( "push_uintptr", dealloc_tokengroup, res );
 			return( (retframe){ 0, 0 } );
 		}
 		
@@ -386,9 +397,10 @@ retframe dealloc_tokengroup
 			/* We need to actually pull the tokengroup's pointer off the */
 			/*  stack, since we're deleting it now. */
 		uintptr_t a;
-		if( !pop_uintptr( stk->data,  &a ) )
+		res = pop_uintptr( stk->data,  &a );
+		if( !res )
 		{
-			err_interface( refid, err_source, err_subsource,  4,  stkp, v, tgrp, &a );
+			FAILEDINTFUNC( "pop_uintptr", dealloc_tokengroup, res );
 			return( (retframe){ 0, 0 } );
 		}
 		
@@ -397,8 +409,8 @@ retframe dealloc_tokengroup
 		
 		
 		lib4_result res = tokenheadptr_pascalarray_destroy( tgrp->arr );
-#define dealloc_tokengroup_ONFAIL1( val ) \
-	err_interface( refid, err_source, err_subsource,  5,  stkp, v, tgrp, (val) ); \
+#define dealloc_tokengroup_ONFAIL1( err ) \
+	MONADICFAILURE( dealloc_tokengroup, "tokenheadptr_pascalarray_destroy", ( err ) ); \
 	return( (retframe){ 0, 0 } );
 		LIB4_RESULT_BODYMATCH(
 			res,
@@ -409,7 +421,7 @@ retframe dealloc_tokengroup
 		
 		res = lib4_stdmemfuncs.dealloc( lib4_stdmemfuncs.data, (void*)tgrp );
 #define dealloc_tokengroup_ONFAIL2( val ) \
-	err_interface( refid, err_source, err_subsource,  6,  stkp, v, tgrp, (val) ); \
+	MONADICFAILURE( dealloc_tokengroup, "lib4_stdmemfuncs.dealloc", ( err ) ); \
 	return( (retframe){ 0, 0 } );
 		LIB4_RESULT_BODYMATCH(
 			res,
@@ -440,7 +452,7 @@ tokenbranch* build_tokenbranch
 	/* Build a new tokenbranch, and set it's defaults. */
 			
 #define build_tokenbranch_FAILURE1( err ) \
-		err_interface( &tokenbranch_refid, (uintptr_t)1, refid, 1, ( err ) ); \
+		MONADICFAILURE( build_tokengroup, "lib4_stdmemfuncs.alloc", ( err ) ); \
 		return( (tokenbranch*)0 );
 	lib4_ptrresult ptrres =
 		lib4_stdmemfuncs.alloc
@@ -448,7 +460,7 @@ tokenbranch* build_tokenbranch
 	LIB4_PTRRESULT_BODYMATCH( ptrres, LIB4_OP_SETa, build_tokenbranch_FAILURE1 )
 	if( !a )
 	{
-		err_interface( &tokenbranch_refid, (uintptr_t)1, refid, 2, &ptrres );
+		BADNULL( build_tokenbranch, &a );
 		return( (tokenbranch*)0 );
 	}
 	
@@ -468,13 +480,13 @@ int set_lead_tokenbranch( uintptr_t *refid,  tokenbranch *tb, token_head *tok )
 		/* We actually DON'T CARE if refid is set. */
 	if( !tb || !tok )
 	{
-		err_interface( &tokenbranch_refid, (uintptr_t)2, refid, 0, tb, tok );
+		BADNULL2( set_lead_tokenbranch, &tb, &tok );
 		return( -1 );
 	}
 	
 	if( tb->lead )
 	{
-		err_interface( &tokenbranch_refid, (uintptr_t)2, refid, 1, tb, tok );
+		BADNONULL( set_lead_tokenbranch, &( tb->lead ) );
 		return( -2 );
 	}
 	
@@ -487,13 +499,14 @@ int push_body_tokenbranch( uintptr_t *refid,  tokenbranch *tb, token_head *tok )
 		/* We actually DON'T CARE if refid is set. */
 	if( !tb || !tok )
 	{
-		err_interface( &tokenbranch_refid, (uintptr_t)3, refid, 0, tb, tok );
+		BADNULL2( push_body_tokenbranch, &tb, &tok );
 		return( -1 );
 	}
 	
-	if( !place_tokenhead( refid, &( tb->body ), tok ) )
+	int res = place_tokenhead( refid, &( tb->body ), tok );
+	if( !res )
 	{
-		err_interface( &tokenbranch_refid, (uintptr_t)3, refid, 1, tb, tok );
+		FAILEDINTFUNC( "place_tokenhead", push_body_tokenbranch, res );
 		return( -2 );
 	}
 	
@@ -504,13 +517,13 @@ int set_tail_tokenbranch( uintptr_t *refid,  tokenbranch *tb, token_head *tok )
 		/* We actually DON'T CARE if refid is set. */
 	if( !tb || !tok )
 	{
-		err_interface( &tokenbranch_refid, (uintptr_t)4, refid, 0, tb, tok );
+		BADNULL2( set_tail_tokenbranch, &tb, &tok );
 		return( -1 );
 	}
 	
 	if( tb->tail )
 	{
-		err_interface( &tokenbranch_refid, (uintptr_t)4, refid, 1, tb, tok );
+		BADNONULL( set_tail_tokenbranch, &( tb->lead ) );
 		return( -2 );
 	}
 	
@@ -530,11 +543,12 @@ retframe dealloc_tokenbranch
 )
 {
 	uintptr_t a;
+	int res;
 	
 	if( !stkp || !tb )
 	{
 			/* Error! */
-		err_interface( refid, err_source, err_subsource,  1,  stkp, v,  tb );
+		BADNULL2( dealloc_tokenbranch, &stkp, &tb );
 		return( (retframe){ 0, 0 } );
 	}
 	
@@ -557,17 +571,18 @@ retframe dealloc_tokenbranch
 		
 			/* We need to actually pull the tokenbranch's pointer off the */
 			/*  stack, since we're deleting it now. */
-		if( !pop_uintptr( stk->data,  &a ) )
+		res = pop_uintptr( stk->data,  &a );
+		if( !res )
 		{
-			err_interface( refid, err_source, err_subsource,  2,  stkp, v,  tb, &a );
+			FAILEDINTFUNC( "pop_uintptr", dealloc_tokenbranch, res );
 			return( (retframe){ 0, 0 } );
 		}
 		
 		
 		res = lib4_stdmemfuncs.dealloc( lib4_stdmemfuncs.data, (void*)tgrp );
 #define dealloc_tokenbranch_ONSUCC( val ) 
-#define dealloc_tokenbranch_ONFAIL( val ) \
-	err_interface( refid, err_source, err_subsource,  3,  stkp, v,  tb, (val) ); \
+#define dealloc_tokenbranch_ONFAIL( err ) \
+	MONADICFAILURE( dealloc_tokenbranch, "lib4_stdmemfuncs.dealloc", ( err ) ); \
 	return( (retframe){ 0, 0 } );
 		LIB4_RESULT_BODYMATCH(
 			res,
@@ -582,9 +597,10 @@ retframe dealloc_tokenbranch
 	}
 	
 	
-	if( !push_uintptr( &( stkp->data ),  a ) )
+	res = push_uintptr( &( stkp->data ),  a );
+	if( !res )
 	{
-		err_interface( refid, err_source, err_subsource,  4,  stkp, v,  tb, &a );
+		FAILEDINTFUNC( "push_uintptr", dealloc_tokenbranch, res );
 		return( (retframe){ 0, 0 } );
 	}
 	return( complexlex_dealloctoken );
@@ -609,16 +625,18 @@ retframe accumulate_whitespace( stackpair *stkp, void *v )
 	token_head *tmp, *th;
 	retframe ret = (retframe){ (framefunc)&end_run, (void*)0 };
 	
-	if( !pop_uintptr( &( stkp->data ),  &a ) )
+	int res = pop_uintptr( &( stkp->data ),  &a );
+	if( !res )
 	{
-		err_interface( &complexlex_refid, (uintptr_t)1, 2, &stkp, &v );
+		FAILEDINTFUNC( "pop_uintptr", accumulate_whitespace, res );
 		return( ret );
 	}
 	th = (token_head*)a;
 	
-	if( !pop_uintptr( &( stkp->data ),  0,  &a ) )
+	res = pop_uintptr( &( stkp->data ),  0,  &a );
+	if( !res )
 	{
-		err_interface( &complexlex_refid, (uintptr_t)1, 3, &stkp, &v, &th );
+		FAILEDINTFUNC( "pop_uintptr", accumulate_whitespace, res );
 		return( ret );
 	}
 	tmp = (token_head*)a;
@@ -629,7 +647,8 @@ retframe accumulate_whitespace( stackpair *stkp, void *v )
 		th->toktype == TOKTYPE_TOKENGROUP_EQUIVMERGE
 	)
 	{
-		err_interface( &complexlex_refid, (uintptr_t)1, 4, &stkp, &v, &th, &tmp );
+		TRESPASSPATH( accumulate_whitespace, "ERROR: accumulate_whitespace encountered a token type of _SAMEMERGE or _EQUIVMERGE : " );
+		DECARG( th->toktype );
 		return( ret );
 		
 	} else if
@@ -655,23 +674,26 @@ retframe accumulate_whitespace( stackpair *stkp, void *v )
 		)
 	)
 	{
-		if( !push_uintptr( &( stkp->data ),  (uintptr_t)tmp ) )
+		res = push_uintptr( &( stkp->data ),  (uintptr_t)tmp );
+		if( !res )
 		{
-			err_interface( &complexlex_refid, (uintptr_t)1, 6, &stkp, &v, &tmp );
+			FAILEDINTFUNC( "push_uintptr", accumulate_whitespace, res );
 			return( ret );
 		}
 		tmp = (token_head*)0;
 	}
 	
-	if( !place_tokenhead( &complexlex_refid, &tmp, th ) )
+	res = place_tokenhead( &complexlex_refid, &tmp, th );
+	if( !res )
 	{
-		err_interface( &complexlex_refid, (uintptr_t)1, 7, &stkp, &v, &th, &tmp );
+		FAILEDINTFUNC( "place_tokenhead", accumulate_whitespace, res );;
 		return( ret );
 	}
 	
-	if( !push_uintptr( &( stkp->data ),  (uintptr_t)tmp ) )
+	res = push_uintptr( &( stkp->data ),  (uintptr_t)tmp );
+	if( !res )
 	{
-		err_interface( &complexlex_refid, (uintptr_t)1, 8, &stkp, &v, &tmp );
+		FAILEDINTFUNC( "push_uintptr", accumulate_whitespace, res );;
 		return( ret );
 	}
 	( (tokengroup*)tmp )->subtype = TOKTYPE_TOKENGROUP_WHITESPACE;
@@ -693,9 +715,11 @@ retframe accumulate_token( stackpair *stkp, void *v )
 	uintptr_t a;
 	retframe ret = (retframe){ (framefunc)&end_run, (void*)0 };
 	
-	if( peek_uintptr( &( stkp->data ),  0,  &top ) )
+	int res = peek_uintptr( &( stkp->data ),  0,  &top );
+		/* TODO: Verify that this is correct. */
+	if( !res )
 	{
-		err_interface( &complexlex_refid, (uintptr_t)2, 2, &stkp, &v, &tmp );
+		FAILEDINTFUNC( "peek_uintptr", accumulate_token, res );
 		return( ret );
 	}
 	
@@ -713,32 +737,36 @@ retframe accumulate_token( stackpair *stkp, void *v )
 	tokenbranch *tb = build_tokenbranch( uintptr_t *refid,  1 );
 	if( !tb )
 	{
-		err_interface( &complexlex_refid, (uintptr_t)2, 3, &stkp, &v, &tmp );
+		FAILEDPTRFUNC( "build_tokenbranch", accumulate_token, tb );
 		return( ret );
 	}
 	
-	if( push_body_tokenbranch( uintptr_t *refid,  tb, (token_head*)top ) )
+	res = push_body_tokenbranch( uintptr_t *refid,  tb, (token_head*)top );
+	if( !res )
 	{
-		err_interface( &complexlex_refid, (uintptr_t)2, 4, &stkp, &v, &tmp );
+		FAILEDINTFUNC( "push_body_tokenbranch", accumulate_token, res );
 		return( ret );
 	}
 	tb->subtype = ( (token_head*)top )->toktype;
 	
-	if( pop_uintptr( &( stkp->data ),  &top ) )
+	res = pop_uintptr( &( stkp->data ),  &top );
+	if( !res )
 	{
-		err_interface( &complexlex_refid, (uintptr_t)2, 5, &stkp, &v, &tmp );
+		FAILEDINTFUNC( "pop_uintptr", accumulate_token, res );
 		return( ret );
 	}
-	if( push_uintptr( &( stkp->data ),  (uintptr_t)&( tb->header ) ) )
+	res = push_uintptr( &( stkp->data ),  (uintptr_t)&( tb->header ) );
+	if( !res )
 	{
-		err_interface( &complexlex_refid, (uintptr_t)2, 6, &stkp, &v, &tmp );
+		FAILEDINTFUNC( "push_uintptr", accumulate_token, res );
 		return( ret );
 	}
 	
 	
-	if( push_retframe( &( stkp->ret ),  (retframe){ &conclude_accumulate_token, (void*)0 } ) )
+	res = push_retframe( &( stkp->ret ),  (retframe){ &conclude_accumulate_token, (void*)0 } );
+	if( !res )
 	{
-		err_interface( &complexlex_refid, (uintptr_t)2, 7, &stkp, &v, &tmp );
+		FAILEDINTFUNC( "push_retframe", accumulate_token, res );
 		return( ret );
 	}
 	CALL_FRAMEFUNC( &accumulate_whitespace, 0, &getANDassemble_token, 0 );
@@ -746,15 +774,17 @@ retframe accumulate_token( stackpair *stkp, void *v )
 retframe conclude_accumulate_token( stackpair *stkp, void *v )
 {
 	uintptr_t top, white, bottom;
-	if( !pop_uintptr( &( stkp->data ),  &top ) )
+	int res = pop_uintptr( &( stkp->data ),  &top );
+	if( !res )
 	{
-		err_interface( &complexlex_refid, (uintptr_t)3, 2, &stkp, &v );
+		FAILEDINTFUNC( "pop_uintptr", conclude_accumulate_token, res );
 		return( ret );
 	}
 	
-	if( !pop_uintptr( &( stkp->data ),  &white ) )
+	res = pop_uintptr( &( stkp->data ),  &white );
+	if( !res )
 	{
-		err_interface( &complexlex_refid, (uintptr_t)3, 3, &stkp, &v,  &top );
+		FAILEDINTFUNC( "pop_uintptr", conclude_accumulate_token, res );
 		return( ret );
 	}
 	if
@@ -767,9 +797,10 @@ retframe conclude_accumulate_token( stackpair *stkp, void *v )
 		return( (retframe){ &accumulate_whitespace, (void*)0 } );
 	}
 	
-	if( !peek_uintptr( &( stkp->data ),  0,  &bottom ) )
+	res = peek_uintptr( &( stkp->data ),  0,  &bottom );
+	if( !res )
 	{
-		err_interface( &complexlex_refid, (uintptr_t)3, 4, &stkp, &v,  &top, &white );
+		FAILEDINTFUNC( "peek_uintptr", conclude_accumulate_token, res );
 		return( ret );
 	}
 	
@@ -777,32 +808,46 @@ retframe conclude_accumulate_token( stackpair *stkp, void *v )
 	{
 		if( ( (tokenbranch*)bottom )->tail == (token_head*)0 )
 		{
-			if( !set_tail_tokenbranch( uintptr_t *refid,  (tokenbranch*)bottom, (token_head*)white ) )
+			res = set_tail_tokenbranch( uintptr_t *refid,  (tokenbranch*)bottom, (token_head*)white );
+			if( !res )
 			{
-				err_interface( &complexlex_refid, (uintptr_t)3, 5, &stkp, &v,  &top, &white, &bottom );
+				FAILEDINTFUNC( "set_tail_tokenbranch", conclude_accumulate_token, res );
 				return( ret );
 			}
 			
 		} else {
 			
-			err_interface( &complexlex_refid, (uintptr_t)3, 6, &stkp, &v,  &top, &white, &bottom );
+			BADNONULL( conclude_accumulate_token, &( ( (tokenbranch*)bottom )->tail ) );
 			return( ret );
 		}
 		
 	} else {
 		
-		if( !push_uintptr( &( stkp->data ),  white ) )
+		res = push_uintptr( &( stkp->data ),  white );
+		if( !res )
 		{
-			err_interface( &complexlex_refid, (uintptr_t)3, 7, &stkp, &v,  &top, &white, &bottom );
+			FAILEDINTFUNC( "push_uintptr", conclude_accumulate_token, res );
 			return( ret );
 		}
 	}
 	
-	if( !push_uintptr( &( stkp->data ),  top ) )
+	res = push_uintptr( &( stkp->data ),  top );
+	if( !res )
 	{
-		err_interface( &complexlex_refid, (uintptr_t)3, 8, &stkp, &v,  &top, &white, &bottom );
+		FAILEDINTFUNC( "push_uintptr", conclude_accumulate_token, res );
 		return( ret );
 	}
 	
 	RET_FRAMEFUNC2( &complexlex_refid, (uintptr_t)3, &stkp, &v,  &top, &white, &bottom );
 }
+
+
+
+#if defined( __cplusplus ) && __cplusplus >= 199711L
+	namespace
+	{
+		msg_styleset errs = { 0 };
+	};
+#elif defined( __STDC__ ) && __STDC_VERSION__ >= 199901L
+	static msg_styleset errs = (msg_styleset){ 0, 0 };
+#endif
