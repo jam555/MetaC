@@ -54,7 +54,7 @@ retframe ???( stackpair *stkp, void *v )
 	
 	if( !stkp )
 	{
-		preproc_ERREXIT( 2, (uintptr_t)1, &stkp, &table );
+		BADNULL( ??? );
 	}
 	
 	???

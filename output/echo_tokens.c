@@ -1,3 +1,40 @@
+#include <stdio.h>
+
+#include "../headers.h"
+
+#include "err/inner_err.h"
+
+
+#if defined( __cplusplus ) && __cplusplus >= 199711L
+	namespace
+	{
+		static msg_styleset errs;
+	};
+#elif defined( __STDC__ ) && __STDC_VERSION__ >= 199901L
+	static msg_styleset errs;
+#else
+	#error "The file " __FILE__ " requires at least C99 or C++98."
+#endif
+
+
+#define BADNULL( funcname, ptr ) \
+	STDMSG_BADNULL_WRAPPER( &errs, funcname, ( ptr ) )
+
+#define STACK_NOTELINE() \
+	STDMSG_NOTELINE_WRAPPER( &errs )
+#define STACK_DECARG( uint ) \
+	STDMSG_DECARG_WRAPPER( &errs, ( uint ) )
+#define STACK_DATAPTR( ptr ) \
+	STDMSG_DATAPTRARG_WRAPPER( &errs, ( ptr ) )
+
+#define FAILEDINTFUNC( calleestr, callername, val ) \
+	STDMSG_FAILEDINTFUNC_WRAPPER( &errs, ( calleestr ), callername, ( val ) )
+
+#define STACK_TRESPASSPATH( funcname, msgstr ) \
+	STDMSG_TRESPASSPATH_WRAPPER( &errs, funcname, ( msgstr ) )
+
+
+
 /* Argument checking should be added to some of this stuff. */
 
 #define SOH ( 0x01 )
@@ -25,14 +62,6 @@ int echo_tokenhead( stackpair *stkp, void *v,  token_head **th )
 }
 
 
-uintptr_t echo_tokens_refid;
-	/* I had four cases that needed a warning, but aren't necessarily an */
-	/*  error... */
-#define echotokens_ERRALERT( key, ... ) \
-		err_interface( &echo_tokens_refid, (lib4_failure_result){ (key) }, __VA_ARGS__ )
-#define echotokens_ERREXIT( key, ... ) \
-		echotokens_ERRALERT( key, __VA_ARGS__ ); \
-		return( (retframe){ &end_run, (void*)0 } )
 	/* This dispatches to other functions (eg. echo_tokengroup) to do the */
 	/*  work, and just exists for the sake of that very dynamic dispatch. */
 retframe echo_tokens_entrypoint( stackpair *stkp, void *v )
@@ -40,14 +69,17 @@ retframe echo_tokens_entrypoint( stackpair *stkp, void *v )
 	token_head *th;
 	uintptr_t a;
 	
-	if( !peek_uintptr( &( stkp->data ),  0,  &a ) )
+	int res = peek_uintptr( &( stkp->data ),  0,  &a );
+	if( !res )
 	{
-		echotokens_ERREXIT( 1, -2, &stkp, &v, &a );
+		FAILEDINTFUNC( "peek_uintptr", echo_tokens_entrypoint, res );
+		return( (retframe){ &end_run, (void*)0 } );
 	}
 	th = (token_head*)a;
 	if( !th )
 	{
-		echotokens_ERREXIT( 1, -3, &stkp, &v, &a, &th );
+		BADNULL( echo_tokens_entrypoint, &th );
+		return( (retframe){ &end_run, (void*)0 } );
 	}
 	
 	
@@ -61,7 +93,8 @@ retframe echo_tokens_entrypoint( stackpair *stkp, void *v )
 			
 			
 		case TOKTYPE_INVALID:
-			echotokens_ERREXIT( 1, -4, &stkp, &v, &a, &th );
+			STACK_TRESPASSPATH( echo_tokens_entrypoint, "Error: \"invalid\" token type encountered inside echo_tokens_entrypoint()" );
+			return( (retframe){ &end_run, (void*)0 } );
 			
 			
 		/* These cases that follow all basically get echoed out verbatim, */
@@ -72,8 +105,9 @@ retframe echo_tokens_entrypoint( stackpair *stkp, void *v )
 		case TOKTYPE_SYM:
 		case TOKTYPE_SYM_CONFUSION:
 		case TOKTYPE_SYM_UNKNOWN:
-			echotokens_ERRALERT( 1, -5, &stkp, &v, &a, &th );
-				/* *_ERRALERT() doesn't exit the function, so we fall */
+			STACK_TRESPASSPATH( echo_tokens_entrypoint, "Warning: unexpected token type encountered inside echo_tokens_entrypoint() : " );
+			STACK_DECARG( th->toktype );
+				/* These two don't exit the function, so we fall */
 				/*  through. We do this because none of these four are meant */
 				/*  to be valid, but are not NECESSARILY wrong either */
 				/*  depending on the type of file being processed, so we */
@@ -187,10 +221,16 @@ retframe echo_tokens_entrypoint( stackpair *stkp, void *v )
 			return( (retframe){ (framefunc)&echo_token, (void*)0 } );
 			
 		default:
+			STACK_TRESPASSPATH( echo_tokens_entrypoint, "Alert: unexpected token type in echo_tokens_entrypoint() : " );
+				STACK_DECARG( th->toktype );
 			/* Unhandled token type, fall through to error exit. */
 	}
 	
-	echotokens_ERREXIT( 1, -6, &stkp, &v, &a );
+	STACK_TRESPASSPATH(
+		echo_tokens_entrypoint,
+		"Error: echo_tokens_entrypoint() was unexpectedly reached. This function is meant to exit before reaching this point."
+	);
+	return( (retframe){ &end_run, (void*)0 } );
 }
 
 
@@ -201,9 +241,13 @@ retframe echo_token( stackpair *stkp, void *v )
 	token *t;
 	int len;
 	
-	if( !echo_tokenhead( stkp, v,  &th ) )
+	len = echo_tokenhead( stkp, v,  &th );
+	if( !len )
 	{
-		echotokens_ERREXIT( 2, -2, 0 );
+		FAILEDINTFUNC( "echo_tokenhead", echo_token, len );
+			STACK_NOTELINE();
+			STACK_DATAPTR( &th );
+		return( (retframe){ &end_run, (void*)0 } );
 	}
 	
 	t = (token*)th;
@@ -232,30 +276,44 @@ retframe echo_tokengroup_extension( stackpair *stkp, void *v )
 	uintptr_t a;
 	uintptr_t iter = (uintptr_t)v;
 	
-	if( !peek_uintptr( &( stkp->data ),  0, &a ) )
+	int res = peek_uintptr( &( stkp->data ),  0, &a );
+	if( !res )
 	{
-		echotokens_ERREXIT( 4, -2, 0 );
+		FAILEDINTFUNC( "peek_uintptr", echo_tokengroup_extension, res );
+			STACK_NOTELINE();
+			STACK_DATAPTR( &( stkp->data ) );
+		return( (retframe){ &end_run, (void*)0 } );
 	}
 	th = (token_head*)a;
 	
 	if( th->toktype != TOKTYPE_TOKENGROUP_SAMEMERGE )
 	{
-		echotokens_ERREXIT( 4, -2, 0 );
+		STACK_TRESPASSPATH(
+			echo_tokengroup_extension,
+			"Error: echo_tokengroup_extension() encountered a non-samemerge token type: "
+		);
+			STACK_DECARG( th->toktype );
+		return( (retframe){ &end_run, (void*)0 } );
 	}
 	
 	if( ( (tokengroup*)th )->used > iter )
 	{
 		if( !( ( (tokengroup*)th )->arr ) )
 		{
-			echotokens_ERREXIT( 4, -2, 0 );
+			BADNULL( echo_tokengroup_extension, &( ( ( (tokengroup*)th )->arr ) );
+			return( (retframe){ &end_run, (void*)0 } );
 		}
 		
 			/* This will need to be popped by whatever gets defered to by */
 			/*  echo_tokengroup_extension(). Note that echo_tokenhead() */
 			/*  already does so... */
-		if( !push_uintptr_t( &( stkp->data ),  (uintptr_t)( ( (tokengroup*)th )->arr->body[ iter ] ) ) )
+		res = push_uintptr( &( stkp->data ),  (uintptr_t)( ( (tokengroup*)th )->arr->body[ iter ] ) );
+		if( !res )
 		{
-			echotokens_ERREXIT( 4, -2, 0 );
+			FAILEDINTFUNC( "push_uintptr", echo_tokengroup_extension, res );
+				STACK_NOTELINE();
+				STACK_DATAPTR( &( stkp->data ) );
+			return( (retframe){ &end_run, (void*)0 } );
 		}
 		
 		putc( ',' );
@@ -272,9 +330,13 @@ retframe echo_tokengroup_extension( stackpair *stkp, void *v )
 			/* "th" got repushed onto the stack before this function was */
 			/*  even called, so we need to repop it here, because we've now */
 			/*  finished echoing it out. */
-		if( !pop_uintptr( &( stkp->data ),  &a ) )
+		res = pop_uintptr( &( stkp->data ),  &a );
+		if( !res )
 		{
-			echotokens_ERREXIT( 4, -2, 0 );
+			FAILEDINTFUNC( "pop_uintptr", echo_tokengroup_extension, res );
+				STACK_NOTELINE();
+				STACK_DATAPTR( &( stkp->data ) );
+			return( (retframe){ &end_run, (void*)0 } );
 		}
 		
 		RET_FRAMEFUNC( echo_tokenhead_refid, 4, -5, &stkp, &v, &th, &tmp );
@@ -284,14 +346,23 @@ retframe echo_tokengroup( stackpair *stkp, void *v )
 {
 	token_head *th;
 	
-	if( !echo_tokenhead( &( stkp->data ), v,  &th ) )
+	int res = echo_tokenhead( &( stkp->data ), v,  &th );
+	if( !res )
 	{
-		echotokens_ERREXIT( 3, -2, 0 );
+		FAILEDINTFUNC( "echo_tokenhead", echo_tokengroup, res );
+			STACK_NOTELINE();
+			STACK_DATAPTR( &( stkp->data ) );
+		return( (retframe){ &end_run, (void*)0 } );
 	}
 	
 	if( th->toktype != TOKTYPE_TOKENGROUP_SAMEMERGE )
 	{
-		echotokens_ERREXIT( 3, -3, 0 );
+		STACK_TRESPASSPATH(
+			echo_tokengroup,
+			"Error: echo_tokengroup() encountered a non-samemerge token type: "
+		);
+			STACK_DECARG( th->toktype );
+		return( (retframe){ &end_run, (void*)0 } );
 	}
 	
 	printf( "%x", (unsigned int)( ( (tokengroup*)th )->subtype ) );
@@ -302,19 +373,28 @@ retframe echo_tokengroup( stackpair *stkp, void *v )
 	{
 		if( !( ( (tokengroup*)th )->arr ) )
 		{
-			echotokens_ERREXIT( 3, -4, 0 );
+			BADNULL( echo_tokengroup_extension, &( ( ( (tokengroup*)th )->arr ) );
+			return( (retframe){ &end_run, (void*)0 } );
 		}
 		
-		if( !push_uintptr( &( stkp->data ),  (uintptr_t)th ) )
+		res = push_uintptr( &( stkp->data ),  (uintptr_t)th );
+		if( !res )
 		{
-			echotokens_ERREXIT( 3, -5, 0 );
+			FAILEDINTFUNC( "push_uintptr", echo_tokengroup, res );
+				STACK_NOTELINE();
+				STACK_DATAPTR( &( stkp->data ) );
+			return( (retframe){ &end_run, (void*)0 } );
 		}
 			/* This second uintptr_t will need to be popped by */
 			/*  echo_tokengroup_extension(). Note that echo_tokenhead() does */
 			/*  that already. */
-		if( !push_uintptr( &( stkp->data ),  (uintptr_t)( ( (tokengroup*)th )->arr->body[ 0 ] ) ) )
+		res = push_uintptr( &( stkp->data ),  (uintptr_t)( ( (tokengroup*)th )->arr->body[ 0 ] ) );
+		if( !res )
 		{
-			echotokens_ERREXIT( 3, -6, 0 );
+			FAILEDINTFUNC( "push_uintptr", echo_tokengroup, res );
+				STACK_NOTELINE();
+				STACK_DATAPTR( &( stkp->data ) );
+			return( (retframe){ &end_run, (void*)0 } );
 		}
 		
 		putc( ',' );
@@ -346,9 +426,13 @@ retframe echo_tokenbranch_conclude( stackpair *stkp, void *v )
 		/* "th" got repushed onto the stack before this function was */
 		/*  even called, so we need to repop it here, because we've now */
 		/*  finished echoing it out. */
-	if( !pop_uintptr( &( stkp->data ),  &a ) )
+	int res = pop_uintptr( &( stkp->data ),  &a );
+	if( !res )
 	{
-		echotokens_ERREXIT( 8, -2, &stkp, &v, &a );
+		FAILEDINTFUNC( "pop_uintptr", echo_tokenbranch_conclude, res );
+			STACK_NOTELINE();
+			STACK_DATAPTR( &( stkp->data ) );
+		return( (retframe){ &end_run, (void*)0 } );
 	}
 	
 	RET_FRAMEFUNC( echo_tokenhead_refid, 8, -3, &stkp, &v, &a );
@@ -358,19 +442,29 @@ retframe echo_tokenbranch_tail( stackpair *stkp, void *v )
 	token_head *th;
 	uintptr_t a;
 	
-	if( !peek_uintptr( &( stkp->data ),  0,  &a ) )
+	int res = peek_uintptr( &( stkp->data ),  0,  &a );
+	if( !res )
 	{
-		echotokens_ERREXIT( 7, -2, &stkp, &v, &a );
+		FAILEDINTFUNC( "peek_uintptr", echo_tokenbranch_tail, res );
+			STACK_NOTELINE();
+			STACK_DATAPTR( &( stkp->data ) );
+		return( (retframe){ &end_run, (void*)0 } );
 	}
 	th = (token_head*)a;
 	if( !th )
 	{
-		echotokens_ERREXIT( 7, -3, &stkp, &v, &a, &th );
+		BADNULL( echo_tokenbranch_tail, &th );
+		return( (retframe){ &end_run, (void*)0 } );
 	}
 	
 	if( th->toktype != TOKTYPE_TOKENGROUP_EQUIVMERGE )
 	{
-		echotokens_ERREXIT( 7, -4, &stkp, &v, &th );
+		STACK_TRESPASSPATH(
+			echo_tokenbranch_tail,
+			"Error: echo_tokenbranch_tail() encountered a non-equivmerge token type: "
+		);
+			STACK_DECARG( th->toktype );
+		return( (retframe){ &end_run, (void*)0 } );
 	}
 	
 	putc( ',' );
@@ -378,9 +472,13 @@ retframe echo_tokenbranch_tail( stackpair *stkp, void *v )
 	if( ( (tokenbranch*)th )->tail )
 	{
 			/* As with the second push in echo_tokenbranch()... */
-		if( !push_uintptr( &( stkp->data ),  (uintptr_t)( ( (tokenbranch*)th )->tail ) ) )
+		res = push_uintptr( &( stkp->data ),  (uintptr_t)( ( (tokenbranch*)th )->tail ) );
+		if( !res )
 		{
-			echotokens_ERREXIT( 7, -5, &stkp, &v, &th );
+			FAILEDINTFUNC( "push_uintptr", echo_tokenbranch_tail, res );
+				STACK_NOTELINE();
+				STACK_DATAPTR( &( stkp->data ) );
+			return( (retframe){ &end_run, (void*)0 } );
 		}
 		
 		CALL_FRAMEFUNC( &echo_tokenbranch_conclude, (void*)0,  &echo_tokens_entrypoint, (void*)0  );
@@ -393,19 +491,29 @@ retframe echo_tokenbranch_body( stackpair *stkp, void *v )
 	token_head *th;
 	uintptr_t a;
 	
-	if( !peek_uintptr( &( stkp->data ),  0,  &a ) )
+	int res = peek_uintptr( &( stkp->data ),  0,  &a );
+	if( !res )
 	{
-		echotokens_ERREXIT( 6, -2, &stkp, &v, &a );
+		FAILEDINTFUNC( "peek_uintptr", echo_tokenbranch_body, res );
+			STACK_NOTELINE();
+			STACK_DATAPTR( &( stkp->data ) );
+		return( (retframe){ &end_run, (void*)0 } );
 	}
 	th = (token_head*)a;
 	if( !th )
 	{
-		echotokens_ERREXIT( 6, -3, &stkp, &v, &a, &th );
+		BADNULL( echo_tokenbranch_body, &th );
+		return( (retframe){ &end_run, (void*)0 } );
 	}
 	
 	if( th->toktype != TOKTYPE_TOKENGROUP_EQUIVMERGE )
 	{
-		echotokens_ERREXIT( 6, -4, &stkp, &v, &th );
+		STACK_TRESPASSPATH(
+			echo_tokenbranch_body,
+			"Error: echo_tokenbranch_body() encountered a non-equivmerge token type: "
+		);
+			STACK_DECARG( th->toktype );
+		return( (retframe){ &end_run, (void*)0 } );
 	}
 	
 	putc( ',' );
@@ -413,9 +521,13 @@ retframe echo_tokenbranch_body( stackpair *stkp, void *v )
 	if( ( (tokenbranch*)th )->body )
 	{
 			/* As with the second push in echo_tokenbranch()... */
-		if( !push_uintptr( &( stkp->data ),  (uintptr_t)( ( (tokenbranch*)th )->body ) ) )
+		res = push_uintptr( &( stkp->data ),  (uintptr_t)( ( (tokenbranch*)th )->body ) );
+		if( !res )
 		{
-			echotokens_ERREXIT( 6, -5, &stkp, &v, &th );
+			FAILEDINTFUNC( "push_uintptr", echo_tokenbranch_body, res );
+				STACK_NOTELINE();
+				STACK_DATAPTR( &( stkp->data ) );
+			return( (retframe){ &end_run, (void*)0 } );
 		}
 		
 		CALL_FRAMEFUNC( &echo_tokenbranch_tail, (void*)0,  &echo_tokens_entrypoint, (void*)0  );
@@ -427,32 +539,49 @@ retframe echo_tokenbranch( stackpair *stkp, void *v )
 {
 	token_head *th;
 	
-	if( !echo_tokenhead( &( stkp->data ), v,  &th ) )
+	int res = echo_tokenhead( &( stkp->data ), v,  &th );
+	if( !res )
 	{
-		echotokens_ERREXIT( 5, -2, &stkp, &v, &th );
+		FAILEDINTFUNC( "echo_tokenhead", echo_tokenbranch, res );
+			STACK_NOTELINE();
+			STACK_DATAPTR( &( stkp->data ) );
+		return( (retframe){ &end_run, (void*)0 } );
 	}
 	
 	if( th->toktype != TOKTYPE_TOKENGROUP_EQUIVMERGE )
 	{
-		echotokens_ERREXIT( 5, -3, &stkp, &v, &th );
+		STACK_TRESPASSPATH(
+			echo_tokenbranch,
+			"Error: echo_tokenbranch() encountered a non-equivmerge token type: "
+		);
+			STACK_DECARG( th->toktype );
+		return( (retframe){ &end_run, (void*)0 } );
 	}
 	
 	printf( "%x", (unsigned int)( ( (tokenbranch*)th )->subtype ) );
 	putc( ',' );
 	
 		/* We'll need to refer to "th" in later calls, so repush it. */
-	if( !push_uintptr( &( stkp->data ),  (uintptr_t)th ) )
+	res = push_uintptr( &( stkp->data ),  (uintptr_t)th );
+	if( !res )
 	{
-		echotokens_ERREXIT( 5, -4, &stkp, &v, &th );
+		FAILEDINTFUNC( "push_uintptr", echo_tokenbranch, res );
+			STACK_NOTELINE();
+			STACK_DATAPTR( &( stkp->data ) );
+		return( (retframe){ &end_run, (void*)0 } );
 	}
 	if( ( (tokenbranch*)th )->lead )
 	{
 			/* This second uintptr_t will need to be popped by */
 			/*  echo_tokengroup_extension(), albeit likely in what it defers */
 			/*  to. Note that echo_tokenhead() does that already. */
-		if( !push_uintptr( &( stkp->data ),  (uintptr_t)( ( (tokenbranch*)th )->lead ) ) )
+		res = push_uintptr( &( stkp->data ),  (uintptr_t)( ( (tokenbranch*)th )->lead ) );
+		if( !res )
 		{
-			echotokens_ERREXIT( 5, -5, &stkp, &v, &th );
+			FAILEDINTFUNC( "push_uintptr", echo_tokenbranch, res );
+				STACK_NOTELINE();
+				STACK_DATAPTR( &( stkp->data ) );
+			return( (retframe){ &end_run, (void*)0 } );
 		}
 		
 			/* Note that echo_tokenbranch_body() needs to be able to */
@@ -468,3 +597,14 @@ retframe echo_tokenbranch( stackpair *stkp, void *v )
 	
 	return( (retframe){ (framefunc)&echo_tokenbranch_body, (void*)0 } );
 }
+
+
+
+#if defined( __cplusplus ) && __cplusplus >= 199711L
+	namespace
+	{
+		msg_styleset errs = { 0 };
+	};
+#elif defined( __STDC__ ) && __STDC_VERSION__ >= 199901L
+	static msg_styleset errs = (msg_styleset){ 0, 0 };
+#endif
