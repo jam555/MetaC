@@ -3,6 +3,8 @@
 	
 	#include "headers.h"
 	
+	#include "err/inner_err.h"
+	
 	
 	
 	typedef struct stackframe stackframe;
@@ -68,10 +70,20 @@
 	int pop_token( stackframe *stk,  token_head **dest );
 	
 	
-	#define STACK_CHECK( stack,  errfunc, errnum,  ... ) \
-		if( !( stack ) ){ errfunc( ( errnum ),  __VA_ARGS__  ); }
-	#define STACK_CHECK2( stack, v,  errfunc, errnum,  ... ) \
-		if( !( stack ) || !( v ) ){ errfunc( ( errnum ),  __VA_ARGS__  ); }
+	
+	#define stack_ENDRETFRAME() return( (retframe){ &end_run, (void*)0 } )
+	
+		/* Old version: STACK_CHECK( stack,  errfunc, errnum,  ... ) */
+	#define STACK_CHECK( stack,  stylesetptr, caller, endfunc ) \
+		if( !( stack ) ) { \
+			STDMSG_BADNULL_WRAPPER( ( stylesetptr ), ( caller ), &( stack ) ); \
+			( endfunc )(); }
+		/* Old version: STACK_CHECK2( stack, v,  errfunc, errnum,  ... ) */
+	#define STACK_CHECK2( stack, v,  stylesetptr, caller, endfunc ) \
+		if( !( stack ) || !( v ) ) { \
+			STDMSG_BADNULL2_WRAPPER( ( stylesetptr ), ( caller ), &( stack ), &( v ) ); \
+			( endfunc )(); }
+	
 	
 	#define STACK_PEEK_UINT( stk, offset, var,  errfunc, err1, err2,  ... ) \
 		if( !peek_uintptr( ( stk ),  ( offset ),  &( var ) ) ) { errfunc( ( err1 ),  __VA_ARGS__,  &( var ) ); } \

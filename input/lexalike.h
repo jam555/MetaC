@@ -10,6 +10,8 @@
 	#include "stdmonads.h"
 	#include "headers.h"
 	
+	#include "err/inner_err.h"
+	
 	
 	
 	typedef struct extrachar
@@ -93,12 +95,18 @@
 	int token_queue_shufflepop( token **tok );
 	int token_queue_shufflepush( token *tok );
 	
+	#define lexalike_ENDRETFRAME() return( (retframe){ &end_run, (void*)0 } )
+	
 	#define POP_SHUFFLE( scratchint, destptrptr,  errfunc, err,  ... ) \
 		( scratchint ) = token_queue_shufflepop( destptrptr ); \
 		if( !( scratchint ) ) { errfunc( ( err ),  __VA_ARGS__, &( scratchint ) ); }
-	#define PUSH_SHUFFLE( scratchint, token,  errfunc, err,  ... ) \
-		( scratchint ) = token_queue_shufflepush( (token*)( token ) ); \
-		if( !( scratchint ) ) { errfunc( ( err ),  __VA_ARGS__, &( scratchint ) ); }
+		/* Old version: PUSH_SHUFFLE( scratchint, token,  errfunc, err,  ... ) */
+	#define PUSH_SHUFFLE( tokptr,  stylesetptr, caller, scratch, endfunc ) \
+		if( 1 ) { \
+			( scratch ) = token_queue_shufflepush( (token*)( tokptr ) ); \
+			if( !( scratch ) ) { \
+				STDMSG_FAILEDINTFUNC_WRAPPER( ( stylesetptr ), "token_queue_shufflepush", ( caller ), ( scratch ) ); \
+				( endfunc )(); } } \
 	
 		/* Moves one token pointer from the "shuffle" stack to the "unget" */
 		/*  stack. */

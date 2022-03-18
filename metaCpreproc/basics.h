@@ -5,6 +5,8 @@
 	
 	#include "../headers.h"
 	
+	#include "err/inner_err.h"
+	
 	
 	int gentyped_tokencomp( const void *key_, const void *elem_ );
 	int gentyped_gencomp( const void *key1_, const void *key2_ );
@@ -37,14 +39,35 @@
 	int macroargs_popset( tokhdptr_parr **dest );
 	int macroargs_peekset( size_t off,  tokhdptr_parr **dest );
 	
-	#define PEEK_MACROARGS( offset, var,  errfunc, err1, err2,  ... ) \
-		if( !macroargs_peekset( ( offset ),  &( var ) ) ) { errfunc( ( err1 ),  __VA_ARGS__, &( var ) ); } \
-		if( !( var ) ) { errfunc( ( err2 ),  __VA_ARGS__, &( var ) ); }
-	#define POP_MACROARGS( destptr,  errfunc, err1, err2,  ... ) \
-		if( !macroargs_popset( destptr ) ) { errfunc( ( err1 ),  __VA_ARGS__, &( var ) ); } \
-		if( !( var ) ) { errfunc( ( err2 ),  __VA_ARGS__, &( var ) ); }
-	#define PUSH_MACROARGS( val,  errfunc, err,  ... ) \
-		if( !macroargs_pushset( val ) ) { errfunc( ( err ),  __VA_ARGS__, ( val ) ); }
+	#define macroargs_ENDRETFRAME() return( (retframe){ &end_run, (void*)0 } )
+	
+		/* Old version: PEEK_MACROARGS( offset, var,  errfunc, err1, err2,  ... ) */
+	#define PEEK_MACROARGS( offset, dest,  stylesetptr, caller, scratch, endfunc ) \
+		if( 1 ) { \
+			( scratch ) = macroargs_peekset( ( offset ),  &( dest ) ); \
+			if( !( scratch ) ) { \
+				STDMSG_FAILEDINTFUNC_WRAPPER( ( stylesetptr ), "macroargs_peekset", ( caller ), ( scratch ) ); \
+				( endfunc )(); } \
+			if( !( dest ) ) { \
+				STDMSG_BADNULL_WRAPPER( ( stylesetptr ), ( caller ), &( dest ) ); \
+				( endfunc )(); } }
+		/* Old version: POP_MACROARGS( destptr,  errfunc, err1, err2,  ... ) */
+	#define POP_MACROARGS( destptr,  stylesetptr, caller, scratch, endfunc ) \
+		if( 1 ) { \
+			( scratch ) = macroargs_popset( destptr ); \
+			if( !( scratch ) ) { \
+				STDMSG_FAILEDINTFUNC_WRAPPER( ( stylesetptr ), "macroargs_popset", ( caller ), ( scratch ) ); \
+				( endfunc )(); } \
+			if( !( *( destptr ) ) ) { \
+				STDMSG_BADNULL_WRAPPER( ( stylesetptr ), ( caller ), ( destptr ) ); \
+				( endfunc )(); } }
+		/* Old version: PUSH_MACROARGS( val,  errfunc, err,  ... ) */
+	#define PUSH_MACROARGS( val,  stylesetptr, caller, scratch, endfunc ) \
+		if( 1 ) { \
+			( scratch ) = macroargs_pushset( val ); \
+			if( !( scratch ) ) { \
+				STDMSG_FAILEDINTFUNC_WRAPPER( ( stylesetptr ), "macroargs_pushset", ( caller ), ( scratch ) ); \
+				( endfunc )(); } }
 	
 	
 		/*

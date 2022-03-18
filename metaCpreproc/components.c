@@ -15,6 +15,46 @@
 #endif
 
 
+#define BADNULL( funcname, ptr ) \
+	STDMSG_BADNULL_WRAPPER( &errs, funcname, ( ptr ) )
+#define BADNONULL( funcname, ptr ) \
+	STDMSG_BADNONNULL_WRAPPER( &errs, funcname, ( ptr ) )
+#define BADNULL2( funcname, ptr1, ptr2 ) \
+	STDMSG_BADNULL2_WRAPPER( &errs, funcname, ( ptr1 ), ( ptr2 ) )
+
+#define MONADICFAILURE( funcname, calltext, err ) \
+		STDMSG_MONADICFAILURE_WRAPPER( &errs, funcname, ( calltext ), ( err ) )
+	#define NOTELINE() STDMSG_NOTELINE_WRAPPER( &errs )
+	
+	#define DECARG( val ) STDMSG_DECARG_WRAPPER( &errs, ( val ) )
+	#define STRARG( str ) STDMSG_STRARG_WRAPPER( &errs, ( str ) )
+
+#define FAILEDINTFUNC( calleestr, callername, val ) \
+	STDMSG_FAILEDINTFUNC_WRAPPER( &errs, ( calleestr ), callername, ( val ) )
+#define FAILEDPTRFUNC( calleestr, callername, val ) \
+	STDMSG_FAILEDPTRFUNC_WRAPPER( &errs, ( calleestr ), callername, ( val ) )
+
+#define TRESPASSPATH( funcname, msgstr ) \
+	STDMSG_TRESPASSPATH_WRAPPER( &errs, funcname, ( msgstr ) )
+
+#define PEEKMACROARGS( offset, dest,  caller, scratch, endfunc ) \
+	PEEK_MACROARGS( offset, dest,  &err, caller, scratch, endfunc );
+#define POPMACROARGS( destptr,  caller, scratch, endfunc ) \
+	POP_MACROARGS( destptr,  &err, caller, scratch, endfunc )
+#define PUSHMACROARGS( val,  caller, scratch, endfunc ) \
+	PUSH_MACROARGS( val,  &err, caller, scratch, endfunc )
+
+
+#define STACKCHECK( stack,  caller, endfunc ) \
+	STACK_CHECK( ( stack ),  &err, ( caller ), ( endfunc ) )
+#define STACKCHECK2( stack, v,  caller, endfunc ) \
+	STACK_CHECK2( ( stack ), ( v ),  &err, ( caller ), ( endfunc ) )
+
+
+#define PUSHSHUFFLE( tokptr,  caller, scratch, endfunc ) \
+	PUSH_SHUFFLE( tokptr,  &err, caller, scratch, endfunc )
+
+
 
 /* This file exists for "component parses" that get built up into more full */
 /*  preprocessor parsing runs. */
@@ -47,12 +87,12 @@ int searchstack_init()
 	
 	if( searchstack )
 	{
-		err_interface( &searchstack_refid, REFID_SUBIDS_searchstack__init, 2,  &searchstack );
+		BADNONULL( searchstack_init, &searchstack );
 		return( -2 );
 	}
 	
-#define searchstack_init_ERR( val ) \
-		err_interface( &searchstack_refid, REFID_SUBIDS_searchstack__init, 3,  &searchstack, ( val ) ); \
+#define searchstack_init_ERR( err ) \
+		MONADICFAILURE( searchstack_init, "genericnamedparr_pascalarray_build", (err) ); \
 		return( -3 );
 	genericnamedparr_pascalarray_result gnpp =
 		genericnamedparr_pascalarray_build( &lib4_stdmemfuncs,  4 );
@@ -60,7 +100,7 @@ int searchstack_init()
 	
 	if( !a )
 	{
-		err_interface( &searchstack_refid, REFID_SUBIDS_searchstack__init, 4,  &searchstack, &gnpp );
+		BADNULL( searchstack_init, &a );
 		return( -4 );
 	}
 	searchstack = a;
@@ -73,12 +113,6 @@ int searchstack_deinit()
 {
 	???
 }
-#define searchstack_ERREXIT( key, ... ) \
-	err_interface( &searchstack_refid, (lib4_failure_result){ (key) }, __VA_ARGS__ ); \
-	return( (retframe){ &end_run, (void*)0 } )
-#define searchstack_ALERT( key, ... ) \
-	err_interface( &searchstack_refid, (lib4_failure_result){ (key) }, __VA_ARGS__ );
-#define ERREXIT( refid, err, ... ) searchstack_ERREXIT( ( refid ), ( err ),  __VA_ARGS__  )
 
 	/* This shouldn't appear directly in any search tables, but instead */
 	/*  should be returned in a retframe by another wrapper function, which */
@@ -90,9 +124,11 @@ retframe components_stdsearchinit( stackpair *stkp, void *v_ )
 	token_head *tok;
 	gennameparr_stdpushentry_entry *v;
 	
-#define ERR_( ... ) ERREXIT( REFID_SUBIDS_searchstack__components_stdsearchinit, __VA_ARGS__ )
+	/* TODO: what the hell do the macros that need this even require for reporting? */
+#define ERR_( ... ) \
+		ERREXIT( REFID_SUBIDS_searchstack__components_stdsearchinit, __VA_ARGS__ )
 	
-	STACK_CHECK2( stkp, v_,  ERR_, 1,  stkp, v_ );
+	STACKCHECK2( stkp, v_,  components_stdsearchinit, macroargs_ENDRETFRAME );
 	v = (gennameparr_stdpushentry_entry*)v_;
 	
 	
@@ -111,7 +147,8 @@ retframe components_stdsearchinit( stackpair *stkp, void *v_ )
 		)
 	)
 	{
-		searchstack_ERREXIT( REFID_SUBIDS_searchstack__components_stdsearchinit, 4,  stkp, v,  &tok );
+		TRESPASSPATH( components_stdsearchinit, "ERROR: components_stdsearchinit was given a token with the wrong token type." );
+		return( (retframe){ &end_run, (void*)0 } );
 	}
 	
 		/* Build the tokenbranch that'll be used to package the context of */
@@ -119,7 +156,8 @@ retframe components_stdsearchinit( stackpair *stkp, void *v_ )
 	tokenbranch *tb = build_tokenbranch( &searchstack_refid,  0 );
 	if( !tb )
 	{
-		searchstack_ERREXIT( REFID_SUBIDS_searchstack__components_stdsearchinit, 5,  stkp, v,  &tok );
+		BADNULL( components_stdsearchinit, &tb );
+		return( (retframe){ &end_run, (void*)0 } );
 	}
 	tb->lead = tok;
 	
@@ -128,7 +166,8 @@ retframe components_stdsearchinit( stackpair *stkp, void *v_ )
 	STACK_PEEK_UINT( &( stkp->data ), 0, a,  ERR_, 6, 7,  stkp, v,  &tb );
 	if( ( (token_head*)a )->toktype != TOKTYPE_TOKENGROUP_SAMEMERGE )
 	{
-		searchstack_ERREXIT( REFID_SUBIDS_searchstack__components_stdsearchinit, 8,  stkp, v,  &tb, &a );
+		TRESPASSPATH( components_stdsearchinit, "ERROR: components_stdsearchinit detected the wrong token type at the top of the data stack." );
+		return( (retframe){ &end_run, (void*)0 } );
 	}
 	
 		/* We'll build a new tokengroup to receive the tokens that we */
@@ -142,7 +181,8 @@ retframe components_stdsearchinit( stackpair *stkp, void *v_ )
 		);
 	if( !tok )
 	{
-		searchstack_ERREXIT( REFID_SUBIDS_searchstack__components_stdsearchinit, 9,  stkp, v,  &tb );
+		FAILEDPTRFUNC( "build_tokengroup", components_stdsearchinit, tok );
+		return( (retframe){ &end_run, (void*)0 } );
 	}
 	
 	
@@ -155,9 +195,8 @@ retframe components_stdsearchinit( stackpair *stkp, void *v_ )
 	
 	
 		/* Push the searchtable itself, so that we'll use the right matches. */
-	if
-	(
-		!lexparse1_pushsearchtable
+	int res =
+		lexparse1_pushsearchtable
 		(
 			&searchstack_refid,
 			
@@ -167,10 +206,11 @@ retframe components_stdsearchinit( stackpair *stkp, void *v_ )
 			REFID_SUBIDS_searchstack__components_stdsearchinit__pushfunc,
 			
 			v->table
-		)
-	)
+		);
+	if( !res )
 	{
-		searchstack_ERREXIT( REFID_SUBIDS_searchstack__components_stdsearchinit, 12,  stkp, v,  &searchstack, &searchstack_used );
+		FAILEDINTFUNC( "lexparse1_pushsearchtable", components_stdsearchinit, res );
+		return( (retframe){ &end_run, (void*)0 } );
 	}
 	
 #undef ERR_
@@ -188,13 +228,12 @@ retframe components_sequencedsearchproceed( stackpair *stkp, void *v_ )
 	
 #define ERR_( ... ) ERREXIT( REFID_SUBIDS_searchstack__components_sequencedsearchproceed, __VA_ARGS__ )
 	
-	STACK_CHECK2( stkp, v_,  ERR_, 1,  stkp, v_ );
+	STACKCHECK2( stkp, v_,  components_sequencedsearchproceed, macroargs_ENDRETFRAME );
 	v = (gennameparr_stdpushentry_entry*)v_;
 	
 		/* The searchtable that we've been using is no longer correct, so pop it. */
-	if
-	(
-		!lexparse1_popsearchtable
+	int res =
+		lexparse1_popsearchtable
 		(
 			&searchstack_refid,
 			
@@ -202,10 +241,11 @@ retframe components_sequencedsearchproceed( stackpair *stkp, void *v_ )
 			&searchstack_used,
 			
 			REFID_SUBIDS_searchstack__components_sequencedsearchproceed__popfunc
-		)
-	)
+		);
+	if( !res )
 	{
-		searchstack_ERREXIT( REFID_SUBIDS_searchstack__components_sequencedsearchproceed, 2,  stkp, v,  &searchstack, &searchstack_used );
+		FAILEDINTFUNC( "lexparse1_popsearchtable", components_sequencedsearchproceed, res );
+		return( (retframe){ &end_run, (void*)0 } );
 	}
 	
 		/* The token that matched. */
@@ -221,13 +261,13 @@ retframe components_sequencedsearchproceed( stackpair *stkp, void *v_ )
 		)
 	)
 	{
-		searchstack_ERREXIT( REFID_SUBIDS_searchstack__components_sequencedsearchproceed, 5,  stkp, v,  &tok );
+		TRESPASSPATH( components_sequencedsearchproceed, "ERROR: components_sequencedsearchproceed was given a token with the wrong token type." );
+		return( (retframe){ &end_run, (void*)0 } );
 	}
 	
 		/* Push the next searchtable that we'll be using. */
-	if
-	(
-		!lexparse1_pushsearchtable
+	res =
+		lexparse1_pushsearchtable
 		(
 			&searchstack_refid,
 			
@@ -237,10 +277,11 @@ retframe components_sequencedsearchproceed( stackpair *stkp, void *v_ )
 			REFID_SUBIDS_searchstack__components_sequencedsearchproceed__pushfunc,
 			
 			v->table
-		)
-	)
+		);
+	if( !res )
 	{
-		searchstack_ERREXIT( REFID_SUBIDS_searchstack__components_sequencedsearchproceed, 6,  stkp, v,  &searchstack, &searchstack_used, &tok );
+		FAILEDINTFUNC( "lexparse1_pushsearchtable", components_sequencedsearchproceed, res );
+		return( (retframe){ &end_run, (void*)0 } );
 	}
 	
 #undef ERR_
@@ -265,7 +306,7 @@ retframe components_stdsearchdeinit( stackpair *stkp, void *v_ )
 	
 #define ERR_( ... ) ERREXIT( REFID_SUBIDS_searchstack__components_stdsearchdeinit, __VA_ARGS__ )
 	
-	STACK_CHECK2( stkp, v_,  ERR_, 1,  stkp, v_ );
+	STACKCHECK2( stkp, v_,  components_stdsearchdeinit, macroargs_ENDRETFRAME );
 	v = (gennameparr_stdpushentry_entry*)v_;
 	
 		/* The ending token. */
@@ -281,14 +322,16 @@ retframe components_stdsearchdeinit( stackpair *stkp, void *v_ )
 		)
 	)
 	{
-		searchstack_ERREXIT( REFID_SUBIDS_searchstack__components_stdsearchdeinit, 4,  stkp, v,  &a, &tok_a );
+		TRESPASSPATH( components_stdsearchdeinit, "ERROR: components_stdsearchdeinit was given a token with the wrong token type." );
+		return( (retframe){ &end_run, (void*)0 } );
 	}
 	
 		/* The result-body of the searchtable that we're going to pop. */
 	STACK_POP_UINT( &( stkp->data ), a,  ERR_, 5, 6,  stkp, v,  &a, &tok_a );
 	if( ( (token_head*)a )->toktype != TOKTYPE_TOKENGROUP_SAMEMERGE )
 	{
-		searchstack_ERREXIT( REFID_SUBIDS_searchstack__components_stdsearchdeinit, 7,  stkp, v,  &a, &tok_a );
+		TRESPASSPATH( components_stdsearchdeinit, "ERROR: components_stdsearchdeinit found a non-_SAMEMERGE token on the data stack." );
+		return( (retframe){ &end_run, (void*)0 } );
 	}
 	tok_b = (token_head*)a;
 	
@@ -297,7 +340,8 @@ retframe components_stdsearchdeinit( stackpair *stkp, void *v_ )
 	STACK_POP_UINT( &( stkp->data ), a,  ERR_, 8, 9,  stkp, v,  &a, &tok_a, &tok_b );
 	if( ( (token_head*)a )->toktype != TOKTYPE_TOKENGROUP_EQUIVMERGE )
 	{
-		searchstack_ERREXIT( REFID_SUBIDS_searchstack__components_stdsearchdeinit, 10,  stkp, v,  &a, &tok_a, &tok_b );
+		TRESPASSPATH( components_stdsearchdeinit, "ERROR: components_stdsearchdeinit found a non-_EQUIVMERGE token on the data stack." );
+		return( (retframe){ &end_run, (void*)0 } );
 	}
 	{
 			/* And now we actually store it all. */
@@ -315,13 +359,13 @@ retframe components_stdsearchdeinit( stackpair *stkp, void *v_ )
 	STACK_PEEK_UINT( &( stkp->data ), 0, a,  ERR_, 11, 12,  stkp, v,  &a, &tok_a );
 	if( ( (token_head*)a )->toktype != TOKTYPE_TOKENGROUP_SAMEMERGE )
 	{
-		searchstack_ERREXIT( REFID_SUBIDS_searchstack__components_stdsearchdeinit, 13,  stkp, v,  &a, &tok_a );
+		TRESPASSPATH( components_stdsearchdeinit, "ERROR: components_stdsearchdeinit found a non-_SAMEMERGE token on the data stack." );
+		return( (retframe){ &end_run, (void*)0 } );
 	}
 	tok_b = (token_head*)a;
 		/* Now we store the tokenbranch into the parent context's */
 		/*  tokengroup. */
-	if
-	(
+	int res =
 		pushto_tokengroup
 		(
 			&searchstack_refid,
@@ -329,17 +373,17 @@ retframe components_stdsearchdeinit( stackpair *stkp, void *v_ )
 			
 			(tokengroup*)tok_b,
 			tok_a
-		)
-	)
+		);
+	if( !res )
 	{
-		searchstack_ERREXIT( REFID_SUBIDS_searchstack__components_stdsearchdeinit, 14,  stkp, v,  &tok_a, &tok_b );
+		FAILEDINTFUNC( "pushto_tokengroup", components_stdsearchdeinit, res );
+		return( (retframe){ &end_run, (void*)0 } );
 	}
 	
 		/* Pop the actual searchtable: it has no business being used to */
 		/*  search anymore. */
-	if
-	(
-		!lexparse1_popsearchtable
+	res =
+		lexparse1_popsearchtable
 		(
 			&searchstack_refid,
 			
@@ -347,10 +391,11 @@ retframe components_stdsearchdeinit( stackpair *stkp, void *v_ )
 			&searchstack_used,
 			
 			REFID_SUBIDS_searchstack__components_stdsearchdeinit__popfunc
-		)
-	)
+		);
+	if( !res )
 	{
-		searchstack_ERREXIT( REFID_SUBIDS_searchstack__components_stdsearchdeinit, 15,  stkp, v,  &tok_a, &tok_b, &searchstack, &searchstack_used );
+		FAILEDINTFUNC( "lexparse1_popsearchtable", components_stdsearchdeinit, res );
+		return( (retframe){ &end_run, (void*)0 } );
 	}
 	
 #undef ERR_
@@ -371,7 +416,7 @@ retframe components_skipendersearchdeinit( stackpair *stkp, void *v_ )
 	
 #define ERR_( ... ) ERREXIT( REFID_SUBIDS_searchstack__components_skipendersearchdeinit, __VA_ARGS__ )
 	
-	STACK_CHECK2( stkp, v_,  ERR_, 1,  stkp, v_ );
+	STACKCHECK2( stkp, v_,  components_skipendersearchdeinit, macroargs_ENDRETFRAME );
 	v = (gennameparr_stdpushentry_entry*)v_;
 	
 		/* The ending token. */
@@ -386,14 +431,16 @@ retframe components_skipendersearchdeinit( stackpair *stkp, void *v_ )
 		)
 	)
 	{
-		searchstack_ERREXIT( REFID_SUBIDS_searchstack__components_skipendersearchdeinit, 4,  stkp, v,  &b );
+		TRESPASSPATH( components_skipendersearchdeinit, "ERROR: components_skipendersearchdeinit was given a token with the wrong token type." );
+		return( (retframe){ &end_run, (void*)0 } );
 	}
 	
 		/* The result-body of the searchtable that we're going to pop. */
 	STACK_POP_UINT( &( stkp->data ), a,  ERR_, 5, 6,  stkp, v,  &b );
 	if( ( (token_head*)a )->toktype != TOKTYPE_TOKENGROUP_SAMEMERGE )
 	{
-		searchstack_ERREXIT( REFID_SUBIDS_searchstack__components_skipendersearchdeinit, 7,  stkp, v,  &b, &a );
+		TRESPASSPATH( components_skipendersearchdeinit, "ERROR: components_skipendersearchdeinit found a non-_SAMEMERGE token on the data stack." );
+		return( (retframe){ &end_run, (void*)0 } );
 	}
 	tok = (token_head*)a;
 	
@@ -402,7 +449,8 @@ retframe components_skipendersearchdeinit( stackpair *stkp, void *v_ )
 	STACK_POP_UINT( &( stkp->data ), a,  ERR_, 8, 9,  stkp, v,  &b, &a, &tok );
 	if( ( (token_head*)a )->toktype != TOKTYPE_TOKENGROUP_EQUIVMERGE )
 	{
-		searchstack_ERREXIT( REFID_SUBIDS_searchstack__components_skipendersearchdeinit, 10,  stkp, v,  &b, &a, &tok );
+		TRESPASSPATH( components_skipendersearchdeinit, "ERROR: components_skipendersearchdeinit found a non-_EQUIVMERGE token on the data stack." );
+		return( (retframe){ &end_run, (void*)0 } );
 	}
 	{
 			/* And now we actually store what we care about. */
@@ -419,12 +467,12 @@ retframe components_skipendersearchdeinit( stackpair *stkp, void *v_ )
 	STACK_PEEK_UINT( &( stkp->data ), 0, a,  ERR_, 11, 12,  stkp, v,  &b, &a, &tok );
 	if( ( (token_head*)a )->toktype != TOKTYPE_TOKENGROUP_SAMEMERGE )
 	{
-		searchstack_ERREXIT( REFID_SUBIDS_searchstack__components_skipendersearchdeinit, 13,  stkp, v,  &b, &a, &tok );
+		TRESPASSPATH( components_skipendersearchdeinit, "ERROR: components_skipendersearchdeinit found a non-_SAMEMERGE token on the data stack." );
+		return( (retframe){ &end_run, (void*)0 } );
 	}
 		/* Now we store the tokenbranch into the parent context's */
 		/*  tokengroup. */
-	if
-	(
+	int res =
 		pushto_tokengroup
 		(
 			&searchstack_refid,
@@ -432,17 +480,17 @@ retframe components_skipendersearchdeinit( stackpair *stkp, void *v_ )
 			
 			(tokengroup*)( (token_head*)a ),
 			tok
-		)
-	)
+		);
+	if( !res )
 	{
-		searchstack_ERREXIT( REFID_SUBIDS_searchstack__components_skipendersearchdeinit, 14,  stkp, v,  &b, &a, &tok );
+		FAILEDINTFUNC( "pushto_tokengroup", components_skipendersearchdeinit, res );
+		return( (retframe){ &end_run, (void*)0 } );
 	}
 	
 		/* Pop the actual searchtable: it has no business being used to */
 		/*  search anymore. */
-	if
-	(
-		!lexparse1_popsearchtable
+	res =
+		lexparse1_popsearchtable
 		(
 			&searchstack_refid,
 			
@@ -450,10 +498,11 @@ retframe components_skipendersearchdeinit( stackpair *stkp, void *v_ )
 			&searchstack_used,
 			
 			REFID_SUBIDS_searchstack__components_skipendersearchdeinit__popfunc
-		)
-	)
+		);
+	if( !res )
 	{
-		searchstack_ERREXIT( REFID_SUBIDS_searchstack__components_skipendersearchdeinit, 15,  stkp, v,  &b, &a, &searchstack, &searchstack_used );
+		FAILEDINTFUNC( "lexparse1_popsearchtable", components_skipendersearchdeinit, res );
+		return( (retframe){ &end_run, (void*)0 } );
 	}
 	
 	
@@ -491,14 +540,14 @@ int macroargs_init()
 {
 	if( macro_args || macro_args_used )
 	{
-		searchstack_ALERT( key, ...,  &macro_args, &macro_args_used );
+		BADNULL2( macroargs_init, &macro_args, &macro_args_used );
 		return( -2 );
 	}
 	
 #define macroargs_init_SUCC( arr ) \
 		macro_args = ( arr ); macro_args_used = 0;
 #define macroargs_init_FAIL( err ) \
-		searchstack_ALERT( key, ...,  &macro_args, &macro_args_used, ( err ) ); \
+		MONADICFAILURE( macroargs_init, "tokhdptparpt_pascalarray_build", (err) ); \
 		return( -3 );
 	
 	tokhdptparpt_pascalarray_result res =
@@ -513,20 +562,20 @@ int macroargs_resize( int deltaMacros )
 	
 	if( !macro_args )
 	{
-		searchstack_ALERT( key, ...,  &macro_args, &macro_args_used, &deltaMacros, &len );
+		BADNULL( macroargs_resize, &macro_args );
 		return( -2 );
 	}
 	
 	if( len < 0 )
 	{
-		searchstack_ALERT( key, ...,  &macro_args, &macro_args_used, &deltaMacros, &len );
+		BADNONULL( macroargs_resize, &len );
 		return( -3 );
 	}
 	
 #define macroargs_resize_SUCC( arr ) \
 		macro_args = ( arr );
 #define macroargs_resize_FAIL( err ) \
-		searchstack_ALERT( key, ...,  &macro_args, &macro_args_used, &len, ( err ) ); \
+		MONADICFAILURE( macroargs_resize, "tokhdptparpt_pascalarray_rebuild", (err) ); \
 		return( -4 );
 	
 	tokhdptparpt_pascalarray_result res =
@@ -544,13 +593,13 @@ int macroargs_clear()
 {
 	if( !macro_args )
 	{
-		searchstack_ALERT( key, ...,  &macro_args, &macro_args_used );
+		BADNULL( macroargs_clear, &macro_args );
 		return( -2 );
 	}
 	
 #define macroargs_resize_SUCC( arr ) ;
 #define macroargs_resize_FAIL( err ) \
-		searchstack_ALERT( key, ...,  &macro_args, &macro_args_used, &res, ( err ) ); \
+		MONADICFAILURE( macroargs_clear, "tokhdptparpt_pascalarray_destroy", (err) ); \
 		return( -3 );
 	
 	lib4_result res = tokhdptparpt_pascalarray_destroy( macro_args );
@@ -566,12 +615,12 @@ int macroargs_pushset( tokhdptr_parr *val )
 {
 	if( !val )
 	{
-		searchstack_ALERT( key, ...,  &macro_args, &macro_args_used, &val );
+		BADNULL( macroargs_pushset, &val );
 		return( -1 );
 	}
 	if( !macro_args )
 	{
-		searchstack_ALERT( key, ...,  &macro_args, &macro_args_used, &val );
+		BADNULL( macroargs_pushset, &macro_args );
 		return( -2 );
 	}
 	
@@ -581,7 +630,7 @@ int macroargs_pushset( tokhdptr_parr *val )
 		
 		if( res < 0 )
 		{
-			searchstack_ALERT( key, ...,  &macro_args, &macro_args_used, &val, &res );
+			BADNONULL( macroargs_pushset, &res );
 			return( -3 );
 		}
 	}
@@ -595,7 +644,7 @@ int macroargs_popset( tokhdptr_parr **dest )
 {
 	if( !macro_args || !macro_args_used )
 	{
-		searchstack_ALERT( key, ...,  &macro_args, &macro_args_used, &dest );
+		BADNULL2( macroargs_popset, &macro_args, &macro_args_used );
 		return( -2 );
 	}
 	
@@ -609,19 +658,19 @@ int macroargs_popset( tokhdptr_parr **dest )
 	}
 	
 		/* Not per-say an error, just a warning. */
-	searchstack_ALERT( key, ...,  &macro_args, &macro_args_used, &( macro_args->body[ macro_args_used ] ) );
+	NOTELINE(); STRARG( "WARNING: macroargs_popset() exited from it's end, because *dest was null." );
 	return( 1 );
 }
 int macroargs_peekset( size_t off,  tokhdptr_parr **dest )
 {
 	if( !macro_args || !macro_args_used )
 	{
-		searchstack_ALERT( key, ...,  &macro_args, &macro_args_used, &dest, &off );
+		BADNULL2( macroargs_peekset, &macro_args, &macro_args_used );
 		return( -2 );
 	}
 	if( !dest || off >= macro_args_used )
 	{
-		searchstack_ALERT( key, ...,  &macro_args, &macro_args_used, &dest, &off );
+		TRESPASSPATH( macroargs_peekset, "ERROR: macroargs_peekset received invalid args." );
 		return( -1 );
 	}
 	
@@ -644,18 +693,19 @@ int pack_arglist( stackpair *stkp,  uintptr_t *refid, int errgate )
 	
 	if( !stkp )
 	{
-		searchstack_ALERT( refid, errgate, 1,  stkp, (void*)0 );
+		BADNULL( pack_arglist, &stkp );
 		return( -1 );
 	}
-
-	if( !pop_uintptr( &( stkp->data ),  &shufcount ) )
+	
+	int res = pop_uintptr( &( stkp->data ),  &shufcount );
+	if( !res )
 	{
-		searchstack_ALERT( refid, errgate, 2,  stkp, (void*)0,  &shufcount );
+		FAILEDINTFUNC( "pop_uintptr", pack_arglist, res );
 		return( -2 );
 	}
 	
 #define pack_arglist_FAIL( err ) \
-		searchstack_ALERT( refid, errgate, 3,  stkp, (void*)0,  &shufcount, (err) ); \
+		MONADICFAILURE( pack_arglist, "tokenheadptr_pascalarray_build", (err) ); \
 		return( -3 );
 	tokenheadptr_pascalarray_result res = tokenheadptr_pascalarray_build( shufcount );
 	LIB4_DEFINE_PASCALARRAY_RESULT_BODYMATCH( res, LIB4_OP_SETa, pack_arglist_FAIL );
@@ -663,23 +713,24 @@ int pack_arglist( stackpair *stkp,  uintptr_t *refid, int errgate )
 	while( shufcount )
 	{
 		--shufcount;
-		int res = token_queue_shufflepop( &tmp );
+		res = token_queue_shufflepop( &tmp );
 		if( !res )
 		{
-			searchstack_ALERT( refid, errgate, 4,  stkp, (void*)0,  &shufcount, &a, res, &tmp );
+			FAILEDINTFUNC( "token_queue_shufflepop", pack_arglist, res );
 			return( -4 );
 		}
 		if( !tmp )
 		{
-			searchstack_ALERT( refid, errgate, 5,  stkp, (void*)0,  &shufcount, &a );
+			BADNULL( pack_arglist, &tmp );
 			return( -5 );
 		}
 		a->body[ shufcount ] = &( tmp->header );
 	}
 	
-	if( !push_uintptr( &( stkp->data ),  (uintptr_t)a ) )
+	res = push_uintptr( &( stkp->data ),  (uintptr_t)a );
+	if( !res )
 	{
-		searchstack_ALERT( refid, errgate, 6,  stkp, (void*)0, &shufcount, &a );
+		FAILEDINTFUNC( "push_uintptr", pack_arglist, res );
 		return( -6 );
 	}
 	
@@ -689,9 +740,10 @@ retframe vm_pop_macroarg( stackpair *stkp, void *v )
 {
 #define ERR_( ... ) ERREXIT( REFID_SUBIDS_searchstack__components_shufflequeue_macro_link, __VA_ARGS__ )
 	
-	STACK_CHECK( stkp,  ERR_, 1,  stkp, v );
+	STACKCHECK( stkp,  vm_pop_macroarg, macroargs_ENDRETFRAME );
 	
-	POP_MACROARGS( (tokhdptr_parr**)0,  ERR_, err1, err2, ... );
+	int res;
+	POPMACROARGS( (tokhdptr_parr**)0,  vm_pop_macroarg, res, macroargs_ENDRETFRAME );
 	
 	RET_FRAMEFUNC( REFID_???, -12, &th );
 	
@@ -717,24 +769,26 @@ retframe shufflequeue_macro_link( stackpair *stkp, void *v )
 	
 #define ERR_( ... ) ERREXIT( REFID_SUBIDS_searchstack__components_shufflequeue_macro_link, __VA_ARGS__ )
 	
-	STACK_CHECK( stkp,  ERR_, 1,  stkp, v );
+	STACKCHECK( stkp,  shufflequeue_macro_link, macroargs_ENDRETFRAME );
 	
 	STACK_POP_UINT( &( stkp->data ), a,  ERR_, 2, 3,  stkp, v );
 	mlink = (macro_link*)a;
 	if( mlink->header.toktype != TOKTYPE_TOKENGROUP_MACROLINK )
 	{
-		searchstack_ERREXIT( REFID_SUBIDS_searchstack__components_shufflequeue_macro_link, 4,  stkp, v,  &mlink );
+		TRESPASSPATH( shufflequeue_macro_link, "ERROR: shufflequeue_macro_link found a macro_link with a non-_MACROLINK token type on top of the data stack." );
+		return( (retframe){ &end_run, (void*)0 } );
 	}
 	
-	PEEK_MACROARGS( 0, thdptpr,  ERR_, 5, 6,  stkp, v,  &mlink );
+	PEEKMACROARGS( 0, thdptpr,  shufflequeue_macro_link, res, macroargs_ENDRETFRAME );
 	if( thdptpr->len <= mlink->args_offset )
 	{
-		searchstack_ERREXIT( REFID_SUBIDS_searchstack__components_shufflequeue_macro_link, 7,  stkp, v,  &mlink, &thdptpr );
+		TRESPASSPATH( shufflequeue_macro_link, "ERROR: shufflequeue_macro_link was given a macro_link with too large an args_offset." );
+		return( (retframe){ &end_run, (void*)0 } );
 	}
 		???
 		/* Note that OUTWARDLY ONE token should be pushed here. This is a */
 		/*  SINGLE arg that we're dealing with, NOT multiple. */
-	PUSH_SHUFFLE( res, thdptpr->body[ mlink->args_offset ],  ERR_, 8,  stkp, v,  &mlink, &thdptpr );
+	PUSHSHUFFLE( thdptpr->body[ mlink->args_offset ],  shufflequeue_macro_link, res, macroargs_ENDRETFRAME );
 	
 #undef ERR_
 
@@ -753,23 +807,25 @@ retframe shufflequeue_macro_token( stackpair *stkp, void *v )
 	
 #define ERR_( ... ) ERREXIT( REFID_SUBIDS_searchstack__components_shufflequeue_macro_token, __VA_ARGS__ )
 	
-	STACK_CHECK( stkp,  ERR_, 1,  stkp, v );
+	STACKCHECK( stkp,  shufflequeue_macro_token, macroargs_ENDRETFRAME );
 	
 	STACK_POP_UINT( &( stkp->data ), a,  ERR_, 2, 3,  stkp, v );
 	mtok = (macro_token*)a;
 	if( mtok->header.toktype != TOKTYPE_TOKENGROUP_MACROTOKEN )
 	{
-		searchstack_ERREXIT( REFID_SUBIDS_searchstack__components_shufflequeue_macro_token, 4,  stkp, v,  &mtok );
+		TRESPASSPATH( shufflequeue_macro_token, "ERROR: shufflequeue_macro_token found a macro_link with a non-_MACROTOKEN token type on top of the data stack." );
+		return( (retframe){ &end_run, (void*)0 } );
 	}
 	if( !( mtok->tok ) )
 	{
-		searchstack_ERREXIT( REFID_SUBIDS_searchstack__components_shufflequeue_macro_token, 5,  stkp, v,  &mtok );
+		BADNULL( shufflequeue_macro_token, &( mtok->tok ) );
+		return( (retframe){ &end_run, (void*)0 } );
 	}
 		???
 		/* Is this actually enough? Might need to ensure that a */
 		/*  tokengroup is present, and push it's elements individually, */
 		/*  or something similar. */
-	PUSH_SHUFFLE( res, mtok->tok,  ERR_, 6,  stkp, v,  &mtok );
+	PUSHSHUFFLE( mtok->tok,  shufflequeue_macro_token, res, macroargs_ENDRETFRAME );
 	
 #undef ERR_
 
@@ -803,13 +859,14 @@ retframe shufflequeue_macro_run( stackpair *stkp, void *v )
 	
 #define ERR_( ... ) ERREXIT( REFID_SUBIDS_searchstack__???, __VA_ARGS__ )
 	
-	STACK_CHECK( stkp,  ERR_, 1,  stkp, v );
+	STACKCHECK( stkp,  shufflequeue_macro_run, macroargs_ENDRETFRAME );
 	
 	STACK_PEEK_UINT( &( stkp->data ), 0, a,  ERR_, 3, 4,  stkp, v );
 	mr = (macro_run*)a;
 	if( mr->header.toktype != TOKTYPE_TOKENGROUP_MACRORUN || !( mr->mac ) || !( mr->args ) )
 	{
-		searchstack_ERREXIT( REFID_SUBIDS_searchstack__???, 5,  stkp, v,  &mr );
+		TRESPASSPATH( shufflequeue_macro_run, "ERROR: shufflequeue_macro_run found an incorrectly configured macro_run on top of the data stack" );
+		return( (retframe){ &end_run, (void*)0 } );
 	}
 	
 		/* Prep for the call to shufflequeue_step_macro_call(). */
@@ -847,16 +904,18 @@ retframe shufflequeue_macro_run( stackpair *stkp, void *v )
 	
 #define ERR_( ... ) ERREXIT( REFID_SUBIDS_searchstack__???, __VA_ARGS__ )
 		
-		STACK_CHECK( stkp,  ERR_, 1,  stkp, v );
+		STACKCHECK( stkp,  shufflequeue_macro_run_continue, macroargs_ENDRETFRAME );
 		
 			/*
 					shuffledlength shufflestack:token*[shuffledlength]
 				--
 					arglist*
 			*/
-		if( !pack_arglist( stkp,  REFID_SUBIDS_searchstack__???, 2 ) )
+		int res = pack_arglist( stkp,  REFID_SUBIDS_searchstack__???, 2 );
+		if( !res )
 		{
-			searchstack_ERREXIT( REFID_SUBIDS_searchstack__???, 3,  stkp, v,   );
+			FAILEDINTFUNC( "pack_arglist", shufflequeue_macro_run_continue, res );
+			return( (retframe){ &end_run, (void*)0 } );
 		}
 		STACK_POP_UINT( &( stkp->data ), args,  ERR_, 4, 5,  stkp, v );
 		
@@ -864,7 +923,8 @@ retframe shufflequeue_macro_run( stackpair *stkp, void *v )
 		mr = (macro_run*)b;
 		if( mr->header.toktype != TOKTYPE_TOKENGROUP_MACRORUN || !( mr->mac ) )
 		{
-			searchstack_ERREXIT( REFID_SUBIDS_searchstack__???, 8,  stkp, v,  &args, &mr );
+			TRESPASSPATH( shufflequeue_macro_run_continue, "ERROR: shufflequeue_macro_run_continue found an incorrectly configured macro_run on top of the data stack" );
+			return( (retframe){ &end_run, (void*)0 } );
 		}
 		STACK_PUSH_UINT( &( stkp->data ), mr->mac,  ERR_, 9,  stkp, v,  &args, &mr );
 		
@@ -908,13 +968,14 @@ retframe shufflequeue_macro_directive( stackpair *stkp, void *v )
 	
 #define ERR_( ... ) ERREXIT( REFID_SUBIDS_searchstack__???, __VA_ARGS__ )
 	
-	STACK_CHECK( stkp,  ERR_, 1,  stkp, v );
+	STACKCHECK( stkp,  shufflequeue_macro_directive, macroargs_ENDRETFRAME );
 	
 	STACK_PEEK_UINT( &( stkp->data ), 0, a,  ERR_, 3, 4,  stkp, v );
 	mdir = (macro_directive*)a;
 	if( mdir->header.toktype != TOKTYPE_TOKENGROUP_MACRODIRECTIVE || !( mdir->handler ) || !( mdir->args ) )
 	{
-		searchstack_ERREXIT( REFID_SUBIDS_searchstack__???, 5,  stkp, v,  &mdir );
+		TRESPASSPATH( shufflequeue_macro_directive, "ERROR: shufflequeue_macro_directive found an incorrectly configured macro_run on top of the data stack" );
+		return( (retframe){ &end_run, (void*)0 } )
 	}
 	
 		/* Prep for the call to shufflequeue_step_macro_call(). */
@@ -952,16 +1013,18 @@ retframe shufflequeue_macro_directive( stackpair *stkp, void *v )
 	
 #define ERR_( ... ) ERREXIT( REFID_SUBIDS_searchstack__???, __VA_ARGS__ )
 		
-		STACK_CHECK( stkp,  ERR_, 1,  stkp, v );
+		STACKCHECK( stkp,  shufflequeue_macro_directive_continue, macroargs_ENDRETFRAME );
 		
 			/*
 					shuffledlength shufflestack:token*[shuffledlength]
 				--
 					arglist*
 			*/
-		if( !pack_arglist( stkp,  REFID_SUBIDS_searchstack__???, 2 ) )
+		int res = pack_arglist( stkp,  REFID_SUBIDS_searchstack__???, 2 );
+		if( !res )
 		{
-			searchstack_ERREXIT( REFID_SUBIDS_searchstack__???, 3,  stkp, v,   );
+			FAILEDINTFUNC( "pack_arglist", shufflequeue_macro_directive_continue, res );
+			return( (retframe){ &end_run, (void*)0 } );
 		}
 		STACK_POP_UINT( &( stkp->data ), args,  ERR_, 4, 5,  stkp, v );
 		
@@ -969,7 +1032,8 @@ retframe shufflequeue_macro_directive( stackpair *stkp, void *v )
 		mdir = (macro_directive*)b;
 		if( mdir->header.toktype != TOKTYPE_TOKENGROUP_MACRODIRECTIVE || !( mdir->handler ) )
 		{
-			searchstack_ERREXIT( REFID_SUBIDS_searchstack__???, 8,  stkp, v,  &args, &mdir );
+			TRESPASSPATH( shufflequeue_macro_directive_continue, "ERROR: shufflequeue_macro_directive_continue popped an invalidly configured macro_directive from the data stack." );
+			return( (retframe){ &end_run, (void*)0 } ); 
 		}
 		
 		STACK_PUSH_UINT( &( stkp->data ), args,  ERR_, 9,  stkp, v,  &mdir );
@@ -1010,20 +1074,22 @@ retframe shufflequeue_macro_directive( stackpair *stkp, void *v )
 retframe shufflequeue_entry_macro_call( stackpair *stkp, void *v )
 {
 	uintptr_t mcall;
+	int res;
 	
 #define ERR_( ... ) ERREXIT( REFID_SUBIDS_searchstack__components_shufflequeue_entry_macro_call, __VA_ARGS__ )
 	
-	STACK_CHECK( stkp,  ERR_, 1,  stkp, v );
+	STACKCHECK( stkp,  shufflequeue_entry_macro_call, macroargs_ENDRETFRAME );
 	
 		/* Move the arguments to the argument stack. */
 	STACK_POP_UINT( &( stkp->data ), mcall,  ERR_, 3, 4,  stkp, v );
-	PUSH_MACROARGS( mcall,  ERR_, 5,  stkp, v );
+	PUSHMACROARGS( mcall,  shufflequeue_entry_macro_call, res, macroargs_ENDRETFRAME );
 	
 	STACK_POP_UINT( &( stkp->data ), mcall,  ERR_, 6, 7,  stkp, v );
 		/* Just verification. */
 	if( ( (token_head*)mcall )->toktype != TOKTYPE_TOKENGROUP_MACROCALL )
 	{
-		searchstack_ERREXIT( REFID_SUBIDS_searchstack__components_shufflequeue_entry_macro_call, 8,  stkp, v,  &arg_parr, &mcall );
+		TRESPASSPATH( shufflequeue_entry_macro_call, "ERROR: shufflequeue_entry_macro_call found a non-_MACROCALL token on top of the data stack." );
+		return( (retframe){ &end_run, (void*)0 } );
 	}
 	
 		/* Push a bookmark for where the tokenqueue shuffle stack currently */
@@ -1063,15 +1129,18 @@ retframe shufflequeue_step_macro_calltool( stackpair *stkp, void *v,  retframe l
 	
 #define ERR_( ... ) ERREXIT( REFID_SUBIDS_searchstack__components_shufflequeue_step_macro_call, __VA_ARGS__ )
 	
-	STACK_CHECK( stkp,  ERR_, 1,  stkp, v );
+	STACKCHECK( stkp,  shufflequeue_step_macro_calltool, macroargs_ENDRETFRAME );
 	
 		/* Pull these two from the stack, since we need to use and modify */
 		/*  the "deeper" one, while otherwise preserving both. */
-	PEEK_MACROARGS( 0, arg_parr,  ERR_, 2, 3,  stkp, v );
+	int res;
+	PEEKMACROARGS( 0, arg_parr,  shufflequeue_step_macro_calltool, res, macroargs_ENDRETFRAME )
 		/* "0" is actually valid, so we can't use the usual macro. */
-	if( !pop_uintptr( stk,  prog ) )
+	int res = pop_uintptr( stk,  prog );
+	if( !res )
 	{
-		searchstack_ERREXIT( REFID_SUBIDS_searchstack__components_shufflequeue_step_macro_call, 4,  stkp, v,  arg_parr, &prog );
+		FAILEDINTFUNC( "pop_uintptr", shufflequeue_step_macro_calltool, res );
+		return( (retframe){ &end_run, (void*)0 } );
 	}
 	
 	STACK_PEEK_UINT( &( stkp->data ), 0, ops_,  ERR_, 5, 6,  stkp, v,  arg_parr, &prog );
@@ -1103,7 +1172,8 @@ retframe shufflequeue_step_macro_calltool( stackpair *stkp, void *v,  retframe l
 				break;
 			
 			default:
-				searchstack_ALERT( REFID_SUBIDS_searchstack__components_shufflequeue_step_macro_call, 9,  stkp, v,  arg_parr, &prog, &ops, &th );
+				TRESPASSPATH( shufflequeue_step_macro_calltool, "ERROR: shufflequeue_step_macro_calltool encountered an unrecognized token type: " );
+				DECARG( th->toktype );
 					/* "hand" contains a reference to end_run, so no need to */
 					/*  do anything other than break out of the switch. */
 				break;
@@ -1150,15 +1220,17 @@ retframe shufflequeue_exit_macro_calltool( stackpair *stkp, void *v )
 	
 #define ERR_( ... ) ERREXIT( REFID_SUBIDS_searchstack__???, __VA_ARGS__ )
 	
-	STACK_CHECK( stkp,  ERR_, 1,  stkp, v );
+	STACKCHECK( stkp,  shufflequeue_exit_macro_calltool, macroargs_ENDRETFRAME );
 	
 		/* And now pop the shuffle stack/queue/whatever's bookmark, so that */
 		/*  we'll know how many token pointers need to be moved from */
 		/*  "shuffle" to the token get/unget stack. These will be */
 		/*  deallocated elsewhere, so no need to do it here. */
-	if( !pop_uintptr( stk,  &shufflebookmark ) )
+	int res = pop_uintptr( stk,  &shufflebookmark );
+	if( !res )
 	{
-		searchstack_ERREXIT( REFID_SUBIDS_???, 5,  stkp, v,  &shufflebookmark );
+		FAILEDINTFUNC( "pop_uintptr", shufflequeue_exit_macro_calltool, res );
+		return( (retframe){ &end_run, (void*)0 } );
 	}
 	??? /* Actually, where DO these get freed? That might be a source of */
 		/*  errors. */
@@ -1188,27 +1260,32 @@ retframe shufflequeue_exit_macro_call( stackpair *stkp, void *v )
 	
 #define ERR_( ... ) ERREXIT( REFID_SUBIDS_searchstack__components_shufflequeue_exit_macro_call, __VA_ARGS__ )
 	
-	STACK_CHECK( stkp,  ERR_, 1,  stkp, v );
+	STACKCHECK( stkp,  shufflequeue_exit_macro_call, macroargs_ENDRETFRAME );
 	
 		/* Pop the pascal array of arguments provided to the macro first: */
 		/*  these will need to be deallocated at some point. */
-	POP_MACROARGS( &args,  ERR_, 2, 3,  stkp, v );
+	int res;
+	POPMACROARGS( &args,  shufflequeue_exit_macro_call, res, macroargs_ENDRETFRAME );
 		/* Do something to deallocate those tokens. */
 	???
 	
 		/* Now pop the progress marker: we're done, so it's done. Just a */
 		/*  number, so no need to deallocate. */
-	if( !pop_uintptr( stk,  &a ) )
+	int res = pop_uintptr( stk,  &a );
+	if( !res )
 	{
-		searchstack_ERREXIT( REFID_SUBIDS_searchstack__components_shufflequeue_exit_macro_call, 3,  stkp, v,  &a );
+		FAILEDINTFUNC( "pop_uintptr", shufflequeue_exit_macro_call, res );
+		return( (retframe){ &end_run, (void*)0 } );
 	}
 	
 		/* Now the operations array. The array itself is */
 		/*  owned elsewhere, so no need to deallocate. Also, deallocating */
 		/*  now could break something later. */
-	if( !pop_uintptr( stk,  &a ) )
+	res = pop_uintptr( stk,  &a );
+	if( !res )
 	{
-		searchstack_ERREXIT( REFID_SUBIDS_searchstack__components_shufflequeue_exit_macro_call, 4,  stkp, v,  &a );
+		FAILEDINTFUNC( "pop_uintptr", shufflequeue_exit_macro_call, res );
+		return( (retframe){ &end_run, (void*)0 } );
 	}
 	
 #undef ERR_
@@ -1246,7 +1323,7 @@ retframe shufflequeue_entry_macro_wrapper( stackpair *stkp, void *v )
 	
 #define ERR_( ... ) ERREXIT( REFID_SUBIDS_searchstack__components_shufflequeue_exit_macro_call, __VA_ARGS__ )
 		
-		STACK_CHECK( stkp,  ERR_, 1,  stkp, v );
+		STACKCHECK( stkp,  shufflequeue_entry_macro_wrapper, macroargs_ENDRETFRAME );
 		
 		STACK_POP_UINT( &( stkp->data ), count,  ERR_, 2, 3,  stkp, v );
 		
@@ -1256,7 +1333,8 @@ retframe shufflequeue_entry_macro_wrapper( stackpair *stkp, void *v )
 			int res = token_queue_shuffle2queue();
 			if( !res )
 			{
-				searchstack_ERREXIT( REFID_SUBIDS_searchstack__components_shufflequeue_exit_macro_call, 6,  stkp, v,  count, res );
+				FAILEDINTFUNC( "token_queue_shuffle2queue", shufflequeue_exit_macro_wrapper, res );
+				return( (retframe){ &end_run, (void*)0 } );
 			}
 		}
 		
