@@ -85,14 +85,33 @@
 			( endfunc )(); }
 	
 	
-	#define STACK_PEEK_UINT( stk, offset, var,  errfunc, err1, err2,  ... ) \
-		if( !peek_uintptr( ( stk ),  ( offset ),  &( var ) ) ) { errfunc( ( err1 ),  __VA_ARGS__,  &( var ) ); } \
-		if( !( var ) ) { errfunc( ( err2 ),  __VA_ARGS__,  &( var ) ); }
-	#define STACK_POP_UINT( stk, var,  errfunc, err1, err2,  ... ) \
-		if( !pop_uintptr( ( stk ),  &( var ) ) ) { errfunc( ( err1 ),  __VA_ARGS__,  &( var ) ); } \
-		if( !( var ) ) { errfunc( ( err2 ),  __VA_ARGS__,  &( var ) ); }
-	#define STACK_PUSH_UINT( stk, val,  errfunc, err,  ... ) \
-		if( !push_uintptr( ( stk ),  ( val ) ) ) { errfunc( ( err ),  __VA_ARGS__, ( val ) ); }
+		/* Old version: STACK_PEEK_UINT( stk, offset, var,  errfunc, err1, err2,  ... ) */
+	#define STACK_PEEK_UINT( stk, offset, dest,  stylesetptr, caller, scratch, endfunc ) \
+		if( 1 ) { \
+			( scratch ) = peek_uintptr( ( stk ),  ( offset ),  &( dest ) ); \
+			if( !( scratch ) ) { \
+				STDMSG_FAILEDINTFUNC_WRAPPER( ( stylesetptr ), "peek_uintptr", ( caller ), ( scratch ) ); \
+				( endfunc )(); } \
+			if( !( dest ) ) { \
+				STDMSG_BADNULL_WRAPPER( ( stylesetptr ), ( caller ), &( dest ) ); \
+				( endfunc )(); } }
+		/* Old version: STACK_POP_UINT( stk, var,  errfunc, err1, err2,  ... ) */
+	#define STACK_POP_UINT( stk, dest,  stylesetptr, caller, scratch, endfunc ) \
+		if( 1 ) { \
+			( scratch ) = pop_uintptr( ( stk ),  &( dest ) ); \
+			if( !( scratch ) ) { \
+				STDMSG_FAILEDINTFUNC_WRAPPER( ( stylesetptr ), "pop_uintptr", ( caller ), ( scratch ) ); \
+				( endfunc )(); } \
+			if( !( dest ) ) { \
+				STDMSG_BADNULL_WRAPPER( ( stylesetptr ), ( caller ), &( dest ) ); \
+				( endfunc )(); } }
+		/* Old version: STACK_PUSH_UINT( stk, val,  errfunc, err,  ... ) */
+	#define STACK_PUSH_UINT( stk, val,  stylesetptr, caller, scratch, endfunc ) \
+		if( 1 ) { \
+			( scratch ) = push_uintptr( ( stk ),  ( val ) ); \
+			if( !( scratch ) ) { \
+				STDMSG_FAILEDINTFUNC_WRAPPER( ( stylesetptr ), "push_uintptr", ( caller ), ( scratch ) ); \
+				( endfunc )(); } }
 	
 	
 		/* I think these need to be MAJORLY reworked. Among other things, I */
