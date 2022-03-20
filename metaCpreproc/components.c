@@ -15,6 +15,11 @@
 #endif
 
 
+#define CALLFRAMEFUNC( stkpair, rethand, retval, callhand, callval,  caller, scratch ) \
+	CALL_FRAMEFUNC( stkpair, rethand, retval, callhand, callval,  &err, caller, scratch, macroargs_ENDRETFRAME )
+#define RETFRAMEFUNC( stkpair,  caller, scratch ) \
+	RET_FRAMEFUNC( stkpair,  &err, caller, scratch, macroargs_ENDRETFRAME )
+
 #define BADNULL( funcname, ptr ) \
 	STDMSG_BADNULL_WRAPPER( &errs, funcname, ( ptr ) )
 #define BADNONULL( funcname, ptr ) \
@@ -296,12 +301,17 @@ retframe components_sequencedsearchproceed( stackpair *stkp, void *v_ )
 	
 		/* followup should PROBABLY itself return a retframe to a standard */
 		/*  searcher function. */
-	CALL_FRAMEFUNC(
+	CALLFRAMEFUNC(
+		stkp,
+		
 		v->conclude.handler,
 		v->conclude.data,
 		
 		v->followup.handler,
-		v->followup.data
+		v->followup.data,
+		
+		components_sequencedsearchproceed,
+		res
 	);
 }
 	/* Use this if you care about the token that caused the function to be */
@@ -528,12 +538,17 @@ retframe components_skipendersearchdeinit( stackpair *stkp, void *v_ )
 		/* Note that the processing function will need to grab the relevant */
 		/*  tokenbranch from the end of the tokengroup that's linked on what */
 		/*  WILL BE the top of the stack. */
-	CALL_FRAMEFUNC(
+	CALLFRAMEFUNC(
+		stkp,
+		
 		v->conclude.handler,
 		v->conclude.data,
 		
 		&invoke_dealloctoken,
-		(void*)0
+		(void*)0,
+		
+		components_skipendersearchdeinit,
+		res
 	);
 }
 
@@ -755,7 +770,7 @@ retframe vm_pop_macroarg( stackpair *stkp, void *v )
 	int res;
 	POPMACROARGS( (tokhdptr_parr**)0,  vm_pop_macroarg, res, macroargs_ENDRETFRAME );
 	
-	RET_FRAMEFUNC( REFID_???, -12, &th );
+	RETFRAMEFUNC( stkp,  vm_pop_macroarg, res );
 	
 #undef ERR_
 }
@@ -801,8 +816,8 @@ retframe shufflequeue_macro_link( stackpair *stkp, void *v )
 	PUSHSHUFFLE( thdptpr->body[ mlink->args_offset ],  shufflequeue_macro_link, res, macroargs_ENDRETFRAME );
 	
 #undef ERR_
-
-	RET_FRAMEFUNC( head_lex_refid, -12, &th );
+	
+	RETFRAMEFUNC( stkp,  shufflequeue_macro_link, res );
 }
 	/*
 			macro_token* args:*arglist shuffle:token*[]
@@ -838,8 +853,8 @@ retframe shufflequeue_macro_token( stackpair *stkp, void *v )
 	PUSHSHUFFLE( mtok->tok,  shufflequeue_macro_token, res, macroargs_ENDRETFRAME );
 	
 #undef ERR_
-
-	RET_FRAMEFUNC( head_lex_refid, -12, &th );
+	
+	RETFRAMEFUNC( stkp,  shufflequeue_macro_token, res );
 }
 	/*
 		(
@@ -890,13 +905,18 @@ retframe shufflequeue_macro_run( stackpair *stkp, void *v )
 	STACKPUSH_UINT( &( stkp->data ), 0,  shufflequeue_macro_run, res, macroargs_ENDRETFRAME );
 	
 #undef ERR_
-
-	CALL_FRAMEFUNC(
+	
+	CALLFRAMEFUNC(
+		stkp,
+		
 		&shufflequeue_macro_run_continue,
 		(void*)0,
 		
 		&shufflequeue_step_macro_call,
-		(void*)0
+		(void*)0,
+		
+		shufflequeue_macro_run,
+		res
 	);
 }
 		/*
@@ -942,13 +962,18 @@ retframe shufflequeue_macro_run( stackpair *stkp, void *v )
 		STACKPUSH_UINT( &( stkp->data ), args,  shufflequeue_macro_run_continue, res, macroargs_ENDRETFRAME );
 		
 #undef ERR_
-
-		CALL_FRAMEFUNC(
+		
+		CALLFRAMEFUNC(
+			stkp,
+			
 			&vm_pop_macroarg,
 			(void*)0,
 			
 			&shufflequeue_entry_macro_call,
-			(void*)0
+			(void*)0,
+			
+			shufflequeue_macro_run_continue,
+			res
 		);
 	}
 		/*
@@ -1000,13 +1025,18 @@ retframe shufflequeue_macro_directive( stackpair *stkp, void *v )
 	STACKPUSH_UINT( &( stkp->data ), 0,  shufflequeue_macro_directive, res, macroargs_ENDRETFRAME );
 	
 #undef ERR_
-
-	CALL_FRAMEFUNC(
+	
+	CALLFRAMEFUNC(
+		stkp,
+		
 		&shufflequeue_macro_directive_continue,
 		(void*)0,
 		
 		&shufflequeue_step_macro_call,
-		(void*)0
+		(void*)0,
+		
+		shufflequeue_macro_directive,
+		res
 	);
 }
 		/*
@@ -1051,13 +1081,18 @@ retframe shufflequeue_macro_directive( stackpair *stkp, void *v )
 		STACKPUSH_UINT( &( stkp->data ), args,  shufflequeue_macro_directive_continue, res, macroargs_ENDRETFRAME );
 		
 #undef ERR_
-
-		CALL_FRAMEFUNC(
+		
+		CALLFRAMEFUNC(
+			stkp,
+			
 			&vm_pop_macroarg,
 			(void*)0,
 			
 			mdir->handler.handler,
-			mdir->handler.data
+			mdir->handler.data,
+			
+			shufflequeue_macro_directive_continue,
+			res
 		);
 	}
 
@@ -1191,12 +1226,17 @@ retframe shufflequeue_step_macro_calltool( stackpair *stkp, void *v,  retframe l
 				break;
 		}
 		
-		CALL_FRAMEFUNC(
+		CALLFRAMEFUNC(
+			stkpair,
+			
 			loop.handler,
 			loop.data,
 			
 			hand,
-			(void*)0
+			(void*)0,
+			
+			shufflequeue_step_macro_calltool,
+			res
 		);
 		
 	} else {
@@ -1254,7 +1294,7 @@ retframe shufflequeue_exit_macro_calltool( stackpair *stkp, void *v )
 	
 #undef ERR_
 	
-	RET_FRAMEFUNC( refname, errnum, ... );
+	RETFRAMEFUNC( stkp,  shufflequeue_exit_macro_calltool, res );
 }
 	/*
 		Forth stack notation:
@@ -1316,12 +1356,18 @@ retframe shufflequeue_exit_macro_call( stackpair *stkp, void *v )
 	*/
 retframe shufflequeue_entry_macro_wrapper( stackpair *stkp, void *v )
 {
-	CALL_FRAMEFUNC(
+	int res;
+	CALLFRAMEFUNC(
+		stkp,
+		
 		&shufflequeue_entry_macro_call,
 		(void*)0,
 		
 		&shufflequeue_exit_macro_wrapper,
-		(void*)0
+		(void*)0,
+		
+		shufflequeue_entry_macro_wrapper,
+		res
 	);
 }
 		/*
@@ -1356,7 +1402,7 @@ retframe shufflequeue_entry_macro_wrapper( stackpair *stkp, void *v )
 		
 #undef ERR_
 		
-		RET_FRAMEFUNC( refname, errnum, ... );
+		RETFRAMEFUNC( stkp,  shufflequeue_exit_macro_wrapper, res );
 	}
 
 

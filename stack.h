@@ -114,31 +114,24 @@
 				( endfunc )(); } }
 	
 	
-		/* I think these need to be MAJORLY reworked. Among other things, I */
-		/*  think push_frame() was from a C-ish "single stack" era, whereas */
-		/*  I'm currently using a Forth-style multiple-stack system (albeit */
-		/*  with more than just two stacks). */
-	#define CALL_FRAMEFUNC( rethand, retval, fhand, fval ) \
-		if( push_retframe( (retframe){ (rethand), (retval) } ) ) { \
-			if( push_frame() ) { \
-				return( (retframe){ (fhand), (fval) } ); } \
-			else { return( (retframe){ &end_run, (void*)0 } ); } }\
-		else { return( (retframe){ &end_run, (void*)0 } ); }
-	#define RET_FRAMEFUNC( refname, errnum, ... ) \
+		/* Old version: CALL_FRAMEFUNC( rethand, retval, fhand, fval ) */
+	#define CALL_FRAMEFUNC( stkpair, rethand, retval, callhand, callval,  stylesetptr, caller, scratch, endfunc ) \
 		if( 1 ) { \
-			stackframe *csf = stack; stack = stack->prev; \
-			retframe ret;  int res = pop_retframe( &ret ); \
-			if( !res ) { \
-				err_interface( &( refname ), (lib4_failure_result){ (errnum) }, __VA_ARGS__ ); \
-				return( (retframe){ &end_run, (void*)0 } ); } \
-			stack = csf; return( ret ); }
-	#define RET_FRAMEFUNC2( refname, subrefnum, ... ) \
+			( scratch ) = push_retframe( ( stkpair )->ret, (retframe){ (rethand), (retval) } ); \
+			if( ( scratch ) ) { \
+				return( (retframe){ (callhand), (callval) } ); } \
+			else { \
+				STDMSG_FAILEDINTFUNC_WRAPPER( ( stylesetptr ), "push_retframe", ( caller ), ( scratch ) ); \
+				( endfunc )(); } }
+		/* Old version: RET_FRAMEFUNC( refname, errnum, ... ) */
+		/* Old version: RET_FRAMEFUNC2( refname, subrefnum, ... ) */
+	#define RET_FRAMEFUNC( stkpair,  stylesetptr, caller, scratch, endfunc ) \
 		if( 1 ) { \
-			stackframe *csf = stack; stack = stack->prev; \
-			retframe ret;  int res = pop_retframe( &ret ); \
-			if( !res ) { \
-				err_interface( &( refname ), ( subrefnum ), __VA_ARGS__ ); \
-				return( (retframe){ &end_run, (void*)0 } ); } \
-			stack = csf; return( ret ); }
+			retframe RET_FRAMEFUNC_ret; \
+			( scratch ) = pop_retframe( ( stkpair )->ret, &RET_FRAMEFUNC_ret ); \
+			if( !( scratch ) ) { \
+				STDMSG_FAILEDINTFUNC_WRAPPER( ( stylesetptr ), "push_retframe", ( caller ), ( scratch ) ); \
+				( endfunc )(); } \
+			return( RET_FRAMEFUNC_ret ); }
 	
 #endif
