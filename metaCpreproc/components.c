@@ -137,9 +137,6 @@ retframe components_stdsearchinit( stackpair *stkp, void *v_ )
 	gennameparr_stdpushentry_entry *v;
 	int res;
 	
-	/* TODO: what the hell do the macros that need this even require for reporting? */
-#define ERR_( ... ) \
-		ERREXIT( REFID_SUBIDS_searchstack__components_stdsearchinit, __VA_ARGS__ )
 	
 	STACKCHECK2( stkp, v_,  components_stdsearchinit, macroargs_ENDRETFRAME );
 	v = (gennameparr_stdpushentry_entry*)v_;
@@ -226,8 +223,6 @@ retframe components_stdsearchinit( stackpair *stkp, void *v_ )
 		return( (retframe){ &end_run, (void*)0 } );
 	}
 	
-#undef ERR_
-	
 	return( v->followup );
 }
 retframe components_sequencedsearchproceed( stackpair *stkp, void *v_ )
@@ -239,7 +234,6 @@ retframe components_sequencedsearchproceed( stackpair *stkp, void *v_ )
 	token_head *tok;
 	gennameparr_stdpushentry_entry *v;
 	
-#define ERR_( ... ) ERREXIT( REFID_SUBIDS_searchstack__components_sequencedsearchproceed, __VA_ARGS__ )
 	
 	STACKCHECK2( stkp, v_,  components_sequencedsearchproceed, macroargs_ENDRETFRAME );
 	v = (gennameparr_stdpushentry_entry*)v_;
@@ -297,8 +291,6 @@ retframe components_sequencedsearchproceed( stackpair *stkp, void *v_ )
 		return( (retframe){ &end_run, (void*)0 } );
 	}
 	
-#undef ERR_
-	
 		/* followup should PROBABLY itself return a retframe to a standard */
 		/*  searcher function. */
 	CALLFRAMEFUNC(
@@ -323,7 +315,6 @@ retframe components_stdsearchdeinit( stackpair *stkp, void *v_ )
 	gennameparr_stdpushentry_entry *v;
 	int res;
 	
-#define ERR_( ... ) ERREXIT( REFID_SUBIDS_searchstack__components_stdsearchdeinit, __VA_ARGS__ )
 	
 	STACKCHECK2( stkp, v_,  components_stdsearchdeinit, macroargs_ENDRETFRAME );
 	v = (gennameparr_stdpushentry_entry*)v_;
@@ -417,7 +408,6 @@ retframe components_stdsearchdeinit( stackpair *stkp, void *v_ )
 		return( (retframe){ &end_run, (void*)0 } );
 	}
 	
-#undef ERR_
 	
 		/* Now we transfer control to the "processing function" for the work */
 		/*  we've assembled. It'll need to grab the relevant tokenbranch */
@@ -434,7 +424,6 @@ retframe components_skipendersearchdeinit( stackpair *stkp, void *v_ )
 	gennameparr_stdpushentry_entry *v;
 	int res;
 	
-#define ERR_( ... ) ERREXIT( REFID_SUBIDS_searchstack__components_skipendersearchdeinit, __VA_ARGS__ )
 	
 	STACKCHECK2( stkp, v_,  components_skipendersearchdeinit, macroargs_ENDRETFRAME );
 	v = (gennameparr_stdpushentry_entry*)v_;
@@ -530,7 +519,6 @@ retframe components_skipendersearchdeinit( stackpair *stkp, void *v_ )
 		/*  can deallocate it with the standard functions for the purpose. */
 	STACKPUSH_UINT( &( stkp->data ), b,  components_skipendersearchdeinit, res, macroargs_ENDRETFRAME );
 	
-#undef ERR_
 	
 		/* Register the "processing function" for the assembled work as the */
 		/*  return route for the standard token deallocator, and then */
@@ -763,16 +751,12 @@ int pack_arglist( stackpair *stkp,  uintptr_t *refid, int errgate )
 }
 retframe vm_pop_macroarg( stackpair *stkp, void *v )
 {
-#define ERR_( ... ) ERREXIT( REFID_SUBIDS_searchstack__components_shufflequeue_macro_link, __VA_ARGS__ )
-	
 	STACKCHECK( stkp,  vm_pop_macroarg, macroargs_ENDRETFRAME );
 	
 	int res;
 	POPMACROARGS( (tokhdptr_parr**)0,  vm_pop_macroarg, res, macroargs_ENDRETFRAME );
 	
 	RETFRAMEFUNC( stkp,  vm_pop_macroarg, res );
-	
-#undef ERR_
 }
 
 
@@ -792,7 +776,6 @@ retframe shufflequeue_macro_link( stackpair *stkp, void *v )
 	tokhdptr_parr *thdptpr;
 	int res;
 	
-#define ERR_( ... ) ERREXIT( REFID_SUBIDS_searchstack__components_shufflequeue_macro_link, __VA_ARGS__ )
 	
 	STACKCHECK( stkp,  shufflequeue_macro_link, macroargs_ENDRETFRAME );
 	
@@ -815,7 +798,6 @@ retframe shufflequeue_macro_link( stackpair *stkp, void *v )
 		/*  SINGLE arg that we're dealing with, NOT multiple. */
 	PUSHSHUFFLE( thdptpr->body[ mlink->args_offset ],  shufflequeue_macro_link, res, macroargs_ENDRETFRAME );
 	
-#undef ERR_
 	
 	RETFRAMEFUNC( stkp,  shufflequeue_macro_link, res );
 }
@@ -830,7 +812,6 @@ retframe shufflequeue_macro_token( stackpair *stkp, void *v )
 	macro_token *mtok;
 	int res;
 	
-#define ERR_( ... ) ERREXIT( REFID_SUBIDS_searchstack__components_shufflequeue_macro_token, __VA_ARGS__ )
 	
 	STACKCHECK( stkp,  shufflequeue_macro_token, macroargs_ENDRETFRAME );
 	
@@ -852,7 +833,6 @@ retframe shufflequeue_macro_token( stackpair *stkp, void *v )
 		/*  or something similar. */
 	PUSHSHUFFLE( mtok->tok,  shufflequeue_macro_token, res, macroargs_ENDRETFRAME );
 	
-#undef ERR_
 	
 	RETFRAMEFUNC( stkp,  shufflequeue_macro_token, res );
 }
@@ -883,7 +863,6 @@ retframe shufflequeue_macro_run( stackpair *stkp, void *v )
 	macro_run *mr;
 	int res;
 	
-#define ERR_( ... ) ERREXIT( REFID_SUBIDS_searchstack__???, __VA_ARGS__ )
 	
 	STACKCHECK( stkp,  shufflequeue_macro_run, macroargs_ENDRETFRAME );
 	
@@ -904,7 +883,6 @@ retframe shufflequeue_macro_run( stackpair *stkp, void *v )
 	STACKPUSH_UINT( &( stkp->data ), mr->args,  shufflequeue_macro_run, res, macroargs_ENDRETFRAME );
 	STACKPUSH_UINT( &( stkp->data ), 0,  shufflequeue_macro_run, res, macroargs_ENDRETFRAME );
 	
-#undef ERR_
 	
 	CALLFRAMEFUNC(
 		stkp,
@@ -932,8 +910,7 @@ retframe shufflequeue_macro_run( stackpair *stkp, void *v )
 	{
 		uintptr_t args, b;
 		macro_run *mr;
-	
-#define ERR_( ... ) ERREXIT( REFID_SUBIDS_searchstack__???, __VA_ARGS__ )
+		
 		
 		STACKCHECK( stkp,  shufflequeue_macro_run_continue, macroargs_ENDRETFRAME );
 		
@@ -961,7 +938,6 @@ retframe shufflequeue_macro_run( stackpair *stkp, void *v )
 		
 		STACKPUSH_UINT( &( stkp->data ), args,  shufflequeue_macro_run_continue, res, macroargs_ENDRETFRAME );
 		
-#undef ERR_
 		
 		CALLFRAMEFUNC(
 			stkp,
@@ -1003,7 +979,6 @@ retframe shufflequeue_macro_directive( stackpair *stkp, void *v )
 	macro_directive *mdir;
 	int res;
 	
-#define ERR_( ... ) ERREXIT( REFID_SUBIDS_searchstack__???, __VA_ARGS__ )
 	
 	STACKCHECK( stkp,  shufflequeue_macro_directive, macroargs_ENDRETFRAME );
 	
@@ -1024,7 +999,6 @@ retframe shufflequeue_macro_directive( stackpair *stkp, void *v )
 	STACKPUSH_UINT( &( stkp->data ), mdir->args,  shufflequeue_macro_directive, res, macroargs_ENDRETFRAME );
 	STACKPUSH_UINT( &( stkp->data ), 0,  shufflequeue_macro_directive, res, macroargs_ENDRETFRAME );
 	
-#undef ERR_
 	
 	CALLFRAMEFUNC(
 		stkp,
@@ -1052,8 +1026,7 @@ retframe shufflequeue_macro_directive( stackpair *stkp, void *v )
 	{
 		uintptr_t args, b;
 		macro_directive *mdir;
-	
-#define ERR_( ... ) ERREXIT( REFID_SUBIDS_searchstack__???, __VA_ARGS__ )
+		
 		
 		STACKCHECK( stkp,  shufflequeue_macro_directive_continue, macroargs_ENDRETFRAME );
 		
@@ -1080,7 +1053,6 @@ retframe shufflequeue_macro_directive( stackpair *stkp, void *v )
 		
 		STACKPUSH_UINT( &( stkp->data ), args,  shufflequeue_macro_directive_continue, res, macroargs_ENDRETFRAME );
 		
-#undef ERR_
 		
 		CALLFRAMEFUNC(
 			stkp,
@@ -1123,7 +1095,6 @@ retframe shufflequeue_entry_macro_call( stackpair *stkp, void *v )
 	uintptr_t mcall;
 	int res;
 	
-#define ERR_( ... ) ERREXIT( REFID_SUBIDS_searchstack__components_shufflequeue_entry_macro_call, __VA_ARGS__ )
 	
 	STACKCHECK( stkp,  shufflequeue_entry_macro_call, macroargs_ENDRETFRAME );
 	
@@ -1156,7 +1127,6 @@ retframe shufflequeue_entry_macro_call( stackpair *stkp, void *v )
 		/* Our progress? None! Because we haven't really started. */
 	STACKPUSH_UINT( &( stkp->data ), 0,  shufflequeue_entry_macro_call, res, macroargs_ENDRETFRAME );
 	
-#undef ERR_
 	
 	return( (retframe){ &shufflequeue_step_macro_call, (void*)0 } );
 }
@@ -1174,7 +1144,6 @@ retframe shufflequeue_step_macro_calltool( stackpair *stkp, void *v,  retframe l
 	uintptr_t prog, ops_;
 	tokhdptr_parr *arg_parr;
 	
-#define ERR_( ... ) ERREXIT( REFID_SUBIDS_searchstack__components_shufflequeue_step_macro_call, __VA_ARGS__ )
 	
 	STACKCHECK( stkp,  shufflequeue_step_macro_calltool, macroargs_ENDRETFRAME );
 	
@@ -1243,8 +1212,6 @@ retframe shufflequeue_step_macro_calltool( stackpair *stkp, void *v,  retframe l
 		
 		return( ret );
 	}
-	
-#undef ERR_
 }
 	/* Just a wrapper. Will need an imitator for directives. */
 retframe shufflequeue_step_macro_call( stackpair *stkp, void *v )
@@ -1270,7 +1237,6 @@ retframe shufflequeue_exit_macro_calltool( stackpair *stkp, void *v )
 {
 	uintptr_t shufflebookmark;
 	
-#define ERR_( ... ) ERREXIT( REFID_SUBIDS_searchstack__???, __VA_ARGS__ )
 	
 	STACKCHECK( stkp,  shufflequeue_exit_macro_calltool, macroargs_ENDRETFRAME );
 	
@@ -1292,7 +1258,6 @@ retframe shufflequeue_exit_macro_calltool( stackpair *stkp, void *v )
 		/*  things need to know this for their own purposes. */
 	STACKPUSH_UINT( &( stkp->data ), shufflebookmark,  shufflequeue_exit_macro_calltool, res, macroargs_ENDRETFRAME );
 	
-#undef ERR_
 	
 	RETFRAMEFUNC( stkp,  shufflequeue_exit_macro_calltool, res );
 }
@@ -1310,7 +1275,6 @@ retframe shufflequeue_exit_macro_call( stackpair *stkp, void *v )
 	uintptr_t a;
 	tokhdptr_parr *args;
 	
-#define ERR_( ... ) ERREXIT( REFID_SUBIDS_searchstack__components_shufflequeue_exit_macro_call, __VA_ARGS__ )
 	
 	STACKCHECK( stkp,  shufflequeue_exit_macro_call, macroargs_ENDRETFRAME );
 	
@@ -1340,7 +1304,6 @@ retframe shufflequeue_exit_macro_call( stackpair *stkp, void *v )
 		return( (retframe){ &end_run, (void*)0 } );
 	}
 	
-#undef ERR_
 	
 	return( shufflequeue_exit_macro_calltool( stkp, v ) );
 }
@@ -1379,8 +1342,7 @@ retframe shufflequeue_entry_macro_wrapper( stackpair *stkp, void *v )
 	{
 		uintptr_t count;
 		int res;
-	
-#define ERR_( ... ) ERREXIT( REFID_SUBIDS_searchstack__components_shufflequeue_exit_macro_call, __VA_ARGS__ )
+		
 		
 		STACKCHECK( stkp,  shufflequeue_entry_macro_wrapper, macroargs_ENDRETFRAME );
 		
@@ -1400,7 +1362,6 @@ retframe shufflequeue_entry_macro_wrapper( stackpair *stkp, void *v )
 		/* The various produced tokens should now be in the token stream, */
 		/*  AND in the correct order. */
 		
-#undef ERR_
 		
 		RETFRAMEFUNC( stkp,  shufflequeue_exit_macro_wrapper, res );
 	}
