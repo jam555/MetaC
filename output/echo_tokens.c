@@ -35,6 +35,13 @@
 
 
 
+#define CALLFRAMEFUNC( rethand, retval, callhand, callval,  caller ) \
+	CALL_FRAMEFUNC( stkp, rethand, retval, callhand, callval,  &errs, ( caller ), res, stack_ENDRETFRAME )
+#define RETFRAMEFUNC( stkpair,  caller ) \
+	RET_FRAMEFUNC( ( stkpair ),  &errs, ( caller ), res, stack_ENDRETFRAME )
+
+
+
 /* Argument checking should be added to some of this stuff. */
 
 #define SOH ( 0x01 )
@@ -267,7 +274,7 @@ retframe echo_token( stackpair *stkp, void *v )
 	
 	/* Success. */
 	
-	RET_FRAMEFUNC( echo_tokenhead_refid, 2, -3, 0 );
+	RETFRAMEFUNC( stkp,  echo_token );
 }
 
 retframe echo_tokengroup_extension( stackpair *stkp, void *v )
@@ -318,7 +325,12 @@ retframe echo_tokengroup_extension( stackpair *stkp, void *v )
 		
 		putc( ',' );
 		
-		CALL_FRAMEFUNC( &echo_tokengroup_extension, (void*)( iter + 1 ),  &echo_tokens_entrypoint, (void*)0 );
+		CALLFRAMEFUNC(
+			&echo_tokengroup_extension, (void*)( iter + 1 ),
+			&echo_tokens_entrypoint, (void*)0,
+			
+			echo_tokengroup_extension
+		);
 		
 	} else {
 		
@@ -339,7 +351,7 @@ retframe echo_tokengroup_extension( stackpair *stkp, void *v )
 			return( (retframe){ &end_run, (void*)0 } );
 		}
 		
-		RET_FRAMEFUNC( echo_tokenhead_refid, 4, -5, &stkp, &v, &th, &tmp );
+		RETFRAMEFUNC( stkp,  echo_tokengroup_extension );
 	}
 }
 retframe echo_tokengroup( stackpair *stkp, void *v )
@@ -404,7 +416,12 @@ retframe echo_tokengroup( stackpair *stkp, void *v )
 			/*  top of the stack. Also, it needs to (via whatever it is that */
 			/*  it delegate to) pop the top, for the sake of keeping the */
 			/*  stack organized & clean. */
-		CALL_FRAMEFUNC( &echo_tokengroup_extension, (void*)( (uintptr_t)1 ),  &echo_tokens_entrypoint, (void*)0  );
+		CALLFRAMEFUNC(
+			&echo_tokengroup_extension, (void*)( (uintptr_t)1 ),
+			&echo_tokens_entrypoint, (void*)0,
+			
+			echo_tokengroup
+		);
 		
 	} else {
 		
@@ -413,7 +430,7 @@ retframe echo_tokengroup( stackpair *stkp, void *v )
 		
 		putc( ETXT );
 		
-		RET_FRAMEFUNC( echo_tokenhead_refid, 3, -7, &stkp, &v, &th, &tmp );
+		RETFRAMEFUNC( stkp,  echo_tokengroup );
 	}
 }
 
@@ -435,7 +452,7 @@ retframe echo_tokenbranch_conclude( stackpair *stkp, void *v )
 		return( (retframe){ &end_run, (void*)0 } );
 	}
 	
-	RET_FRAMEFUNC( echo_tokenhead_refid, 8, -3, &stkp, &v, &a );
+	RETFRAMEFUNC( stkp,  echo_tokenbranch_conclude );
 }
 retframe echo_tokenbranch_tail( stackpair *stkp, void *v )
 {
@@ -481,7 +498,12 @@ retframe echo_tokenbranch_tail( stackpair *stkp, void *v )
 			return( (retframe){ &end_run, (void*)0 } );
 		}
 		
-		CALL_FRAMEFUNC( &echo_tokenbranch_conclude, (void*)0,  &echo_tokens_entrypoint, (void*)0  );
+		CALLFRAMEFUNC(
+			&echo_tokenbranch_conclude, (void*)0,
+			&echo_tokens_entrypoint, (void*)0,
+			
+			echo_tokenbranch_tail
+		);
 	}
 	
 	return( (retframe){ (framefunc)&echo_tokenbranch_conclude, (void*)0 } );
@@ -530,7 +552,12 @@ retframe echo_tokenbranch_body( stackpair *stkp, void *v )
 			return( (retframe){ &end_run, (void*)0 } );
 		}
 		
-		CALL_FRAMEFUNC( &echo_tokenbranch_tail, (void*)0,  &echo_tokens_entrypoint, (void*)0  );
+		CALLFRAMEFUNC(
+			&echo_tokenbranch_tail, (void*)0,
+			&echo_tokens_entrypoint, (void*)0,
+			
+			echo_tokenbranch_body
+		);
 	}
 	
 	return( (retframe){ (framefunc)&echo_tokenbranch_tail, (void*)0 } );
@@ -589,7 +616,12 @@ retframe echo_tokenbranch( stackpair *stkp, void *v )
 			/*  to by the top of the stack. Also, it needs to (via whatever */
 			/*  it is that it delegate to) pop the top, for the sake of */
 			/*  keeping the stack organized & clean. */
-		CALL_FRAMEFUNC( &echo_tokenbranch_body, (void*)0,  &echo_tokens_entrypoint, (void*)0  );
+		CALLFRAMEFUNC(
+			&echo_tokenbranch_body, (void*)0,
+			&echo_tokens_entrypoint, (void*)0,
+			
+			echo_tokenbranch
+		);
 	}
 	
 	/* If ->lead is null, then we don't need to echo it, so we can just */

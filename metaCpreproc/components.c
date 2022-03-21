@@ -67,6 +67,10 @@
 	PUSH_SHUFFLE( tokptr,  &err, caller, scratch, endfunc )
 
 
+#define RETFRAMEFUNC( stkp,  caller, scratch ) \
+	RET_FRAMEFUNC( ( stkp ),  &errs, ( caller ), ( scratch ), stack_ENDRETFRAME )
+
+
 
 /* This file exists for "component parses" that get built up into more full */
 /*  preprocessor parsing runs. */

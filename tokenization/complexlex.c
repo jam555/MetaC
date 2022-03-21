@@ -40,6 +40,13 @@ stackpair std_stacks;
 
 
 
+#define CALLFRAMEFUNC( rethand, retval, callhand, callval,  caller ) \
+	CALL_FRAMEFUNC( stkp, rethand, retval, callhand, callval,  &errs, ( caller ), res, stack_ENDRETFRAME )
+#define RETFRAMEFUNC( caller ) \
+	RET_FRAMEFUNC( stkp,  &errs, ( caller ), res, stack_ENDRETFRAME )
+
+
+
 retframe complexlex_dealloctoken = (retframe){ &smart_dealloc_token, (void*)0 };
 
 retframe set_dealloctoken( retframe dealc_ )
@@ -149,11 +156,14 @@ retframe smart_dealloc_token( stackpair *stkp, void *v )
 		/*  retframe was returned to us (which will probably ALSO be this */
 		/*  function...).  */
 		
-		CALL_FRAMEFUNC(
+		/* ??? */
+		CALLFRAMEFUNC(
 			complexlex_dealloctoken.handler,
 			complexlex_dealloctoken.data,
 			
-			ret.handler, ret.data
+			ret.handler, ret.data,
+			
+			smart_dealloc_token
 		);
 		
 	} else {
@@ -162,14 +172,7 @@ retframe smart_dealloc_token( stackpair *stkp, void *v )
 			/*  complex type was deallocated by the helper function that we */
 			/*  got the current value of "ret" from, so it's time to return */
 			/*  to OUR caller (or at least the "designated return route")! */
-		RET_FRAMEFUNC(
-			complexlex_refid,
-			REFID_SUBIDS_complexlex__smart_dealloc_token,
-			5,
-			
-			stkp,
-			v
-		);
+		RETFRAMEFUNC( smart_dealloc_token );
 	}
 }
 
@@ -658,7 +661,7 @@ retframe accumulate_whitespace( stackpair *stkp, void *v )
 		th->toktype != TOKTYPE_OTHER
 	)
 	{
-		RET_FRAMEFUNC( complexlex_refid, -5, &stkp, &v, &th, &tmp );
+		RETFRAMEFUNC( accumulate_whitespace );
 		
 	} else if
 	(
@@ -698,7 +701,12 @@ retframe accumulate_whitespace( stackpair *stkp, void *v )
 	}
 	( (tokengroup*)tmp )->subtype = TOKTYPE_TOKENGROUP_WHITESPACE;
 	
-	CALL_FRAMEFUNC( &accumulate_whitespace, 0, &getANDassemble_token, 0 );
+	CALLFRAMEFUNC(
+		&accumulate_whitespace, 0,
+		&getANDassemble_token, 0,
+		
+		accumulate_whitespace
+	);
 }
 	/* This function expects an already ASSEMBLED token to be pointed to by */
 	/*  a pointer on the top of the data stack. It will then either directly */
@@ -769,7 +777,12 @@ retframe accumulate_token( stackpair *stkp, void *v )
 		FAILEDINTFUNC( "push_retframe", accumulate_token, res );
 		return( ret );
 	}
-	CALL_FRAMEFUNC( &accumulate_whitespace, 0, &getANDassemble_token, 0 );
+	CALLFRAMEFUNC(
+		&accumulate_whitespace, 0,
+		&getANDassemble_token, 0,
+		
+		accumulate_token
+	);
 }
 retframe conclude_accumulate_token( stackpair *stkp, void *v )
 {
@@ -838,7 +851,7 @@ retframe conclude_accumulate_token( stackpair *stkp, void *v )
 		return( ret );
 	}
 	
-	RET_FRAMEFUNC2( &complexlex_refid, (uintptr_t)3, &stkp, &v,  &top, &white, &bottom );
+	RETFRAMEFUNC( conclude_accumulate_token );
 }
 
 

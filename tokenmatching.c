@@ -42,11 +42,13 @@ int match_token( token *tok,  unsigned char *str, size_t len )
 {
 	if( len && !str )
 	{
+		STACK_TRESPASSPATH( match_token, "ERROR: match_token was given a null string pointer with a positive length." );
 		return( -2 );
 	}
 	
-	if( !tok != !str )
+	if( ( !tok ) != ( !str ) )
 	{
+		STACK_TRESPASSPATH( match_token, "ERROR: match_token encountered ( !tok ) != ( !str )." );
 		return( -1 );
 	}
 	
@@ -282,7 +284,7 @@ int lexparse1_popsearchtable( uintptr_t *refid, genname_parrparr **keys, size_t 
 }
 retframe lexparse1_tokensearch
 (
-	stackframe *stk,
+	stackpair *stkp,
 	
 	uintptr_t *refid,
 	
@@ -319,7 +321,7 @@ retframe lexparse1_tokensearch
 		return( (retframe){ &end_run, (void*)0 } );
 	}
 	
-	int res = peek_uintptr( stk,  &a );
+	int res = peek_uintptr( stkp->data,  &a );
 	if( !res )
 	{
 		STACK_FAILEDUINTFUNC( "peek_uintptr", lexparse1_tokensearch, res );
@@ -370,7 +372,7 @@ retframe lexparse1_tokensearch
 					return( (retframe){ &end_run, (void*)0 } );
 			}
 			
-			RET_FRAMEFUNC( ( *refid ), err_subsource, 7, found );
+			RET_FRAMEFUNC( stkp,  &errs, lexparse1_tokensearch, res, stack_ENDRETFRAME );
 		default:
 			return( seekother );
 	}

@@ -33,6 +33,11 @@
 
 
 
+#define RETFRAMEFUNC( caller ) \
+	RET_FRAMEFUNC( stkp,  &errs, ( caller ), res, stack_ENDRETFRAME )
+
+
+
 retframe head_lex( stackpair *stkp, void *v )
 {
 	retframe ret = (retframe){ (framefunc)&end_run, (void*)0 };
@@ -135,7 +140,7 @@ retframe head_lex( stackpair *stkp, void *v )
 			return( (retframe){ &end_run, (void*)0 } );
 		}
 		
-		RET_FRAMEFUNC( head_lex_refid, -6, 0 );
+		RETFRAMEFUNC( head_lex );
 		
 	} else if( a.c == '#' )
 	{
@@ -156,7 +161,7 @@ retframe head_lex( stackpair *stkp, void *v )
 			return( (retframe){ &end_run, (void*)0 } );
 		}
 		
-		RET_FRAMEFUNC( head_lex_refid, -7, 0 );
+		RETFRAMEFUNC( head_lex );
 		
 	} else if( a.c == '@' )
 	{
@@ -184,7 +189,7 @@ retframe head_lex( stackpair *stkp, void *v )
 			return( (retframe){ &end_run, (void*)0 } );
 		}
 		
-		RET_FRAMEFUNC( head_lex_refid, -10, 0 );
+		RETFRAMEFUNC( head_lex );
 	}
 	
 	/* TODO: Are these two REALLY supposed to exit like this, instead of with errors? */
@@ -193,14 +198,14 @@ retframe head_lex( stackpair *stkp, void *v )
 	if( !res )
 	{
 		STACK_TRESPASSPATH( head_lex, "WARNING: head_lex() exited via a suspect route." );
-		RET_FRAMEFUNC( head_lex_refid, -11, &th, &a.c );
+		RETFRAMEFUNC( head_lex );
 	}
 	
 	res2 = push_tokenhead( &( stkp->data ),  th );
 	if( !res )
 	{
 		STACK_TRESPASSPATH( head_lex, "WARNING: head_lex() exited via a suspect route." );
-		RET_FRAMEFUNC( head_lex_refid, -12, &th );
+		RETFRAMEFUNC( head_lex );
 	}
 	
 	return( ret );
@@ -253,7 +258,7 @@ retframe space_lex( stackpair *stkp, void *v )
 				return( (retframe){ &end_run, (void*)0 } );
 			}
 			
-			RET_FRAMEFUNC( space_lex_refid, -7, 0 );
+			RETFRAMEFUNC( space_lex );
 			
 		} else {
 			
@@ -327,7 +332,7 @@ retframe newline_lex( stackpair *stkp, void *v )
 				return( (retframe){ &end_run, (void*)0 } );
 			}
 			
-			RET_FRAMEFUNC( newline_lex_refid, -7, 0 );
+			RETFRAMEFUNC( newline_lex );
 			
 		} else {
 			
@@ -403,7 +408,7 @@ retframe name_lex( stackpair *stkp, void *v )
 				return( (retframe){ &end_run, (void*)0 } );
 			}
 			
-			RET_FRAMEFUNC( name_lex_refid, -7, 0 );
+			RETFRAMEFUNC( name_lex );
 			
 		} else {
 			
@@ -526,7 +531,7 @@ retframe numberentry_lex( stackpair *stkp, void *v )
 							return( (retframe){ &end_run, (void*)0 } );
 						}
 						
-						RET_FRAMEFUNC( number_lex_refid, -7, 0 );
+						RETFRAMEFUNC( numberentry_lex );
 						
 					} else {
 						
@@ -601,7 +606,7 @@ retframe numberdecimal_lex( stackpair *stkp, void *v )
 				return( (retframe){ &end_run, (void*)0 } );
 			}
 			
-			RET_FRAMEFUNC( number_lex_refid, -15, 0 );
+			RETFRAMEFUNC( numberdecimal_lex );
 			
 		} else {
 			
@@ -670,7 +675,7 @@ retframe numberhexadecimal_lex( stackpair *stkp, void *v )
 				return( (retframe){ &end_run, (void*)0 } );
 			}
 			
-			RET_FRAMEFUNC( number_lex_refid, -23, 0 );
+			RETFRAMEFUNC( numberhexadecimal_lex );
 			
 		} else {
 			
@@ -743,7 +748,7 @@ retframe numberoctal_lex( stackpair *stkp, void *v )
 				return( (retframe){ &end_run, (void*)0 } );
 			}
 			
-			RET_FRAMEFUNC( number_lex_refid, -31, 0 );
+			RETFRAMEFUNC( numberoctal_lex );
 			
 		} else {
 			
@@ -813,7 +818,7 @@ retframe numberbinary_lex( stackpair *stkp, void *v )
 				return( (retframe){ &end_run, (void*)0 } );
 			}
 			
-			RET_FRAMEFUNC( number_lex_refid, -39, 0 );
+			RETFRAMEFUNC( numberbinary_lex );
 			
 		} else {
 			
@@ -902,7 +907,7 @@ retframe brackop_lex( stackpair *stkp, void *v )
 					return( (retframe){ &end_run, (void*)0 } );
 				}
 				
-				RET_FRAMEFUNC( number_lex_refid, -6, 0 );
+				RETFRAMEFUNC( brackop_lex );
 				
 			} else {
 				
@@ -932,7 +937,7 @@ retframe brackop_lex( stackpair *stkp, void *v )
 		return( (retframe){ &end_run, (void*)0 } );
 	}
 	
-	RET_FRAMEFUNC( number_lex_refid, -10, 0 );
+	RETFRAMEFUNC( brackop_lex );
 }
 
 
@@ -999,7 +1004,7 @@ retframe str_lex( stackpair *stkp, void *v )
 		( th.toktype == TOKTYPE_DQSTR && a.c == '\"' )
 	)
 	{
-		RET_FRAMEFUNC( str_lex_refid, -9, 0 );
+		RETFRAMEFUNC( str_lex );
 	}
 	return( (retframe){ hand, (void*)0 } );
 }
@@ -1054,7 +1059,7 @@ retframe escstr_lex( stackpair *stkp, void *v )
 		( th.toktype == TOKTYPE_DQSTR && a.c == '\"' )
 	)
 	{
-		RET_FRAMEFUNC( str_lex_refid, -15, 0 );
+		RETFRAMEFUNC( escstr_lex );
 	}
 	return( (retframe){ hand, (void*)0 } );
 }
@@ -1273,7 +1278,7 @@ retframe syms_lex( stackpair *stkp, v )
 		return( (retframe){ &end_run, (void*)0 } );
 	}
 	
-	RET_FRAMEFUNC( number_lex_refid, -8, 0 );
+	RETFRAMEFUNC( syms_lex );
 }
 retframe symssinglet_lex( stackpair *stkp, void *arg, token_head *th, char a, extrachar b )
 {
@@ -1287,7 +1292,7 @@ retframe symssinglet_lex( stackpair *stkp, void *arg, token_head *th, char a, ex
 	int res = unget_extrachar( a );
 	if( res )
 	{
-		STACK_FAILEDINTFUNC( "unget_extrachar", symssinglet_lex_lex, res );
+		STACK_FAILEDINTFUNC( "unget_extrachar", symssinglet_lex, res );
 		return( (retframe){ &end_run, (void*)0 } );
 	}
 	
@@ -1359,11 +1364,11 @@ retframe symssinglet_lex( stackpair *stkp, void *arg, token_head *th, char a, ex
 	res = push_tokenhead( &( stkp->data ),  th );
 	if( !res )
 	{
-		STACK_FAILEDINTFUNC( "push_tokenhead", symssinglet_lex_lex, res );
+		STACK_FAILEDINTFUNC( "push_tokenhead", symssinglet_lex, res );
 		return( (retframe){ &end_run, (void*)0 } );
 	}
 	
-	RET_FRAMEFUNC( syms_lex_refid, -12, 0 );
+	RETFRAMEFUNC( symssinglet_lex );
 }
 retframe symsext_lex( stackpair *stkp, void *arg, token_head *th, extrachar a, extrachar b )
 {
@@ -1502,7 +1507,7 @@ retframe symsext_lex( stackpair *stkp, void *arg, token_head *th, extrachar a, e
 		return( (retframe){ &end_run, (void*)0 } );
 	}
 	
-	RET_FRAMEFUNC( syms_lex_refid, -32, 0 );
+	RETFRAMEFUNC( symsext_lex );
 }
 
 
@@ -1563,7 +1568,7 @@ retframe at_lex( stackpair *stkp, void *v )
 		return( (retframe){ &end_run, (void*)0 } );
 	}
 	
-	RET_FRAMEFUNC( at_refid, -8, 0 );
+	RETFRAMEFUNC( at_lex );
 }
 
 

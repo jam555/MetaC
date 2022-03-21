@@ -45,7 +45,8 @@ int lexparse1_popsearchtable( uintptr_t *refid, genname_parrparr **keys, size_t 
 /****************************************************************************/
 retframe lexparse1_tokensearch
 (
-	stackframe *stk,
+		/* Was a stackframe*, but the revised retrn macro needs the pair. */
+	stackpair *stkp,
 	
 	uintptr_t *refid,
 	

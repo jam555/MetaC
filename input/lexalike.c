@@ -45,8 +45,16 @@ stackpair std_stacks;
 #define STACK_BADUINT( funcname, objaddr, expectedval ) \
 	STDMSG_BADUINT_WRAPPER( &errs, ( funcname ), ( objaddr ), ( expectedval ) )
 
+#define TRESPASSPATH( funcname, msgstr ) \
+	STDMSG_TRESPASSPATH_WRAPPER( &errs, funcname, msgstr )
+
 #define STACK_I_OVERFLOW( funcname, objaddr, limit ) \
 	STDMSG_I_OVERFLOW_WRAPPER( &errs, ( funcname ), ( objaddr ), ( limit ) )
+
+
+#define RETFRAMEFUNC( caller ) \
+	RET_FRAMEFUNC( stkp,  &errs, ( caller ), res, stack_ENDRETFRAME )
+
 
 
 /* The purpose of lexalike.c is to provide wrappers for charin(), isspace(), */
@@ -162,7 +170,7 @@ retframe assemble_token( stackpair *stkp, void *v )
 	
 	/* Success. */
 	
-	RET_FRAMEFUNC( assemble_token_refid, 2, -6, 0 );
+	RETFRAMEFUNC( assemble_token );
 }
 retframe dealloc_token( stackpair *stkp, void *v )
 {
@@ -181,14 +189,14 @@ retframe dealloc_token( stackpair *stkp, void *v )
 		return( (retframe){ &end_run, (void*)0 } );
 	LIB4_RESULT_BODYMATCH( res, LIB4_OP_SETa, dealloc_token_ONFAIL );
 	
-	RET_FRAMEFUNC( assemble_token_refid, 3, -4,  stkp, v );
+	RETFRAMEFUNC( dealloc_token );
 }
 retframe getANDassemble_token( stackpair *stkp, void *v )
 {
 		/* Setup a return into assemble_token() to get the token material */
 		/*  properly packaged, and then directly head into head_lex() to get */
 		/*  that material itself. */
-	CALL_FRAMEFUNC( &assemble_token, 0, lexentry, 0 );
+	RETFRAMEFUNC( getANDassemble_token );
 }
 
 
@@ -208,11 +216,13 @@ int token_queue_init()
 	token_queue.f = tmpfile();
 	if( !token_queue.f )
 	{
+		STACK_BADNULL( token_queue_init, &( token_queue.f ) );
 		return( -1 );
 	}
 	token_queue.shuffle = tmpfile();
 	if( !token_queue.shuffle )
 	{
+		STACK_BADNULL( token_queue_init, &( token_queue.shuffle ) );
 		fclose( token_queue.f );
 		token_queue.f = (FILE*)0;
 		return( -2 );
@@ -230,20 +240,26 @@ int token_queue_push( token *tok )
 	if( tok )
 	{
 			/* "&& 0" because we don't have the code here to actually find */
-			/*  the maximum size of files. */
+			/*  the maximum size of files. The "0" is where that would be */
+			/*  paid attention to. */
 		if( token_queue.used >= token_queue_STACKSIZE && 0 )
 		{
+			TRESPASSPATH( token_queue_push, "ERROR: token_queue_push encountered a used value larger than the stack." );
 			return( -2 );
 		}
 		
 		uintptr_t tmp = (uintptr_t)tok;
 		
-		if( fseek( token_queue.f, token_queue.used * sizeof( uintptr_t ), SEEK_SET ) != 0 )
+		int res = fseek( token_queue.f, token_queue.used * sizeof( uintptr_t ), SEEK_SET );
+		if( res != 0 )
 		{
+			STACK_FAILEDINTFUNC( "fseek", token_queue_push, res );
 			return( -3 );
 		}
-		if( !fwrite( (const void*)&tmp, sizeof( uintptr_t ), 1, token_queue.f ) )
+		res = fwrite( (const void*)&tmp, sizeof( uintptr_t ), 1, token_queue.f );
+		if( !res )
 		{
+			STACK_FAILEDINTFUNC( "fwrite", token_queue_push, res );
 			return( -4 );
 		}
 		++token_queue.used;
@@ -259,22 +275,28 @@ int token_queue_pop( token **tok )
 	{
 		if( *tok )
 		{
+			STACK_BADNULL( token_queue_pop, &tok );
 			return( -2 );
 		}
 		if( !token_queue.used )
 		{
+			STACK_BADNULL( token_queue_pop, &( token_queue.used ) );
 			return( -3 );
 		}
 		
 		--token_queue.used;
 		uintptr_t tmp;
 		
-		if( fseek( token_queue.f, token_queue.used * sizeof( uintptr_t ), SEEK_SET ) != 0 )
+		int res = fseek( token_queue.f, token_queue.used * sizeof( uintptr_t ), SEEK_SET );
+		if( res != 0 )
 		{
+			STACK_FAILEDINTFUNC( "fseek", token_queue_pop, res );;
 			return( -4 );
 		}
-		if( !fread( (void*)&tmp, sizeof( uintptr_t ), 1, token_queue.f ) )
+		res = fread( (void*)&tmp, sizeof( uintptr_t ), 1, token_queue.f );
+		if( !res )
 		{
+			STACK_FAILEDINTFUNC( "fread", token_queue_pop, res );
 			return( -5 );
 		}
 		*tok = (token*)tmp;
@@ -304,7 +326,7 @@ retframe token_queue_fetch( stackpair *stkp, void *v )
 			return( (retframe){ &end_run, (void*)0 } );
 		}
 		
-		RET_FRAMEFUNC( token_queue_refid, 5, -3, 0 );
+		RETFRAMEFUNC( token_queue_fetch );
 		
 	} else {
 		
@@ -324,17 +346,22 @@ int token_queue_shufflepush( token *tok )
 			/*  the maximum size of files. */
 		if( token_queue.shuffleused >= token_queue_STACKSIZE && 0 )
 		{
+			TRESPASSPATH( token_queue_shufflepush, "ERROR: token_queue_shufflepush encountered a used value larger than the stack." );
 			return( -2 );
 		}
 		
 		uintptr_t tmp = (uintptr_t)tok;
 		
-		if( fseek( token_queue.shuffle, token_queue.shuffleused * sizeof( uintptr_t ), SEEK_SET ) != 0 )
+		int res = fseek( token_queue.shuffle, token_queue.shuffleused * sizeof( uintptr_t ), SEEK_SET );
+		if( res != 0 )
 		{
+			STACK_FAILEDINTFUNC( "fseek", token_queue_shufflepush, res );
 			return( -3 );
 		}
-		if( !fwrite( (const void*)&tmp, sizeof( uintptr_t ), 1, token_queue.shuffle ) )
+		res = fwrite( (const void*)&tmp, sizeof( uintptr_t ), 1, token_queue.shuffle );
+		if( !res )
 		{
+			STACK_FAILEDINTFUNC( "fwrite", token_queue_shufflepush, res );
 			return( -4 );
 		}
 		++token_queue.shuffleused;
@@ -350,22 +377,28 @@ int token_queue_shufflepop( token **tok )
 	{
 		if( *tok )
 		{
+			STACK_BADNULL( token_queue_shufflepop, &tok );
 			return( -2 );
 		}
 		if( !token_queue.shuffleused )
 		{
+			STACK_BADNULL( token_queue_shufflepop, &( token_queue.shuffleused ) );
 			return( -3 );
 		}
 		
 		--token_queue.shuffleused;
 		uintptr_t tmp;
 		
-		if( fseek( token_queue.shuffle, token_queue.shuffleused * sizeof( uintptr_t ), SEEK_SET ) != 0 )
+		int res = fseek( token_queue.shuffle, token_queue.shuffleused * sizeof( uintptr_t ), SEEK_SET );
+		if( res != 0 )
 		{
+			STACK_FAILEDINTFUNC( "fseek", token_queue_shufflepop, res );
 			return( -4 );
 		}
-		if( !fread( (void*)&tmp, sizeof( uintptr_t ), 1, token_queue.shuffle ) )
+		res = fread( (void*)&tmp, sizeof( uintptr_t ), 1, token_queue.shuffle );
+		if( !res )
 		{
+			STACK_FAILEDINTFUNC( "fread", token_queue_shufflepop, res );
 			return( -5 );
 		}
 		*tok = (token*)tmp;
@@ -386,17 +419,22 @@ int token_queue_shuffle2queue()
 		( token_queue.used >= token_queue_STACKSIZE && 0 )
 	)
 	{
+		TRESPASSPATH( token_queue_shuffle2queue, "ERROR: token_queue_shuffle2queue encountered a bounds error." );
 		return( -2 );
 	}
 	
 	token *tmp;
 	
-	if( !token_queue_shufflepop( &tmp ) )
+	int res = token_queue_shufflepop( &tmp );
+	if( !res )
 	{
+		STACK_FAILEDINTFUNC( "token_queue_shufflepop", token_queue_shuffle2queue, res );
 		return( -3 );
 	}
-	if( !token_queue_push( tmp ) )
+	res = token_queue_push( tmp );
+	if( ! )
 	{
+		STACK_FAILEDINTFUNC( "token_queue_push", token_queue_shuffle2queue, res );
 		return( -4 );
 	}
 	
@@ -407,14 +445,18 @@ int token_queue_shuffle2queue()
 	/*  If you actually care, then empty out the file first. */
 int token_queue_deinit()
 {
-	if( fclose( token_queue.shuffle ) == EOF )
+	int res = fclose( token_queue.shuffle );
+	if( res == EOF )
 	{
+		STACK_FAILEDINTFUNC( "fclose", token_queue_deinit, res );
 		return( -2 );
 	}
 	token_queue.shuffle = (FILE*)0;
 	
-	if( fclose( token_queue.f ) != EOF )
+	res = fclose( token_queue.f );
+	if( res != EOF )
 	{
+		STACK_FAILEDINTFUNC( "fclose", token_queue_deinit, res );
 		return( -3 );
 	}
 	token_queue.f = (FILE*)0;
@@ -657,6 +699,7 @@ int tokenize_char__accumulate( stackpair *stkp, void *v,  token_head *th, char *
 		return( 1 );
 	}
 	
+	TRESPASSPATH( tokenize_char__accumulate, "ERROR: tokenize_char__accumulate unexpectedly exited through it's end." );
 	return( -1 );
 }
 	/* TODO: This comment was pulled from headers.h. and reflects the */
@@ -981,7 +1024,7 @@ retframe stack_testchar2( stackpair *stkp, void *v,  int (*testfunc)( int ), cha
 			return( (retframe){ &end_run, (void*)0 } );
 		}
 		
-		RET_FRAMEFUNC( lexalike_refid, REFID_SUBIDS_lexalike__stack_testchar2, 0, -15, 0 );
+		RETFRAMEFUNC( stack_testchar2 );
 	}
 	
 	STACK_BADNULL2( stack_testchar2, &stkp, &v );
