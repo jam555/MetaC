@@ -5,10 +5,6 @@
 	
 	
 	
-	extern uintptr_t echo_tokens_refid;
-	
-	
-	
 	int echo_tokenhead( stackpair *stkp, void *v,  token_head **th );
 	
 		/* This dispatches to other functions (eg. echo_tokengroup) to do the */

@@ -1,0 +1,98 @@
+Special note:
+	The FAILED * FUNC macros should probably be supplemented with versions that implement the standard assigned-and-if() construct. That will save MANY lines.
+	Probably need to check all the files for *_refid variables, and delete them. Caught some, but probably not all.
+
+
+err.c:
+	Line 1017: What goes there?
+	might need some sort of debug/release mode?
+
+demo_errs.c:
+	has a lot of STACK_* macros: the STACK_* bit on frpont has no particular point.
+
+lexalike.c:
+	has a lot of STACK_* macros: the STACK_* bit on frpont has no particular point.
+	has a lot of functions like bin2num: these should be moved to a distinct file for reusability & increased comprehensibility.
+	The extrachar stuff should probably be moved to a different file for the same reasons.
+	has at least one TODO about an old comment- update that comment.
+	Line 974 in stack_testchar has a TODO about a custom error message.
+	Needs trigraph support added in.
+lexalike.h:
+	Will need to be synced with some lexalike.c changes.
+
+source.c:
+	There's a TODO at the top asking about error reporting. Do we want to move the error reporting system in?
+
+basics.c:
+	Line 249 has a bit of error reporting that's probably worthy of it's own custom error reporter.
+	Where is pack_arglist() defined (Note: components.c- so why is it declared in basics.h)? Same for vm_pop_macroarg() (same, so same)?
+
+components.c:
+	Starting at line 80, "default" isn't really defined.
+	Line 128, searchstack_deinit() isn't filled out at all.
+	components_sequencedsearchproceed() has a note saying it needs to be reviewed
+	Line 549 has a note about the macroargs stuff needing to be in it's own file.
+	Line 800- verify if something else needs to go at the "???".
+	Line 834- see "Line 800".
+	All of the pack_arglist() stuff has references to old-style error reporting in it's arguments- fix that in both use & definition.
+	Line 1259- Again "???", but also a not about free()s. Check into that.
+	Line 1292- "???", with a note to do deallocation.
+	Line 1382- Some note that might need to be deleted, moved, or rewritten.
+	Various things (e.g. the macro_link stuff) may deserve to be broken out into it's own files to improve clarity.
+
+exec.h:
+	The whole file needs to be examined for rewriting.
+	Some stuff from components.c seems to be declared here- is it also declared in components.h?
+	Line 107 has a "???" in a struct definition.
+
+freshline_directives.c:
+	This frankly hasn't REALLY been written yet.
+
+echo_tokens.c:
+	Do we want to add error reporting to echo_tokenhead()?
+	More STACK_* macros that don't need to start like that.
+
+complexlex.c:
+	dealloc_tokengroup() and similar need to have the old "refid" error reporting removed from function sigs.
+	Line 159: Apparently I was uncertain about something here. Best to check.
+	Line 613: A note about a function set/function that should be built. Might be further down in same file already...
+complexlex.h:
+	Line 95: Same note as 613 in .c
+
+simplelex.c:
+	Line 195: I think I got the two returns below this wrong. They probably need to be errors.
+	Line 420: Does anything else belong here?
+	Line 689: Maybe have the wrong variable?
+	Line 763: And again.
+	Line 832: and again...
+	Line 921: Do we want to actrually add this check?
+	Line 925: See line 832.
+	Line 1041: Again.
+	Line 1395: Maybe make a macro to package these error actions, so that can be used four times to save lines?
+simplelex.h:
+	Need some note on unused vs other chars.
+
+token.h:
+	Line 20: Need to check all the files for other definitions of struct token.
+	Need some notes on *_INVALID vs *_OTHER
+	Line 163 & 165: Finish these defines.
+
+headers.h:
+	Need to verify that all the relevant headers are included. Maybe make sub-headers for modularity?
+
+stack.c:
+	Do we want to add the error reporting to the stack functions?
+	Line 376: If a specific error is going to be used, then it should be BY NAME, not simply by number.
+	Line 453: Same.
+	Line 464: And again.
+	Line 476: And again.
+	Line 519: I suspect this needs an error return.
+	Line 545: There's a note here about verifying the proper use of (token_head*)->length.
+
+tokenmatching.c:
+	Various STACK_* macros should probably have the STACK_ bit removed.
+	Various functions have args from the previous style of error reporting: need to fix that.
+	Line 406: Should this REALLY be fixed instead of deleted? I think I may have moved past this.
+
+
+Finally: Finish the whole preprocessor!

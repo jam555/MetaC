@@ -457,7 +457,7 @@ retframe components_skipendersearchdeinit( stackpair *stkp, void *v_ )
 	}
 	tok = (token_head*)a;
 	
-		/* And "finally" (for this step), the tokebranch that organizes all */
+		/* And "finally" (for this step), the tokenbranch that organizes all */
 		/*  of that stuff.  */
 	STACKPOP_UINT( &( stkp->data ), a,  components_skipendersearchdeinit, res, macroargs_ENDRETFRAME );
 	if( ( (token_head*)a )->toktype != TOKTYPE_TOKENGROUP_EQUIVMERGE )
@@ -1374,34 +1374,6 @@ retframe shufflequeue_entry_macro_wrapper( stackpair *stkp, void *v )
 
 
 
-
-
-
-typedef struct ???1 ???1;
-struct ???1
-{
-	???;
-};
-
-typedef struct ???2 ???2;
-struct ???2
-{
-	charparrptr_parr *argnames;
-	
-	???1_parr *tree;
-};
-
-retframe ???( stackpair *stkp, void *v )
-{
-	???
-	
-	if( !stkp )
-	{
-		preproc_ERREXIT( 2, (uintptr_t)1, &stkp, &table );
-	}
-	
-	???
-}
 
 
 

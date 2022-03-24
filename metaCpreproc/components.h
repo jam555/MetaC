@@ -9,30 +9,6 @@
 	
 	
 	
-	extern uintptr_t searchstack_refid;
-		#define REFID_SUBIDS_searchstack__init 1, 0
-		#define REFID_SUBIDS_searchstack__components_stdsearchinit 2, 0
-			#define REFID_SUBIDS_searchstack__components_stdsearchinit__pushfunc 2, 1
-		#define REFID_SUBIDS_searchstack__components_sequencedsearchproceed 3, 0
-			#define REFID_SUBIDS_searchstack__components_sequencedsearchproceed__popfunc 3, 1
-			#define REFID_SUBIDS_searchstack__components_sequencedsearchproceed__pushfunc 4
-		#define REFID_SUBIDS_searchstack__components_stdsearchdeinit 5, 0
-			#define REFID_SUBIDS_searchstack__components_stdsearchdeinit__popfunc 5, 1
-			#define REFID_SUBIDS_searchstack__components_stdsearchdeinit__pushfunc 6
-		#define REFID_SUBIDS_searchstack__components_skipendersearchdeinit 7, 0
-			#define REFID_SUBIDS_searchstack__components_skipendersearchdeinit__popfunc 7, 1
-			#define REFID_SUBIDS_searchstack__components_skipendersearchdeinit__pushfunc 8
-		#define REFID_SUBIDS_searchstack__components_shufflequeue_entry_macro_call 9
-		#define REFID_SUBIDS_searchstack__components_shufflequeue_step_macro_call 10
-		#define REFID_SUBIDS_searchstack__components_shufflequeue_macro_link 11
-		#define REFID_SUBIDS_searchstack__components_shufflequeue_macro_token 12
-		#define REFID_SUBIDS_searchstack__components_shufflequeue_macro_run 13
-		
-	???
-		#define REFID_SUBIDS_searchstack__components_shufflequeue_exit_macro_call ???
-	
-	
-	
 	typedef struct genericnamed genericnamed;
 	struct genericnamed
 	{

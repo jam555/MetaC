@@ -30,15 +30,6 @@
 	
 	
 	
-	extern uintptr_t lexalike_refid;
-		#define REFID_SUBIDS_lexalike__tokenize_char 1, 0
-			#define REFID_SUBIDS_lexalike__tokenize_char__accumulate 1, 1
-		#define REFID_SUBIDS_lexalike__stack_testchar 2, 0
-			#define REFID_SUBIDS_lexalike__stack_testchar2 2, 1
-		#define REFID_SUBIDS_lexalike__get_extrachar 3
-	
-	
-	
 	/* The purpose of lexalike.c is to provide wrappers for charin(), */
 	/*  isspace(), etc., but which convert stuff to tokens so that there's */
 	/*  an easier way to support character delimiting, by moving it before */

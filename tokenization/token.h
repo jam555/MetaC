@@ -5,10 +5,6 @@
 	
 	
 	
-	uintptr_t assemble_token_refid;
-	
-	
-	
 	typedef struct token_head
 	{
 		uintptr_t toktype;

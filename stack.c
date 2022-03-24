@@ -533,7 +533,6 @@ int pop_block( stackframe *stk,  char *dest, size_t len )
 	return( 1 );
 }
 
-uintptr_t stack_token_refid;
 int push_token( stackframe *stk,  token_head *src )
 {
 	if( !src )

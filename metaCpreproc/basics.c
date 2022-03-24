@@ -246,8 +246,6 @@ retframe gentyped_search( stackpair *stkp, gentyped_parr *table, retframe (*tabl
 	}
 	
 		/* Shouldn't ever get here, but whatever. */
-	preproc_ERREXIT( 1, (uintptr_t)8, &stkp, &v, &table,  &a, &found );
-	
 	TRESPASSPATH( gentyped_search, "gentyped_search() returned from end instead of via switch. Should have defaulted to calling:" );
 		NOTELINE(); HEXARG( (uintptr_t)( seekother.func ) );
 		NOTESPACE(); HEXARG( (uintptr_t)( seekother.data ) );
