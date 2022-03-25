@@ -40,6 +40,18 @@ stackpair std_stacks;
 
 
 
+#define STACKCHECK( stack,  caller, endfunc ) \
+	STACK_CHECK( ( stack ),  &err, ( caller ), ( endfunc ) )
+#define STACKCHECK2( stack, v,  caller, endfunc ) \
+	STACK_CHECK2( ( stack ), ( v ),  &err, ( caller ), ( endfunc ) )
+
+#define STACKPOP_UINT( stk, dest,  caller, scratch, endfunc ) \
+	STACK_POP_UINT( ( stk ), ( dest ),  &errs, ( caller ), ( scratch ), ( endfunc ) )
+#define STACKPUSH_UINT( stk, val,  caller, scratch, endfunc ) \
+	STACK_PUSH_UINT( ( stk ), ( val ),  &errs, ( caller ), ( scratch ), ( endfunc ) )
+#define STACKPEEK_UINT( stk, offset, dest,  caller, scratch, endfunc ) \
+	STACK_PEEK_UINT( ( stk ), ( offset ), ( dest ),  &errs, ( caller ), ( scratch ), ( endfunc ) )
+
 #define CALLFRAMEFUNC( rethand, retval, callhand, callval,  caller ) \
 	CALL_FRAMEFUNC( stkp, rethand, retval, callhand, callval,  &errs, ( caller ), res, stack_ENDRETFRAME )
 #define RETFRAMEFUNC( caller ) \
@@ -82,19 +94,11 @@ retframe smart_dealloc_token( stackpair *stkp, void *v )
 		/* One way or another, this SHOULDN'T be the value actually getting */
 		/*  returned. But just in case... */
 	retframe ret = (retframe){ &end_run, (void*)0 };
+	int res;
 	
-	if( !stkp )
-	{
-		BADNULL( smart_dealloc_token, &stkp );
-		return( (retframe){ (framefunc)&end_run, (void*)0 } );
-	}
+	STACKCHECK( stkp,  smart_dealloc_token, macroargs_ENDRETFRAME );
 	
-	int res = peek_uintptr( stk->data,  0,  &a );
-	if( !res )
-	{
-		FAILEDINTFUNC( "peek_uintptr", smart_dealloc_token, res );
-		return( (retframe){ (framefunc)&end_run, (void*)0 } );
-	}
+	STACKPEEK_UINT( &( stk->data ), 0, &a,  smart_dealloc_token, res, macroargs_ENDRETFRAME );
 	th = (token_head*)a;
 	
 	if( th->toktype == TOKTYPE_TOKENGROUP_SAMEMERGE )
@@ -370,6 +374,8 @@ retframe dealloc_tokengroup
 	retframe ret = (retframe){ 0, 0 };
 	int res;
 	
+	STACKCHECK( stkp,  dealloc_tokengroup, macroargs_ENDRETFRAME );
+	
 	if( !tgrp )
 	{
 			/* Error! */
@@ -385,12 +391,10 @@ retframe dealloc_tokengroup
 	
 	if( tgrp->used )
 	{
-		res = push_uintptr( &( stkp->data ),  (uintptr_t)( tgrp->arr ) );
-		if( !res )
-		{
-			FAILEDINTFUNC( "push_uintptr", dealloc_tokengroup, res );
-			return( (retframe){ 0, 0 } );
-		}
+		STACKPUSH_UINT(
+			&( stkp->data ),  (uintptr_t)( tgrp->arr ),
+			dealloc_tokengroup, res, macroargs_ENDRETFRAME
+		);
 		
 		--( tgrp->used );
 		ret = complexlex_dealloctoken;
@@ -400,12 +404,10 @@ retframe dealloc_tokengroup
 			/* We need to actually pull the tokengroup's pointer off the */
 			/*  stack, since we're deleting it now. */
 		uintptr_t a;
-		res = pop_uintptr( stk->data,  &a );
-		if( !res )
-		{
-			FAILEDINTFUNC( "pop_uintptr", dealloc_tokengroup, res );
-			return( (retframe){ 0, 0 } );
-		}
+		STACKPOP_UINT(
+			&( stkp->data ), &a,
+			dealloc_tokengroup, res, macroargs_ENDRETFRAME
+		);
 		
 		
 #define dealloc_tokengroup_ONSUCC( val ) 
@@ -548,12 +550,7 @@ retframe dealloc_tokenbranch
 	uintptr_t a;
 	int res;
 	
-	if( !stkp || !tb )
-	{
-			/* Error! */
-		BADNULL2( dealloc_tokenbranch, &stkp, &tb );
-		return( (retframe){ 0, 0 } );
-	}
+	STACKCHECK2( stkp, tb,  dealloc_tokenbranch, macroargs_ENDRETFRAME );
 	
 	if( tb->lead )
 	{
@@ -574,12 +571,10 @@ retframe dealloc_tokenbranch
 		
 			/* We need to actually pull the tokenbranch's pointer off the */
 			/*  stack, since we're deleting it now. */
-		res = pop_uintptr( stk->data,  &a );
-		if( !res )
-		{
-			FAILEDINTFUNC( "pop_uintptr", dealloc_tokenbranch, res );
-			return( (retframe){ 0, 0 } );
-		}
+		STACKPOP_UINT(
+			&( stk->data ), &a,
+			dealloc_tokenbranch, res, macroargs_ENDRETFRAME
+		);
 		
 		
 		res = lib4_stdmemfuncs.dealloc( lib4_stdmemfuncs.data, (void*)tgrp );
@@ -600,12 +595,7 @@ retframe dealloc_tokenbranch
 	}
 	
 	
-	res = push_uintptr( &( stkp->data ),  a );
-	if( !res )
-	{
-		FAILEDINTFUNC( "push_uintptr", dealloc_tokenbranch, res );
-		return( (retframe){ 0, 0 } );
-	}
+	STACKPUSH_UINT( &( stkp->data ), a,  dealloc_tokenbranch, res, macroargs_ENDRETFRAME );
 	return( complexlex_dealloctoken );
 }
 
@@ -627,21 +617,12 @@ retframe accumulate_whitespace( stackpair *stkp, void *v )
 	uintptr_t a;
 	token_head *tmp, *th;
 	retframe ret = (retframe){ (framefunc)&end_run, (void*)0 };
+	int res;
 	
-	int res = pop_uintptr( &( stkp->data ),  &a );
-	if( !res )
-	{
-		FAILEDINTFUNC( "pop_uintptr", accumulate_whitespace, res );
-		return( ret );
-	}
+	STACKPOP_UINT( &( stkp->data ), &a,  accumulate_whitespace, res, macroargs_ENDRETFRAME );
 	th = (token_head*)a;
 	
-	res = pop_uintptr( &( stkp->data ),  0,  &a );
-	if( !res )
-	{
-		FAILEDINTFUNC( "pop_uintptr", accumulate_whitespace, res );
-		return( ret );
-	}
+	STACKPOP_UINT( &( stkp->data ), &a,  accumulate_whitespace, res, macroargs_ENDRETFRAME );
 	tmp = (token_head*)a;
 	
 	if
@@ -677,12 +658,7 @@ retframe accumulate_whitespace( stackpair *stkp, void *v )
 		)
 	)
 	{
-		res = push_uintptr( &( stkp->data ),  (uintptr_t)tmp );
-		if( !res )
-		{
-			FAILEDINTFUNC( "push_uintptr", accumulate_whitespace, res );
-			return( ret );
-		}
+		STACKPUSH_UINT( &( stkp->data ), (uintptr_t)tmp,  accumulate_whitespace, res, macroargs_ENDRETFRAME );
 		tmp = (token_head*)0;
 	}
 	
@@ -693,12 +669,7 @@ retframe accumulate_whitespace( stackpair *stkp, void *v )
 		return( ret );
 	}
 	
-	res = push_uintptr( &( stkp->data ),  (uintptr_t)tmp );
-	if( !res )
-	{
-		FAILEDINTFUNC( "push_uintptr", accumulate_whitespace, res );;
-		return( ret );
-	}
+	STACKPUSH_UINT( &( stkp->data ), (uintptr_t)tmp,  accumulate_whitespace, res, macroargs_ENDRETFRAME );
 	( (tokengroup*)tmp )->subtype = TOKTYPE_TOKENGROUP_WHITESPACE;
 	
 	CALLFRAMEFUNC(
@@ -722,14 +693,9 @@ retframe accumulate_token( stackpair *stkp, void *v )
 {
 	uintptr_t a;
 	retframe ret = (retframe){ (framefunc)&end_run, (void*)0 };
+	int res;
 	
-	int res = peek_uintptr( &( stkp->data ),  0,  &top );
-		/* TODO: Verify that this is correct. */
-	if( !res )
-	{
-		FAILEDINTFUNC( "peek_uintptr", accumulate_token, res );
-		return( ret );
-	}
+	STACKPEEK_UINT( &( stkp->data ), 0, &top,  accumulate_token, res, macroargs_ENDRETFRAME );
 	
 	if
 	(
@@ -757,18 +723,8 @@ retframe accumulate_token( stackpair *stkp, void *v )
 	}
 	tb->subtype = ( (token_head*)top )->toktype;
 	
-	res = pop_uintptr( &( stkp->data ),  &top );
-	if( !res )
-	{
-		FAILEDINTFUNC( "pop_uintptr", accumulate_token, res );
-		return( ret );
-	}
-	res = push_uintptr( &( stkp->data ),  (uintptr_t)&( tb->header ) );
-	if( !res )
-	{
-		FAILEDINTFUNC( "push_uintptr", accumulate_token, res );
-		return( ret );
-	}
+	STACKPOP_UINT( &( stkp->data ), &top,  accumulate_token, res, macroargs_ENDRETFRAME );
+	STACKPUSH_UINT( &( stkp->data ), (uintptr_t)&( tb->header ),  accumulate_token, res, macroargs_ENDRETFRAME );
 	
 	
 	res = push_retframe( &( stkp->ret ),  (retframe){ &conclude_accumulate_token, (void*)0 } );
@@ -787,19 +743,11 @@ retframe accumulate_token( stackpair *stkp, void *v )
 retframe conclude_accumulate_token( stackpair *stkp, void *v )
 {
 	uintptr_t top, white, bottom;
-	int res = pop_uintptr( &( stkp->data ),  &top );
-	if( !res )
-	{
-		FAILEDINTFUNC( "pop_uintptr", conclude_accumulate_token, res );
-		return( ret );
-	}
+	int res;
 	
-	res = pop_uintptr( &( stkp->data ),  &white );
-	if( !res )
-	{
-		FAILEDINTFUNC( "pop_uintptr", conclude_accumulate_token, res );
-		return( ret );
-	}
+	STACKPOP_UINT( &( stkp->data ), &top,  conclude_accumulate_token, res, macroargs_ENDRETFRAME );
+	
+	STACKPOP_UINT( &( stkp->data ), &white,  conclude_accumulate_token, res, macroargs_ENDRETFRAME );
 	if
 	(
 		( (token_head*)white )->toktype != TOKTYPE_SPACE &&
@@ -810,12 +758,7 @@ retframe conclude_accumulate_token( stackpair *stkp, void *v )
 		return( (retframe){ &accumulate_whitespace, (void*)0 } );
 	}
 	
-	res = peek_uintptr( &( stkp->data ),  0,  &bottom );
-	if( !res )
-	{
-		FAILEDINTFUNC( "peek_uintptr", conclude_accumulate_token, res );
-		return( ret );
-	}
+	STACKPEEK_UINT( &( stkp->data ), 0, &bottom,  conclude_accumulate_token, res, macroargs_ENDRETFRAME );
 	
 	if( ( (token_head*)bottom )->toktype == TOKTYPE_TOKENGROUP_EQUIVMERGE )
 	{
@@ -836,20 +779,16 @@ retframe conclude_accumulate_token( stackpair *stkp, void *v )
 		
 	} else {
 		
-		res = push_uintptr( &( stkp->data ),  white );
-		if( !res )
-		{
-			FAILEDINTFUNC( "push_uintptr", conclude_accumulate_token, res );
-			return( ret );
-		}
+		STACKPUSH_UINT(
+			&( stkp->data ), white,
+			conclude_accumulate_token, res, macroargs_ENDRETFRAME
+		);
 	}
 	
-	res = push_uintptr( &( stkp->data ),  top );
-	if( !res )
-	{
-		FAILEDINTFUNC( "push_uintptr", conclude_accumulate_token, res );
-		return( ret );
-	}
+	STACKPUSH_UINT(
+		&( stkp->data ), top,
+		conclude_accumulate_token, res, macroargs_ENDRETFRAME
+	);
 	
 	RETFRAMEFUNC( conclude_accumulate_token );
 }

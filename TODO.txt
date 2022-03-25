@@ -2,13 +2,15 @@ Special note:
 	The FAILED * FUNC macros should probably be supplemented with versions that implement the standard assigned-and-if() construct. That will save MANY lines.
 	Probably need to check all the files for *_refid variables, and delete them. Caught some, but probably not all.
 
+Aaaand the file is already out of date. Have been using already-defined stuff for the FAILED * FUNC macro note above. So, lots of line numbers below are off...
+
 
 err.c:
 	Line 1017: What goes there?
 	might need some sort of debug/release mode?
 
 demo_errs.c:
-	has a lot of STACK_* macros: the STACK_* bit on frpont has no particular point.
+	has a lot of STACK_* macros: the STACK_* bit on front has no particular point.
 
 lexalike.c:
 	has a lot of STACK_* macros: the STACK_* bit on frpont has no particular point.
@@ -68,7 +70,10 @@ simplelex.c:
 	Line 921: Do we want to actrually add this check?
 	Line 925: See line 832.
 	Line 1041: Again.
-	Line 1395: Maybe make a macro to package these error actions, so that can be used four times to save lines?
+	
+	New:
+	Line 187: Add a TRESPASSPATH error.
+	Also, have done a lot of rework, so line numbers are wrong now.
 simplelex.h:
 	Need some note on unused vs other chars.
 

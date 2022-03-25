@@ -35,6 +35,20 @@
 
 
 
+#define STACKCHECK( stack,  caller, endfunc ) \
+	STACK_CHECK( ( stack ),  &err, ( caller ), ( endfunc ) )
+#define STACKCHECK2( stack, v,  caller, endfunc ) \
+	STACK_CHECK2( ( stack ), ( v ),  &err, ( caller ), ( endfunc ) )
+
+#define STACKPEEK_UINT( stk, offset, dest,  caller, scratch, endfunc ) \
+	STACK_PEEK_UINT( ( stk ), ( offset ), ( dest ),  &err, ( caller ), ( scratch ), ( endfunc ) )
+#define STACKPOP_UINT( stk, dest,  caller, scratch, endfunc ) \
+	STACK_POP_UINT( ( stk ), ( dest ),  &err, ( caller ), ( scratch ), ( endfunc ) )
+#define STACKPUSH_UINT( stk, val,  caller, scratch, endfunc ) \
+	STACK_PUSH_UINT( ( stk ), ( val ),  &err, ( caller ), ( scratch ), ( endfunc ) )
+
+
+
 #define CALLFRAMEFUNC( rethand, retval, callhand, callval,  caller ) \
 	CALL_FRAMEFUNC( stkp, rethand, retval, callhand, callval,  &errs, ( caller ), res, stack_ENDRETFRAME )
 #define RETFRAMEFUNC( stkpair,  caller ) \
@@ -76,12 +90,10 @@ retframe echo_tokens_entrypoint( stackpair *stkp, void *v )
 	token_head *th;
 	uintptr_t a;
 	
-	int res = peek_uintptr( &( stkp->data ),  0,  &a );
-	if( !res )
-	{
-		FAILEDINTFUNC( "peek_uintptr", echo_tokens_entrypoint, res );
-		return( (retframe){ &end_run, (void*)0 } );
-	}
+	STACKCHECK( stkp,  echo_tokens_entrypoint, macroargs_ENDRETFRAME );
+	
+	int res;
+	STACKPEEK_UINT( &( stkp->data ), 0, &a,  echo_tokens_entrypoint, res, macroargs_ENDRETFRAME );
 	th = (token_head*)a;
 	if( !th )
 	{
@@ -248,6 +260,8 @@ retframe echo_token( stackpair *stkp, void *v )
 	token *t;
 	int len;
 	
+	STACKCHECK( stkp,  echo_token, macroargs_ENDRETFRAME );
+	
 	len = echo_tokenhead( stkp, v,  &th );
 	if( !len )
 	{
@@ -283,14 +297,13 @@ retframe echo_tokengroup_extension( stackpair *stkp, void *v )
 	uintptr_t a;
 	uintptr_t iter = (uintptr_t)v;
 	
-	int res = peek_uintptr( &( stkp->data ),  0, &a );
-	if( !res )
-	{
-		FAILEDINTFUNC( "peek_uintptr", echo_tokengroup_extension, res );
-			STACK_NOTELINE();
-			STACK_DATAPTR( &( stkp->data ) );
+	STACKCHECK( stkp,  echo_tokengroup_extension, macroargs_ENDRETFRAME );
+	
+	int res;
+#define echo_tokengroup_extension_END1() \
+		STACK_NOTELINE(); STACK_DATAPTR( &( stkp->data ) ); \
 		return( (retframe){ &end_run, (void*)0 } );
-	}
+	STACKPEEK_UINT(&( stkp->data ), 0, &a ,  echo_tokengroup_extension, res, echo_tokengroup_extension_END1 );
 	th = (token_head*)a;
 	
 	if( th->toktype != TOKTYPE_TOKENGROUP_SAMEMERGE )
@@ -314,14 +327,14 @@ retframe echo_tokengroup_extension( stackpair *stkp, void *v )
 			/* This will need to be popped by whatever gets defered to by */
 			/*  echo_tokengroup_extension(). Note that echo_tokenhead() */
 			/*  already does so... */
-		res = push_uintptr( &( stkp->data ),  (uintptr_t)( ( (tokengroup*)th )->arr->body[ iter ] ) );
-		if( !res )
-		{
-			FAILEDINTFUNC( "push_uintptr", echo_tokengroup_extension, res );
-				STACK_NOTELINE();
-				STACK_DATAPTR( &( stkp->data ) );
-			return( (retframe){ &end_run, (void*)0 } );
-		}
+		STACKPUSH_UINT(
+			&( stkp->data ),
+			(uintptr_t)( ( (tokengroup*)th )->arr->body[ iter ] ),
+			
+			echo_tokengroup_extension,
+			res,
+			echo_tokengroup_extension_END1
+		);
 		
 		putc( ',' );
 		
@@ -342,14 +355,14 @@ retframe echo_tokengroup_extension( stackpair *stkp, void *v )
 			/* "th" got repushed onto the stack before this function was */
 			/*  even called, so we need to repop it here, because we've now */
 			/*  finished echoing it out. */
-		res = pop_uintptr( &( stkp->data ),  &a );
-		if( !res )
-		{
-			FAILEDINTFUNC( "pop_uintptr", echo_tokengroup_extension, res );
-				STACK_NOTELINE();
-				STACK_DATAPTR( &( stkp->data ) );
-			return( (retframe){ &end_run, (void*)0 } );
-		}
+		STACKPOP_UINT(
+			&( stkp->data ),
+			&a,
+			
+			echo_tokengroup_extension,
+			res,
+			echo_tokengroup_extension_END1
+		);
 		
 		RETFRAMEFUNC( stkp,  echo_tokengroup_extension );
 	}
@@ -385,29 +398,33 @@ retframe echo_tokengroup( stackpair *stkp, void *v )
 	{
 		if( !( ( (tokengroup*)th )->arr ) )
 		{
-			BADNULL( echo_tokengroup_extension, &( ( ( (tokengroup*)th )->arr ) );
+			BADNULL( echo_tokengroup, &( ( ( (tokengroup*)th )->arr ) );
 			return( (retframe){ &end_run, (void*)0 } );
 		}
 		
-		res = push_uintptr( &( stkp->data ),  (uintptr_t)th );
-		if( !res )
-		{
-			FAILEDINTFUNC( "push_uintptr", echo_tokengroup, res );
-				STACK_NOTELINE();
-				STACK_DATAPTR( &( stkp->data ) );
-			return( (retframe){ &end_run, (void*)0 } );
-		}
+		/* ??? */
+#define echo_tokengroup_END1() \
+	STACK_NOTELINE(); STACK_DATAPTR( &( stkp->data ) ); \
+	return( (retframe){ &end_run, (void*)0 } );
+		STACKPUSH_UINT(
+			&( stkp->data ),
+			(uintptr_t)th,
+			
+			echo_tokengroup,
+			res,
+			echo_tokengroup_END1
+		);
 			/* This second uintptr_t will need to be popped by */
 			/*  echo_tokengroup_extension(). Note that echo_tokenhead() does */
 			/*  that already. */
-		res = push_uintptr( &( stkp->data ),  (uintptr_t)( ( (tokengroup*)th )->arr->body[ 0 ] ) );
-		if( !res )
-		{
-			FAILEDINTFUNC( "push_uintptr", echo_tokengroup, res );
-				STACK_NOTELINE();
-				STACK_DATAPTR( &( stkp->data ) );
-			return( (retframe){ &end_run, (void*)0 } );
-		}
+		STACKPUSH_UINT(
+			&( stkp->data ),
+			(uintptr_t)( ( (tokengroup*)th )->arr->body[ 0 ] ),
+			
+			echo_tokengroup,
+			res,
+			echo_tokengroup_END1
+		);
 		
 		putc( ',' );
 		
@@ -443,14 +460,11 @@ retframe echo_tokenbranch_conclude( stackpair *stkp, void *v )
 		/* "th" got repushed onto the stack before this function was */
 		/*  even called, so we need to repop it here, because we've now */
 		/*  finished echoing it out. */
-	int res = pop_uintptr( &( stkp->data ),  &a );
-	if( !res )
-	{
-		FAILEDINTFUNC( "pop_uintptr", echo_tokenbranch_conclude, res );
-			STACK_NOTELINE();
-			STACK_DATAPTR( &( stkp->data ) );
+	int res;
+#define echo_tokenbranch_conclude_END1() \
+		STACK_NOTELINE(); STACK_DATAPTR( &( stkp->data ) ); \
 		return( (retframe){ &end_run, (void*)0 } );
-	}
+	STACKPOP_UINT( &( stkp->data ), &a,  echo_tokenbranch_conclude, res, echo_tokenbranch_conclude_END1 );
 	
 	RETFRAMEFUNC( stkp,  echo_tokenbranch_conclude );
 }
@@ -458,15 +472,12 @@ retframe echo_tokenbranch_tail( stackpair *stkp, void *v )
 {
 	token_head *th;
 	uintptr_t a;
+	int res;
 	
-	int res = peek_uintptr( &( stkp->data ),  0,  &a );
-	if( !res )
-	{
-		FAILEDINTFUNC( "peek_uintptr", echo_tokenbranch_tail, res );
-			STACK_NOTELINE();
-			STACK_DATAPTR( &( stkp->data ) );
+#define echo_tokenbranch_tail_END1() \
+		STACK_NOTELINE(); STACK_DATAPTR( &( stkp->data ) ); \
 		return( (retframe){ &end_run, (void*)0 } );
-	}
+	STACKPEEK_UINT( &( stkp->data ), 0, &a,  echo_tokenbranch_tail, res, echo_tokenbranch_tail_END1 );
 	th = (token_head*)a;
 	if( !th )
 	{
@@ -489,14 +500,10 @@ retframe echo_tokenbranch_tail( stackpair *stkp, void *v )
 	if( ( (tokenbranch*)th )->tail )
 	{
 			/* As with the second push in echo_tokenbranch()... */
-		res = push_uintptr( &( stkp->data ),  (uintptr_t)( ( (tokenbranch*)th )->tail ) );
-		if( !res )
-		{
-			FAILEDINTFUNC( "push_uintptr", echo_tokenbranch_tail, res );
-				STACK_NOTELINE();
-				STACK_DATAPTR( &( stkp->data ) );
-			return( (retframe){ &end_run, (void*)0 } );
-		}
+		STACKPUSH_UINT(
+			&( stkp->data ), (uintptr_t)( ( (tokenbranch*)th )->tail ),
+			echo_tokenbranch_tail, res, echo_tokenbranch_tail_END1
+		);
 		
 		CALLFRAMEFUNC(
 			&echo_tokenbranch_conclude, (void*)0,
@@ -512,15 +519,12 @@ retframe echo_tokenbranch_body( stackpair *stkp, void *v )
 {
 	token_head *th;
 	uintptr_t a;
+	int res;
 	
-	int res = peek_uintptr( &( stkp->data ),  0,  &a );
-	if( !res )
-	{
-		FAILEDINTFUNC( "peek_uintptr", echo_tokenbranch_body, res );
-			STACK_NOTELINE();
-			STACK_DATAPTR( &( stkp->data ) );
+#define echo_tokenbranch_body_END1() \
+		STACK_NOTELINE(); STACK_DATAPTR( &( stkp->data ) ); \
 		return( (retframe){ &end_run, (void*)0 } );
-	}
+	STACKPEEK_UINT( &( stkp->data ), 0, &a,  echo_tokenbranch_body, res, echo_tokenbranch_body_END1 );
 	th = (token_head*)a;
 	if( !th )
 	{
@@ -543,14 +547,10 @@ retframe echo_tokenbranch_body( stackpair *stkp, void *v )
 	if( ( (tokenbranch*)th )->body )
 	{
 			/* As with the second push in echo_tokenbranch()... */
-		res = push_uintptr( &( stkp->data ),  (uintptr_t)( ( (tokenbranch*)th )->body ) );
-		if( !res )
-		{
-			FAILEDINTFUNC( "push_uintptr", echo_tokenbranch_body, res );
-				STACK_NOTELINE();
-				STACK_DATAPTR( &( stkp->data ) );
-			return( (retframe){ &end_run, (void*)0 } );
-		}
+		STACKPUSH_UINT(
+			&( stkp->data ), (uintptr_t)( ( (tokenbranch*)th )->body ),
+			echo_tokenbranch_body, res, echo_tokenbranch_body_END1
+		);
 		
 		CALLFRAMEFUNC(
 			&echo_tokenbranch_tail, (void*)0,
@@ -565,14 +565,16 @@ retframe echo_tokenbranch_body( stackpair *stkp, void *v )
 retframe echo_tokenbranch( stackpair *stkp, void *v )
 {
 	token_head *th;
+	int res;
 	
-	int res = echo_tokenhead( &( stkp->data ), v,  &th );
+#define echo_tokenbranch_END1() \
+		STACK_NOTELINE(); STACK_DATAPTR( &( stkp->data ) ); \
+		return( (retframe){ &end_run, (void*)0 } );
+	res = echo_tokenhead( &( stkp->data ), v,  &th );
 	if( !res )
 	{
 		FAILEDINTFUNC( "echo_tokenhead", echo_tokenbranch, res );
-			STACK_NOTELINE();
-			STACK_DATAPTR( &( stkp->data ) );
-		return( (retframe){ &end_run, (void*)0 } );
+		echo_tokenbranch_END1();
 	}
 	
 	if( th->toktype != TOKTYPE_TOKENGROUP_EQUIVMERGE )
@@ -589,27 +591,19 @@ retframe echo_tokenbranch( stackpair *stkp, void *v )
 	putc( ',' );
 	
 		/* We'll need to refer to "th" in later calls, so repush it. */
-	res = push_uintptr( &( stkp->data ),  (uintptr_t)th );
-	if( !res )
-	{
-		FAILEDINTFUNC( "push_uintptr", echo_tokenbranch, res );
-			STACK_NOTELINE();
-			STACK_DATAPTR( &( stkp->data ) );
-		return( (retframe){ &end_run, (void*)0 } );
-	}
+	STACKPUSH_UINT(
+		&( stkp->data ), (uintptr_t)th,
+		echo_tokenbranch, res, echo_tokenbranch_END1
+	);
 	if( ( (tokenbranch*)th )->lead )
 	{
 			/* This second uintptr_t will need to be popped by */
 			/*  echo_tokengroup_extension(), albeit likely in what it defers */
 			/*  to. Note that echo_tokenhead() does that already. */
-		res = push_uintptr( &( stkp->data ),  (uintptr_t)( ( (tokenbranch*)th )->lead ) );
-		if( !res )
-		{
-			FAILEDINTFUNC( "push_uintptr", echo_tokenbranch, res );
-				STACK_NOTELINE();
-				STACK_DATAPTR( &( stkp->data ) );
-			return( (retframe){ &end_run, (void*)0 } );
-		}
+		STACKPUSH_UINT(
+			&( stkp->data ), (uintptr_t)( ( (tokenbranch*)th )->lead ),
+			echo_tokenbranch, res, echo_tokenbranch_END1
+		);
 		
 			/* Note that echo_tokenbranch_body() needs to be able to */
 			/*  dynamically dispatch according to the type of token pointed */

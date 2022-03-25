@@ -38,6 +38,43 @@
 
 
 
+#define PUSHCHAR( stk, val,  caller, scratch ) \
+	( scratch ) = push_char( ( stk ),  ( val ) ); \
+	if( !( scratch ) ) { \
+		STACK_FAILEDINTFUNC( "push_char", ( caller ), ( scratch ) ); \
+		return( (retframe){ &end_run, (void*)0 } ); }
+
+#define POPTOKENHEAD( stk, varptr,  caller, scratch ) \
+	( scratch ) = pop_tokenhead( ( stk ),  ( varptr ) ); \
+	if( !( scratch ) ) { \
+		STACK_FAILEDINTFUNC( "push_tokenhead", ( caller ), ( scratch ) ); \
+		return( (retframe){ &end_run, (void*)0 } ); }
+#define PUSHTOKENHEAD( stk, val,  caller, scratch ) \
+	( scratch ) = push_tokenhead( ( stk ),  ( val ) ); \
+	if( !( scratch ) ) { \
+		STACK_FAILEDINTFUNC( "push_tokenhead", ( caller ), ( scratch ) ); \
+		return( (retframe){ &end_run, (void*)0 } ); }
+
+#define UNGETEXTRACHAR_1( val,  caller, scratch ) \
+	if( 1 ) { \
+		( scratch ) = unget_extrachar( ( val ) ); \
+		if( !( scratch ) ) { \
+			STACK_FAILEDINTFUNC( "unget_extrachar", ( caller ), ( scratch ) ); \
+			return( (retframe){ &end_run, (void*)0 } ); } }
+#define SETHAND_ENDRUN() hand = &end_run;
+#define RETURN_ENDRUN() return( (retframe){ &end_run, (void*)0 } );
+#define UNGETEXTRACHAR_2( stk, val, tokhead,  caller, scratch, onerr ) \
+	if( 1 ) 
+		( scratch ) = unget_extrachar( ( val ) ); \
+		if( ( scratch ) ) { /* Success. */ \
+			PUSHTOKENHEAD( &( ( stk )->data ), ( tokhead ),  ( caller ), ( scratch ) ); \
+			RETFRAMEFUNC( ( caller ) ); \
+		} else { /* Failure. */ \
+			STACK_FAILEDINTFUNC( "unget_extrachar", ( caller ), ( scratch ) ); \
+			( onerr )(); } }
+
+
+
 retframe head_lex( stackpair *stkp, void *v )
 {
 	retframe ret = (retframe){ (framefunc)&end_run, (void*)0 };
@@ -127,18 +164,8 @@ retframe head_lex( stackpair *stkp, void *v )
 		
 		th.toktype = ( a.c == '$' ? TOKTYPE_DOLLAR : TOKTYPE_GRAVE );
 		
-		res2 = push_char( &( stkp->data ),  a.c );
-		if( !res2 )
-		{
-			STACK_FAILEDINTFUNC( "push_char", head_lex, res2 );
-			return( (retframe){ &end_run, (void*)0 } );
-		}
-		res2 = push_tokenhead( &( stkp->data ),  th );
-		if( !res2 )
-		{
-			STACK_FAILEDINTFUNC( "push_tokenhead", head_lex, res2 );
-			return( (retframe){ &end_run, (void*)0 } );
-		}
+		PUSHCHAR( &( stkp->data ), a.c,   head_lex, res2);
+		PUSHTOKENHEAD( &( stkp->data ), th,  head_lex, res2 );
 		
 		RETFRAMEFUNC( head_lex );
 		
@@ -148,18 +175,8 @@ retframe head_lex( stackpair *stkp, void *v )
 		
 		th.toktype = TOKTYPE_OCTO;
 		
-		res2 = push_char( &( stkp->data ),  a.c );
-		if( !res2 )
-		{
-			STACK_FAILEDINTFUNC( "push_char", head_lex, res2 );
-			return( (retframe){ &end_run, (void*)0 } );
-		}
-		res2 = push_tokenhead( &( stkp->data ),  th );
-		if( !res2 )
-		{
-			STACK_FAILEDINTFUNC( "push_token_head", head_lex, res2 );
-			return( (retframe){ &end_run, (void*)0 } );
-		}
+		PUSHCHAR( &( stkp->data ), a.c,   head_lex, res2);
+		PUSHTOKENHEAD( &( stkp->data ), th,  head_lex, res2 );
 		
 		RETFRAMEFUNC( head_lex );
 		
@@ -176,38 +193,16 @@ retframe head_lex( stackpair *stkp, void *v )
 		
 		th.toktype = TOKTYPE_OTHER;
 		
-		res2 = push_char( &( stkp->data ),  a.c );
-		if( !res2 )
-		{
-			STACK_FAILEDINTFUNC( "push_char", head_lex, res2 );
-			return( (retframe){ &end_run, (void*)0 } );
-		}
-		res2 = push_tokenhead( &( stkp->data ),  th );
-		if( !res2 )
-		{
-			STACK_FAILEDINTFUNC( "push_token_head", head_lex, res2 );
-			return( (retframe){ &end_run, (void*)0 } );
-		}
+		PUSHCHAR( &( stkp->data ), a.c,   head_lex, res2);
+		PUSHTOKENHEAD( &( stkp->data ), th,  head_lex, res2 );
 		
 		RETFRAMEFUNC( head_lex );
 	}
 	
-	/* TODO: Are these two REALLY supposed to exit like this, instead of with errors? */
+	PUSHCHAR( &( stkp->data ), a.c,   head_lex, res2);
+	PUSHTOKENHEAD( &( stkp->data ), th,  head_lex, res2 );
 	
-	res2 = push_char( &( stkp->data ),  a.c );
-	if( !res )
-	{
-		STACK_TRESPASSPATH( head_lex, "WARNING: head_lex() exited via a suspect route." );
-		RETFRAMEFUNC( head_lex );
-	}
-	
-	res2 = push_tokenhead( &( stkp->data ),  th );
-	if( !res )
-	{
-		STACK_TRESPASSPATH( head_lex, "WARNING: head_lex() exited via a suspect route." );
-		RETFRAMEFUNC( head_lex );
-	}
-	
+		/* TODO: add a TRESPASSPATH() error here. */
 	return( ret );
 }
 
@@ -216,14 +211,10 @@ retframe space_lex( stackpair *stkp, void *v )
 	token_head th;
 	framefunc hand = &space_lex;
 	extrachar a;
+	int res;
 	
 	/* Validation stuff. */
-	int res = pop_tokenhead( &( stkp->data ),  &th );
-	if( !res )
-	{
-		STACK_FAILEDINTFUNC( "pop_tokenhead", space_lex, res );
-		return( (retframe){ &end_run, (void*)0 } );
-	}
+	POPTOKENHEAD( &( stkp->data ), &th,  space_lex, res );
 	if( th.toktype != TOKTYPE_SPACE )
 	{
 		STACK_TRESPASSPATH( space_lex, "ERROR: space_lex encountered a non-_SPACE token type." );
@@ -246,41 +237,11 @@ retframe space_lex( stackpair *stkp, void *v )
 		
 	} else {
 		
-		res = unget_extrachar( a );
-		if( res )
-		{
-			/* Success. */
-			
-			res = push_tokenhead( &( stkp->data ),  th );
-			if( !res )
-			{
-				STACK_FAILEDINTFUNC( "push_tokenhead", space_lex, res );
-				return( (retframe){ &end_run, (void*)0 } );
-			}
-			
-			RETFRAMEFUNC( space_lex );
-			
-		} else {
-			
-			/* Fail, but don't immediately end. */
-			
-			STACK_FAILEDINTFUNC( "unget_extrachar", space_lex, res );
-			hand = &end_run;
-		}
+		UNGETEXTRACHAR_2( stkp, a, th,  space_lex, res, SETHAND_ENDRUN );
 	}
 	
-	res = push_char( &( stkp->data ),  a.c );
-	if( !res )
-	{
-		STACK_FAILEDINTFUNC( "push_char", space_lex, res );
-		return( (retframe){ &end_run, (void*)0 } );
-	}
-	res = push_tokenhead( &( stkp->data ),  th );
-	if( !res )
-	{
-		STACK_FAILEDINTFUNC( "push_tokenhead", space_lex, res );
-		return( (retframe){ &end_run, (void*)0 } );
-	}
+	PUSHCHAR( &( stkp->data ), a.c,  space_lex, res );
+	PUSHTOKENHEAD( &( stkp->data ), th,  space_lex, res );
 	
 	return( (retframe){ hand, (void*)0 } );
 }
@@ -290,14 +251,10 @@ retframe newline_lex( stackpair *stkp, void *v )
 	token_head th;
 	framefunc hand = &newline_lex;
 	extrachar a;
+	int res;
 	
 	/* Validation stuff. */
-	int res = pop_tokenhead( &( stkp->data ),  &th );
-	if( !res )
-	{
-		STACK_FAILEDINTFUNC( "pop_tokenhead", newline_lex, res );
-		return( (retframe){ &end_run, (void*)0 } );
-	}
+	POPTOKENHEAD( &( stkp->data ), &th,  newline_lex, res );
 	if( th.toktype != TOKTYPE_NEWLINE )
 	{
 		STACK_TRESPASSPATH( newline_lex, "ERROR: newline_lex encountered a non-_NEWLINE token type." );
@@ -320,43 +277,11 @@ retframe newline_lex( stackpair *stkp, void *v )
 		
 	} else {
 		
-		res = unget_extrachar( a );
-		if( res )
-		{
-			/* Success. */
-			
-			res = push_tokenhead( &( stkp->data ),  th );
-			if( !res )
-			{
-				STACK_FAILEDINTFUNC( "push_tokenhead", newline_lex, res );
-				return( (retframe){ &end_run, (void*)0 } );
-			}
-			
-			RETFRAMEFUNC( newline_lex );
-			
-		} else {
-			
-			/* Fail. */
-			
-			STACK_FAILEDINTFUNC( "unget_extrachar", newline_lex, res );
-			hand = &end_run;
-			
-			/* Fall-through. */
-		}
+		UNGETEXTRACHAR_2( stkp, a, th,  newline_lex, res, SETHAND_ENDRUN );
 	}
 	
-	res = push_char( &( stkp->data ),  a.c );
-	if( !res )
-	{
-		STACK_FAILEDINTFUNC( "push_char", newline_lex, res );
-		return( (retframe){ &end_run, (void*)0 } );
-	}
-	res = push_tokenhead( &( stkp->data ),  th );
-	if( !res )
-	{
-		STACK_FAILEDINTFUNC( "push_tokenhead", newline_lex, res );
-		return( (retframe){ &end_run, (void*)0 } );
-	}
+	PUSHCHAR( &( stkp->data ),  a.c,  newline_lex, res );
+	PUSHTOKENHEAD( &( stkp->data ),  th,  newline_lex, res );
 	
 	return( (retframe){ hand, (void*)0 } );
 }
@@ -368,12 +293,8 @@ retframe name_lex( stackpair *stkp, void *v )
 	extrachar a;
 	
 	/* Validation stuff. */
-	int res = pop_tokenhead( &( stkp->data ),  &th );
-	if( !res )
-	{
-		STACK_FAILEDINTFUNC( "pop_tokenhead", name_lex, res );
-		return( (retframe){ &end_run, (void*)0 } );
-	}
+	int res;
+	POPTOKENHEAD( &( stkp->data ), &th,  name_lex, res );
 	if( th.toktype != TOKTYPE_NAME )
 	{
 		STACK_TRESPASSPATH( name_lex, "ERROR: name_lex encountered a non-_NAME token type." );
@@ -396,43 +317,11 @@ retframe name_lex( stackpair *stkp, void *v )
 		
 	} else {
 		
-		res = unget_extrachar( a );
-		if( res )
-		{
-			/* Success. */
-			
-			res = push_tokenhead( &( stkp->data ),  th );
-			if( !res )
-			{
-				STACK_FAILEDINTFUNC( "push_tokenhead", name_lex, res );
-				return( (retframe){ &end_run, (void*)0 } );
-			}
-			
-			RETFRAMEFUNC( name_lex );
-			
-		} else {
-			
-			/* Fail. */
-			
-			STACK_FAILEDINTFUNC( "unget_extrachar", name_lex, res );
-			hand = &end_run;
-			
-			/* ... */
-		}
+		UNGETEXTRACHAR_2( stkp, a, th,  name_lex, res, SETHAND_ENDRUN );
 	}
 	
-	res = push_char( &( stkp->data ),  a.c );
-	if( !res )
-	{
-		STACK_FAILEDINTFUNC( "push_char", name_lex, res );
-		return( (retframe){ &end_run, (void*)0 } );
-	}
-	res = push_tokenhead( &( stkp->data ),  th );
-	if( !res )
-	{
-		STACK_FAILEDINTFUNC( "push_tokenhead", name_lex, res );
-		return( (retframe){ &end_run, (void*)0 } );
-	}
+	PUSHCHAR( &( stkp->data ), a.c,  name_lex, res );
+	PUSHTOKENHEAD( &( stkp->data ), th,  name_lex, res );
 	
 	return( (retframe){ hand, (void*)0 } );
 }
@@ -444,12 +333,7 @@ retframe numberentry_lex( stackpair *stkp, void *v )
 	framefunc hand = &end_run;
 	extrachar a;
 	
-	int res = pop_tokenhead( &( stkp->data ),  &th );
-	if( !res )
-	{
-		STACK_FAILEDINTFUNC( "pop_tokenhead", numberentry_lex, res );
-		return( (retframe){ &end_run, (void*)0 } );
-	}
+	POPTOKENHEAD( &( stkp->data ), &th,  numberentry_lex, res );
 	if( th.toktype != TOKTYPE_NUMBER )
 	{
 		STACK_TRESPASSPATH( numberentry_lex, "ERROR: numberentry_lex encountered a non-_NUMBER token type." );
@@ -482,8 +366,7 @@ retframe numberentry_lex( stackpair *stkp, void *v )
 #define numberentry_lex2_FETCHFAIL( err ) \
 	if( 1 ) { \
 		STACK_MONADICFAILURE( numberentry_lex, "get_extrachar", (err) ); \
-		return( (retframe){ &end_run, (void*)0 } ); \
-	}
+		return( (retframe){ &end_run, (void*)0 } ); }
 				ecr = get_extrachar( stkp, v );
 				EXTRACHAR_BODYMATCH( ecr, LIB4_OP_SETa, numberentry_lex2_FETCHFAIL )
 			}
@@ -519,48 +402,18 @@ retframe numberentry_lex( stackpair *stkp, void *v )
 					break;
 				
 				default:
-					res = unget_extrachar( a );
-					if( res )
-					{
-						/* Success. */
-						
-						res = push_tokenhead( &( stkp->data ),  th );
-						if( !res )
-						{
-							STACK_FAILEDINTFUNC( "push_tokenhead", numberentry_lex, res );
-							return( (retframe){ &end_run, (void*)0 } );
-						}
-						
-						RETFRAMEFUNC( numberentry_lex );
-						
-					} else {
-						
-						/* Fail. */
-						
-						STACK_FAILEDINTFUNC( "unget_extrachar", numberentry_lex, res );
-						return( (retframe){ &end_run, (void*)0 } );
-					}
+					UNGETEXTRACHAR_2( stkp, a, th,  numberentry_lex, res, RETURN_ENDRUN );
 					
 					break;
 			}
 			
 			th.length += 1;
-			res = push_char( &( stkp->data ),  a.c );
-			if( !res )
-			{
-				STACK_FAILEDINTFUNC( "push_char", numberentry_lex, res );
-				return( (retframe){ &end_run, (void*)0 } );
-			}
+			PUSHCHAR( &( stkp->data ), a.c,  numberentry_lex, res );
 			
 			break;
 	}
 	
-	res = push_tokenhead( &( stkp->data ),  th );
-	if( !res )
-	{
-		STACK_FAILEDINTFUNC( "push_tokenhead", numberentry_lex, res );
-		return( (retframe){ &end_run, (void*)0 } );
-	}
+	PUSHTOKENHEAD( &( stkp->data ), th,  numberentry_lex, res );
 	
 	return( (retframe){ hand, (void*)0 } );
 }
@@ -570,13 +423,9 @@ retframe numberdecimal_lex( stackpair *stkp, void *v )
 		/* We loop by default. */
 	framefunc hand = &numberdecimal_lex;
 	extrachar a;
+	int res;
 	
-	int res = pop_tokenhead( &( stkp->data ),  &th );
-	if( !res )
-	{
-		STACK_FAILEDINTFUNC( "pop_tokenhead", numberdecimal_lex, res );
-		return( (retframe){ &end_run, (void*)0 } );
-	}
+	POPTOKENHEAD( &( stkp->data ), &th,  numberdecimal_lex, res );
 	if( th.toktype != TOKTYPE_NUMBER )
 	{
 		STACK_TRESPASSPATH( numberdecimal_lex, "ERROR: numberdecimal_lex encountered a non-_NUMBER token type." );
@@ -594,42 +443,12 @@ retframe numberdecimal_lex( stackpair *stkp, void *v )
 	if( !isdigit( a.c ) )
 	{
 			/* One way or another, we want to break the loop. */
-		res = unget_extrachar( a );
-		if( res )
-		{
-			/* Success. */
-			
-			res = push_tokenhead( &( stkp->data ),  th );
-			if( !res )
-			{
-				STACK_FAILEDINTFUNC( "push_tokenhead", numberdecimal_lex, res );
-				return( (retframe){ &end_run, (void*)0 } );
-			}
-			
-			RETFRAMEFUNC( numberdecimal_lex );
-			
-		} else {
-			
-			/* Fail. */
-			
-			STACK_FAILEDINTFUNC( "unget_extrachar", numberdecimal_lex, res );
-			return( (retframe){ &end_run, (void*)0 } );
-		}
+		UNGETEXTRACHAR_2( stkp, a, th,  numberdecimal_lex, res, RETURN_ENDRUN );
 	}
 	
-	res = push_char( &( stkp->data ),  a.c );
-	if( !res )
-	{
-		STACK_FAILEDINTFUNC( "push_char", numberdecimal_lex, res );
-		return( (retframe){ &end_run, (void*)0 } );
-	}
+	PUSHCHAR( &( stkp->data ), a.c,  numberdecimal_lex, res );
 	th.length += 1;
-	res = push_tokenhead( &( stkp->data ),  th );
-	if( !res )
-	{
-		STACK_FAILEDINTFUNC( "push_tokenhead", name_lex, res );
-		return( (retframe){ &end_run, (void*)0 } );
-	}
+	PUSHTOKENHEAD( &( stkp->data ), th,  numberdecimal_lex, res );
 	
 	return( (retframe){ hand, (void*)0 } );
 }
@@ -640,12 +459,8 @@ retframe numberhexadecimal_lex( stackpair *stkp, void *v )
 	framefunc hand = &numberhexadecimal_lex;
 	extrachar a;
 	
-	int res = pop_tokenhead( &( stkp->data ),  &th );
-	if( !res )
-	{
-		STACK_FAILEDINTFUNC( "pop_tokenhead", numberhexadecimal_lex, res );
-		return( (retframe){ &end_run, (void*)0 } );
-	}
+	int res;
+	POPTOKENHEAD( &( stkp->data ), &th,  numberhexadecimal_lex, res );
 	if( th.toktype != TOKTYPE_NUMBER )
 	{
 		STACK_TRESPASSPATH( numberhexadecimal_lex, "ERROR: numberhexadecimal_lex encountered a non-_NUMBER token type." );
@@ -663,43 +478,13 @@ retframe numberhexadecimal_lex( stackpair *stkp, void *v )
 	if( !isxdigit( a.c ) )
 	{
 			/* One way or another, we want to break the loop. */
-		res = unget_extrachar( a );
-		if( res )
-		{
-			/* Success. */
-			
-			res = push_tokenhead( &( stkp->data ),  th );
-			if( !res )
-			{
-				STACK_FAILEDINTFUNC( "push_tokenhead", numberhexadecimal_lex, res );
-				return( (retframe){ &end_run, (void*)0 } );
-			}
-			
-			RETFRAMEFUNC( numberhexadecimal_lex );
-			
-		} else {
-			
-			/* Fail. */
-			
-			STACK_FAILEDINTFUNC( "unget_extrachar", numberhexadecimal_lex, res );
-			return( (retframe){ &end_run, (void*)0 } );
-		}
+		UNGETEXTRACHAR_2( stkp, a, th,  numberhexadecimal_lex, res, RETURN_ENDRUN );
 	}
 	
 		/* This will probably trigger a compile error: look up proper var. */
 	th.length += 1;
-	res = push_char( &( stkp->data ),  a.c );
-	if( !res )
-	{
-		STACK_FAILEDINTFUNC( "push_char", numberhexadecimal_lex, res );
-		return( (retframe){ &end_run, (void*)0 } );
-	}
-	res = push_tokenhead( &( stkp->data ),  th );
-	if( !res )
-	{
-		STACK_FAILEDINTFUNC( "push_tokenhead", numberhexadecimal_lex, res );
-		return( (retframe){ &end_run, (void*)0 } );
-	}
+	PUSHCHAR( &( stkp->data ), a.c,  numberhexadecimal_lex, res );
+	PUSHTOKENHEAD( &( stkp->data ), th,  numberhexadecimal_lex, res );
 	
 	return( (retframe){ hand, (void*)0 } );
 }
@@ -710,12 +495,8 @@ retframe numberoctal_lex( stackpair *stkp, void *v )
 	framefunc hand = &numberoctal_lex;
 	extrachar a;
 	
-	int res = pop_tokenhead( &( stkp->data ),  &th );
-	if( !res )
-	{
-		STACK_FAILEDINTFUNC( "pop_tokenhead", numberoctal_lex, res );
-		return( (retframe){ &end_run, (void*)0 } );
-	}
+	int res;
+	POPTOKENHEAD( &( stkp->data ), &th,  numberoctal_lex, res );
 	if( th.toktype != TOKTYPE_NUMBER )
 	{
 		STACK_TRESPASSPATH( numberoctal_lex, "ERROR: numberoctal_lex encountered a non-_NUMBER token type." );
@@ -736,43 +517,13 @@ retframe numberoctal_lex( stackpair *stkp, void *v )
 	) )
 	{
 			/* One way or another, we want to break the loop. */
-		res = unget_extrachar( a );
-		if( res )
-		{
-			/* Success. */
-			
-			res = push_tokenhead( &( stkp->data ),  th );
-			if( !res )
-			{
-				STACK_FAILEDINTFUNC( "push_tokenhead", numberoctal_lex, res );
-				return( (retframe){ &end_run, (void*)0 } );
-			}
-			
-			RETFRAMEFUNC( numberoctal_lex );
-			
-		} else {
-			
-			/* Fail. */
-			
-			STACK_FAILEDINTFUNC( "unget_extrachar", numberoctal_lex, res );
-			return( (retframe){ &end_run, (void*)0 } );
-		}
+		UNGETEXTRACHAR_2( stkp, a, th,  numberoctal_lex, res, RETURN_ENDRUN );
 	}
 	
 		/* This will probably trigger a compile error: look up proper var. */
 	th.length += 1;
-	res = push_char( &( stkp->data ),  a.c );
-	if( !res )
-	{
-		STACK_FAILEDINTFUNC( "push_char", numberoctal_lex, res );
-		return( (retframe){ &end_run, (void*)0 } );
-	}
-	res = push_tokenhead( &( stkp->data ),  th );
-	if( !res )
-	{
-		STACK_FAILEDINTFUNC( "push_tokenhead", numberoctal_lex, res );
-		return( (retframe){ &end_run, (void*)0 } );
-	}
+	PUSHCHAR( &( stkp->data ), a.c,  numberoctal_lex, res );
+	PUSHTOKENHEAD( &( stkp->data ), th,  numberoctal_lex, res );
 	
 	return( (retframe){ hand, (void*)0 } );
 }
@@ -783,12 +534,8 @@ retframe numberbinary_lex( stackpair *stkp, void *v )
 	framefunc hand = &numberbinary_lex;
 	extrachar a;
 	
-	int res = pop_tokenhead( &( stkp->data ),  &th );
-	if( !res )
-	{
-		STACK_FAILEDINTFUNC( "pop_tokenhead", numberbinary_lex, res );
-		return( (retframe){ &end_run, (void*)0 } );
-	}
+	int res;
+	POPTOKENHEAD( &( stkp->data ), &th,  numberbinary_lex, res );
 	if( th.toktype != TOKTYPE_NUMBER )
 	{
 		STACK_TRESPASSPATH( numberbinary_lex, "ERROR: numberbinary_lex encountered a non-_NUMBER token type." );
@@ -806,43 +553,13 @@ retframe numberbinary_lex( stackpair *stkp, void *v )
 	if( !( a.c == '0' || a.c == '1' ) )
 	{
 			/* One way or another, we want to break the loop. */
-		res = unget_extrachar( a );
-		if( res )
-		{
-			/* Success. */
-			
-			res = push_tokenhead( &( stkp->data ),  th );
-			if( !res )
-			{
-				STACK_FAILEDINTFUNC( "push_tokenhead", numberbinary_lex, res );
-				return( (retframe){ &end_run, (void*)0 } );
-			}
-			
-			RETFRAMEFUNC( numberbinary_lex );
-			
-		} else {
-			
-			/* Fail. */
-			
-			STACK_FAILEDINTFUNC( "unget_extrachar", numberbinary_lex, res );
-			return( (retframe){ &end_run, (void*)0 } );
-		}
+		UNGETEXTRACHAR_2( stkp, a, th,  numberbinary_lex, res, RETURN_ENDRUN );
 	}
 	
 		/* This will probably trigger a compile error: look up proper var. */
 	th.length += 1;
-	res = push_char( &( stkp->data ),  a.c );
-	if( !res )
-	{
-		STACK_FAILEDINTFUNC( "push_char", numberbinary_lex, res );
-		return( (retframe){ &end_run, (void*)0 } );
-	}
-	res = push_tokenhead( &( stkp->data ),  th );
-	if( !res )
-	{
-		STACK_FAILEDINTFUNC( "push_tokenhead", numberbinary_lex, res );
-		return( (retframe){ &end_run, (void*)0 } );
-	}
+	PUSHCHAR( &( stkp->data ), a.c,  numberbinary_lex, res );
+	PUSHTOKENHEAD( &( stkp->data ), th,  numberbinary_lex, res );
 	
 	return( (retframe){ hand, (void*)0 } );
 }
@@ -855,12 +572,8 @@ retframe brackop_lex( stackpair *stkp, void *v )
 	framefunc hand = &end_run;
 	extrachar a;
 	
-	int res = pop_tokenhead( &( stkp->data ),  &th );
-	if( !res )
-	{
-		STACK_FAILEDINTFUNC( "pop_tokenhead", brackop_lex, res );
-		return( (retframe){ &end_run, (void*)0 } );
-	}
+	int res;
+	POPTOKENHEAD( &( stkp->data ), &th,  brackop_lex, res );
 	if( !(
 		th.toktype == TOKTYPE_OPCRL ||
 		th.toktype == TOKTYPE_OPSQR ||
@@ -895,27 +608,7 @@ retframe brackop_lex( stackpair *stkp, void *v )
 			break;
 		default:
 				/* One way or another, we want to break the loop. */
-			res = unget_extrachar( a );
-			if( res )
-			{
-				/* Success. */
-				
-				res = push_tokenhead( &( stkp->data ),  th );
-				if( !res )
-				{
-					STACK_FAILEDINTFUNC( "push_tokenhead", brackop_lex, res );
-					return( (retframe){ &end_run, (void*)0 } );
-				}
-				
-				RETFRAMEFUNC( brackop_lex );
-				
-			} else {
-				
-				/* Fail. */
-				
-				STACK_FAILEDINTFUNC( "unget_extrachar", brackop_lex, res );
-				return( (retframe){ &end_run, (void*)0 } );
-			}
+			UNGETEXTRACHAR_2( stkp, a, th,  brackop_lex, res, RETURN_ENDRUN );
 	}
 	
 	/* Wouldn't be bad to double-check the value of th.toktype here, but not */
@@ -924,18 +617,8 @@ retframe brackop_lex( stackpair *stkp, void *v )
 	
 		/* This will probably trigger a compile error: look up proper var. */
 	th.length += 1;
-	res = push_char( &( stkp->data ),  a.c );
-	if( !res )
-	{
-		STACK_FAILEDINTFUNC( "push_char", brackop_lex, res );
-		return( (retframe){ &end_run, (void*)0 } );
-	}
-	res = push_tokenhead( &( stkp->data ),  th );
-	if( !res )
-	{
-		STACK_FAILEDINTFUNC( "push_tokenhead", brackop_lex, res );
-		return( (retframe){ &end_run, (void*)0 } );
-	}
+	PUSHCHAR( &( stkp->data ), a.c,  brackop_lex, res );
+	PUSHTOKENHEAD( &( stkp->data ), th,  brackop_lex, res );
 	
 	RETFRAMEFUNC( brackop_lex );
 }
@@ -948,12 +631,8 @@ retframe str_lex( stackpair *stkp, void *v )
 	framefunc hand = &str_lex;
 	extrachar a;
 	
-	int res = pop_tokenhead( &( stkp->data ),  &th );
-	if( !res )
-	{
-		STACK_FAILEDINTFUNC( "pop_tokenhead", str_lex, res );
-		return( (retframe){ &end_run, (void*)0 } );
-	}
+	int res;
+	POPTOKENHEAD( &( stkp->data ), &th,  str_lex, res );
 	if( !(
 		th.toktype == TOKTYPE_SQSTR ||
 		th.toktype == TOKTYPE_DQSTR
@@ -985,18 +664,8 @@ retframe str_lex( stackpair *stkp, void *v )
 	}
 	
 	th.length += 1;
-	res = push_char( &( stkp->data ),  a.c );
-	if( !res )
-	{
-		STACK_FAILEDINTFUNC( "push_char", str_lex, res );
-		return( (retframe){ &end_run, (void*)0 } );
-	}
-	res = push_tokenhead( &( stkp->data ),  th );
-	if( !res )
-	{
-		STACK_FAILEDINTFUNC( "push_tokenhead", str_lex, res );
-		return( (retframe){ &end_run, (void*)0 } );
-	}
+	PUSHCHAR( &( stkp->data ), a.c,  str_lex, res );
+	PUSHTOKENHEAD( &( stkp->data ), th,  str_lex, res );
 	
 	if
 	(
@@ -1015,12 +684,8 @@ retframe escstr_lex( stackpair *stkp, void *v )
 	framefunc hand = &str_lex;
 	extrachar a;
 	
-	int res = pop_tokenhead( &( stkp->data ),  &th );
-	if( !res )
-	{
-		STACK_FAILEDINTFUNC( "pop_tokenhead", escstr_lex, res );
-		return( (retframe){ &end_run, (void*)0 } );
-	}
+	int res;
+	POPTOKENHEAD( &( stkp->data ), &th,  escstr_lex, res );
 	if( !(
 		th.toktype == TOKTYPE_SQSTR ||
 		th.toktype == TOKTYPE_DQSTR
@@ -1040,18 +705,8 @@ retframe escstr_lex( stackpair *stkp, void *v )
 	
 		/* This will probably trigger a compile error: look up proper var. */
 	th.length += 1;
-	res = push_char( &( stkp->data ),  a.c );
-	if( !res )
-	{
-		STACK_FAILEDINTFUNC( "push_char", escstr_lex, res );
-		return( (retframe){ &end_run, (void*)0 } );
-	}
-	res = push_tokenhead( &( stkp->data ),  th );
-	if( !res )
-	{
-		STACK_FAILEDINTFUNC( "push_tokenhead", escstr_lex, res );
-		return( (retframe){ &end_run, (void*)0 } );
-	}
+	PUSHCHAR( &( stkp->data ), a.c,  escstr_lex, res );
+	PUSHTOKENHEAD( &( stkp->data ), th,  escstr_lex, res );
 	
 	if
 	(
@@ -1071,12 +726,8 @@ retframe syms_lex( stackpair *stkp, v )
 	framefunc hand = &end_run;
 	extrachar a;
 	
-	int res = pop_tokenhead( &( stkp->data ),  &th );
-	if( !res )
-	{
-		STACK_FAILEDINTFUNC( "pop_tokenhead", syms_lex, res );
-		return( (retframe){ &end_run, (void*)0 } );
-	}
+	int res;
+	POPTOKENHEAD( &( stkp->data ), &th,  syms_lex, res );
 	if( th.toktype != TOKTYPE_SYM )
 	{
 		STACK_TRESPASSPATH( syms_lex, "ERROR: syms_lex encountered a non-_SYM token type." );
@@ -1261,22 +912,12 @@ retframe syms_lex( stackpair *stkp, v )
 			}
 			
 			th.length += 1;
-			res = push_char( &( stkp->data ),  b.c );
-			if( !res )
-			{
-				STACK_FAILEDINTFUNC( "push_char", syms_lex, res );
-				return( (retframe){ &end_run, (void*)0 } );
-			}
+			PUSHCHAR( &( stkp->data ), b.c,  syms_lex, res );
 			
 			break;
 	}
 	
-	res = push_tokenhead( &( stkp->data ),  th );
-	if( !res )
-	{
-		STACK_FAILEDINTFUNC( "push_tokenhead", syms_lex, res );
-		return( (retframe){ &end_run, (void*)0 } );
-	}
+	PUSHTOKENHEAD( &( stkp->data ), th,  syms_lex, res );
 	
 	RETFRAMEFUNC( syms_lex );
 }
@@ -1289,12 +930,8 @@ retframe symssinglet_lex( stackpair *stkp, void *arg, token_head *th, char a, ex
 	}
 	
 	
-	int res = unget_extrachar( a );
-	if( res )
-	{
-		STACK_FAILEDINTFUNC( "unget_extrachar", symssinglet_lex, res );
-		return( (retframe){ &end_run, (void*)0 } );
-	}
+	int res;
+	UNGETEXTRACHAR_1( a,  symssinglet_lex, res );
 	
 	switch( a )
 	{
@@ -1361,12 +998,7 @@ retframe symssinglet_lex( stackpair *stkp, void *arg, token_head *th, char a, ex
 	}
 	
 	
-	res = push_tokenhead( &( stkp->data ),  th );
-	if( !res )
-	{
-		STACK_FAILEDINTFUNC( "push_tokenhead", symssinglet_lex, res );
-		return( (retframe){ &end_run, (void*)0 } );
-	}
+	PUSHTOKENHEAD( &( stkp->data ), th,  symssinglet_lex, res );
 	
 	RETFRAMEFUNC( symssinglet_lex );
 }
@@ -1389,27 +1021,24 @@ retframe symsext_lex( stackpair *stkp, void *arg, token_head *th, extrachar a, e
 		EXTRACHAR_BODYMATCH( ecr, LIB4_OP_SETc, symsext_lex_FETCHFAIL )
 	}
 	
-#define symsetx_lex_DITOK( erra, errb ) \
-		if( 1 ) { \
-			res = unget_extrachar( c ); if( !res ) { \
-				STACK_FAILEDINTFUNC( "unget_extrachar", symsext_lex, res ); \
-				STACK_NOTELINE(); STACK_SIGNEDARG( (erra) ); \
-				return( (retframe){ &end_run, (void*)0 } ); } \
-			res = push_char( &( stkp->data ),  b.c ); if( !res ) { \
-				STACK_FAILEDINTFUNC( "push_char", symsext_lex, res ); \
-				STACK_NOTELINE(); STACK_SIGNEDARG( (errb) ); \
-				return( (retframe){ &end_run, (void*)0 } ); } }
+#define symsext_lex_STDERR( calleestr, err ) \
+	if( !res ) { \
+		STACK_FAILEDINTFUNC( ( calleestr ), symsext_lex, res ); \
+		STACK_NOTELINE(); STACK_SIGNEDARG( (err) ); \
+		return( (retframe){ &end_run, (void*)0 } ); } }
+#define symsext_lex_DITOK( erra, errb ) \
+	if( 1 ) { \
+		res = unget_extrachar( c ); \
+			symsext_lex_STDERR( "unget_extrachar", erra ); \
+		res = push_char( &( stkp->data ),  b.c ); \
+			symsext_lex_STDERR( "push_char", errb ); }
 #define symsext_lex_TRITOK( erra, errb ) \
-		if( 1 ) { \
-			res = push_char( &( stkp->data ),  b.c ); if( !res ) { \
-				STACK_FAILEDINTFUNC( "push_char", symsext_lex, res ); \
-				STACK_NOTELINE(); STACK_SIGNEDARG( (erra) ); \
-				return( (retframe){ &end_run, (void*)0 } ); } \
-			res = push_char( &( stkp->data ),  c.c ); if( !res ) { \
-				STACK_FAILEDINTFUNC( "push_char", symsext_lex, res ); \
-				STACK_NOTELINE(); STACK_SIGNEDARG( (errb) ); \
-				return( (retframe){ &end_run, (void*)0 } ); } \
-			th.length += 1; }
+	if( 1 ) { \
+		res = push_char( &( stkp->data ),  b.c ); \
+			symsext_lex_STDERR( "push_char", erra ); \
+		res = push_char( &( stkp->data ),  c.c ); \
+			symsext_lex_STDERR( "push_char", errb ); \
+		th.length += 1; }
 	switch( a.c )
 	{
 		case '>':
@@ -1422,7 +1051,7 @@ retframe symsext_lex( stackpair *stkp, void *arg, token_head *th, extrachar a, e
 					
 				} else {
 					
-					symsetx_lex_DITOK( -17, -18 );
+					symsext_lex_DITOK( -17, -18 );
 					th.toktype = TOKTYPE_SYM_PLACEDDIVISIVSHIFT;
 				}
 				
@@ -1445,7 +1074,7 @@ retframe symsext_lex( stackpair *stkp, void *arg, token_head *th, extrachar a, e
 					
 				} else {
 					
-					symsetx_lex_DITOK( -22, -23 );
+					symsext_lex_DITOK( -22, -23 );
 					th.toktype = TOKTYPE_SYM_PLACEDMULTIPLYSHIFT;
 				}
 				
@@ -1468,18 +1097,8 @@ retframe symsext_lex( stackpair *stkp, void *arg, token_head *th, extrachar a, e
 					
 				} else {
 					
-					res = unget_extrachar( c );
-					if( !res )
-					{
-						STACK_FAILEDINTFUNC( "unget_extrachar", symsext_lex, res );
-						return( (retframe){ &end_run, (void*)0 } );
-					}
-					res = unget_extrachar( b );
-					if( !res )
-					{
-						STACK_FAILEDINTFUNC( "unget_extrachar", symsext_lex, res );
-						return( (retframe){ &end_run, (void*)0 } );
-					}
+					UNGETEXTRACHAR_1( c,  symsext_lex, res );
+					UNGETEXTRACHAR_1( b,  symsext_lex, res );
 					
 					th.toktype = TOKTYPE_SYM_QUERY;
 				}
@@ -1501,11 +1120,7 @@ retframe symsext_lex( stackpair *stkp, void *arg, token_head *th, extrachar a, e
 	
 	/* Success. */
 	
-	if( !push_tokenhead( &( stkp->data ),  th ) )
-	{
-		STACK_FAILEDINTFUNC( "push_tokenhead", symsext_lex, res );
-		return( (retframe){ &end_run, (void*)0 } );
-	}
+	PUSHTOKENHEAD( &( stkp->data ), th,  symsext_lex, res );
 	
 	RETFRAMEFUNC( symsext_lex );
 }
@@ -1517,12 +1132,8 @@ retframe at_lex( stackpair *stkp, void *v )
 	framefunc hand = &end_run;
 	extrachar a;
 	
-	int res = pop_tokenhead( &( stkp->data ), &th );
-	if( !res )
-	{
-		STACK_FAILEDINTFUNC( "pop_tokenhead", at_lex, res );
-		return( (retframe){ &end_run, (void*)0 } );
-	}
+	int res;
+	POPTOKENHEAD( &( stkp->data ), &th,  at_lex, res );
 	if( th.toktype != TOKTYPE_AT )
 	{
 		STACK_TRESPASSPATH( at_lex, "ERROR: at_lex encountered a non-_AT token type." );
@@ -1539,34 +1150,19 @@ retframe at_lex( stackpair *stkp, void *v )
 	
 	if( a.c == '<' )
 	{
-		res = push_char( &( stkp->data ), a.c );
-		if( !res )
-		{
-			STACK_FAILEDINTFUNC( "push_char", at_lex, res );
-			return( (retframe){ &end_run, (void*)0 } );
-		}
+		PUSHCHAR( &( stkp->data ), a.c,  at_lex, res );
 		th.toktype = TOKTYPE_SYM_ADDROF;
 		th.length += 1;
 		
 	} else {
 		
-		res = unget_extrachar( a );
-		if( !res )
-		{
-			STACK_FAILEDINTFUNC( "unget_extrachar", at_lex, res );
-			return( (retframe){ &end_run, (void*)0 } );
-		}
+		UNGETEXTRACHAR_1( a,  at_lex, res );
 		th.toktype = TOKTYPE_SYM_DEREFERENCE;
 	}
 	
 	/* Success. */
 	
-	res = push_tokenhead( &( stkp->data ), th );
-	if( !res )
-	{
-		STACK_FAILEDINTFUNC( "push_tokenhead", at_lex, res );
-		return( (retframe){ &end_run, (void*)0 } );
-	}
+	PUSHTOKENHEAD( &( stkp->data ), th,  at_lex, res );
 	
 	RETFRAMEFUNC( at_lex );
 }

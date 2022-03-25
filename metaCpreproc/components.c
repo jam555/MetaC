@@ -802,7 +802,6 @@ retframe shufflequeue_macro_link( stackpair *stkp, void *v )
 		/*  SINGLE arg that we're dealing with, NOT multiple. */
 	PUSHSHUFFLE( thdptpr->body[ mlink->args_offset ],  shufflequeue_macro_link, res, macroargs_ENDRETFRAME );
 	
-	
 	RETFRAMEFUNC( stkp,  shufflequeue_macro_link, res );
 }
 	/*
@@ -836,7 +835,6 @@ retframe shufflequeue_macro_token( stackpair *stkp, void *v )
 		/*  tokengroup is present, and push it's elements individually, */
 		/*  or something similar. */
 	PUSHSHUFFLE( mtok->tok,  shufflequeue_macro_token, res, macroargs_ENDRETFRAME );
-	
 	
 	RETFRAMEFUNC( stkp,  shufflequeue_macro_token, res );
 }
@@ -1131,7 +1129,6 @@ retframe shufflequeue_entry_macro_call( stackpair *stkp, void *v )
 		/* Our progress? None! Because we haven't really started. */
 	STACKPUSH_UINT( &( stkp->data ), 0,  shufflequeue_entry_macro_call, res, macroargs_ENDRETFRAME );
 	
-	
 	return( (retframe){ &shufflequeue_step_macro_call, (void*)0 } );
 }
 
@@ -1156,12 +1153,7 @@ retframe shufflequeue_step_macro_calltool( stackpair *stkp, void *v,  retframe l
 	int res;
 	PEEKMACROARGS( 0, arg_parr,  shufflequeue_step_macro_calltool, res, macroargs_ENDRETFRAME )
 		/* "0" is actually valid, so we can't use the usual macro. */
-	int res = pop_uintptr( stk,  prog );
-	if( !res )
-	{
-		FAILEDINTFUNC( "pop_uintptr", shufflequeue_step_macro_calltool, res );
-		return( (retframe){ &end_run, (void*)0 } );
-	}
+	STACKPOP_UINT( &( stkp->data ), &prog,  shufflequeue_step_macro_calltool, res, macroargs_ENDRETFRAME );
 	
 	STACKPEEK_UINT( &( stkp->data ), 0, a,  shufflequeue_step_macro_calltool, res, macroargs_ENDRETFRAME );
 	tokhdptr_parr *ops = (tokhdptr_parr*)ops_;
@@ -1248,12 +1240,8 @@ retframe shufflequeue_exit_macro_calltool( stackpair *stkp, void *v )
 		/*  we'll know how many token pointers need to be moved from */
 		/*  "shuffle" to the token get/unget stack. These will be */
 		/*  deallocated elsewhere, so no need to do it here. */
-	int res = pop_uintptr( stk,  &shufflebookmark );
-	if( !res )
-	{
-		FAILEDINTFUNC( "pop_uintptr", shufflequeue_exit_macro_calltool, res );
-		return( (retframe){ &end_run, (void*)0 } );
-	}
+	int res;
+	STACKPOP_UINT( &( stkp->data ), &shufflebookmark,  shufflequeue_exit_macro_calltool, res, macroargs_ENDRETFRAME );
 	??? /* Actually, where DO these get freed? That might be a source of */
 		/*  errors. */
 	
@@ -1261,7 +1249,6 @@ retframe shufflequeue_exit_macro_calltool( stackpair *stkp, void *v )
 		/* Push the number of tokens on the shuffle stack: some */
 		/*  things need to know this for their own purposes. */
 	STACKPUSH_UINT( &( stkp->data ), shufflebookmark,  shufflequeue_exit_macro_calltool, res, macroargs_ENDRETFRAME );
-	
 	
 	RETFRAMEFUNC( stkp,  shufflequeue_exit_macro_calltool, res );
 }
@@ -1291,23 +1278,12 @@ retframe shufflequeue_exit_macro_call( stackpair *stkp, void *v )
 	
 		/* Now pop the progress marker: we're done, so it's done. Just a */
 		/*  number, so no need to deallocate. */
-	int res = pop_uintptr( stk,  &a );
-	if( !res )
-	{
-		FAILEDINTFUNC( "pop_uintptr", shufflequeue_exit_macro_call, res );
-		return( (retframe){ &end_run, (void*)0 } );
-	}
+	STACKPOP_UINT( &( stkp->data ), &a,  shufflequeue_exit_macro_call, res, macroargs_ENDRETFRAME );
 	
 		/* Now the operations array. The array itself is */
 		/*  owned elsewhere, so no need to deallocate. Also, deallocating */
 		/*  now could break something later. */
-	res = pop_uintptr( stk,  &a );
-	if( !res )
-	{
-		FAILEDINTFUNC( "pop_uintptr", shufflequeue_exit_macro_call, res );
-		return( (retframe){ &end_run, (void*)0 } );
-	}
-	
+	STACKPOP_UINT( &( stkp->data ), &a,  shufflequeue_exit_macro_call, res, macroargs_ENDRETFRAME );
 	
 	return( shufflequeue_exit_macro_calltool( stkp, v ) );
 }
