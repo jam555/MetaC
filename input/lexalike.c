@@ -19,36 +19,36 @@ stackpair std_stacks;
 #endif
 
 
-#define STACK_BADNULL( funcname, ptr ) \
+#define BADNULL( funcname, ptr ) \
 	STDMSG_BADNULL_WRAPPER( &errs, funcname, ( ptr ) )
-#define STACK_BADNULL2( funcname, ptr1, ptr2 ) \
+#define BADNULL2( funcname, ptr1, ptr2 ) \
 	STDMSG_BADNULL2_WRAPPER( &errs, funcname, ( ptr1 ), ( ptr2 ) )
 
-#define STACK_MONADICFAILURE( funcname, calltext, err ) \
+#define MONADICFAILURE( funcname, calltext, err ) \
 		STDMSG_MONADICFAILURE_WRAPPER( &errs, funcname, ( calltext ), ( err ) )
-	#define STACK_NOTELINE() STDMSG_NOTELINE_WRAPPER( &errs )
-	#define STACK_NOTESPACE() STDMSG_NOTESPACE_WRAPPER( &errs )
+	#define NOTELINE() STDMSG_NOTELINE_WRAPPER( &errs )
+	#define NOTESPACE() STDMSG_NOTESPACE_WRAPPER( &errs )
 	
-	#define STACK_SIGNEDARG( integer ) STDMSG_SIGNEDARG_WRAPPER( &errs, integer )
-	#define STACK_DECARG( uint ) STDMSG_DECARG_WRAPPER( &errs, ( uint ) )
-	#define STACK_HEXARG( hex ) STDMSG_HEXARG_WRAPPER( &errs, hex )
-	#define STACK_CHARARG( chara ) STDMSG_CHARARG_WRAPPER( &errs, ( chara ) )
-	#define STACK_DATAPTR( ptr ) STDMSG_DATAPTRARG_WRAPPER( &errs, ( ptr ) )
+	#define SIGNEDARG( integer ) STDMSG_SIGNEDARG_WRAPPER( &errs, integer )
+	#define DECARG( uint ) STDMSG_DECARG_WRAPPER( &errs, ( uint ) )
+	#define HEXARG( hex ) STDMSG_HEXARG_WRAPPER( &errs, hex )
+	#define CHARARG( chara ) STDMSG_CHARARG_WRAPPER( &errs, ( chara ) )
+	#define DATAPTR( ptr ) STDMSG_DATAPTRARG_WRAPPER( &errs, ( ptr ) )
 
-#define STACK_FAILEDINTFUNC( calleestr, callername, val ) \
+#define FAILEDINTFUNC( calleestr, callername, val ) \
 	STDMSG_FAILEDINTFUNC_WRAPPER( &errs, ( calleestr ), callername, ( val ) )
 
-#define STACK_BADCHAR( funcname, objaddr, expectedval ) \
+#define BADCHAR( funcname, objaddr, expectedval ) \
 	STDMSG_BADCHAR_WRAPPER( &errs, ( funcname ), ( objaddr ), ( expectedval ) )
-#define STACK_BADINT( funcname, objaddr, expectedval ) \
+#define BADINT( funcname, objaddr, expectedval ) \
 	STDMSG_BADINT_WRAPPER( &errs, ( funcname ), ( objaddr ), ( expectedval ) )
-#define STACK_BADUINT( funcname, objaddr, expectedval ) \
+#define BADUINT( funcname, objaddr, expectedval ) \
 	STDMSG_BADUINT_WRAPPER( &errs, ( funcname ), ( objaddr ), ( expectedval ) )
 
 #define TRESPASSPATH( funcname, msgstr ) \
 	STDMSG_TRESPASSPATH_WRAPPER( &errs, funcname, msgstr )
 
-#define STACK_I_OVERFLOW( funcname, objaddr, limit ) \
+#define I_OVERFLOW( funcname, objaddr, limit ) \
 	STDMSG_I_OVERFLOW_WRAPPER( &errs, ( funcname ), ( objaddr ), ( limit ) )
 
 
@@ -89,7 +89,7 @@ intptr_t set_lexentry( lexentry lentry )
 		
 	} else {
 		
-		STACK_BADNULL( set_lexentry, &lentry );
+		BADNULL( set_lexentry, &lentry );
 	}
 	
 	return( ret );
@@ -104,7 +104,7 @@ retframe assemble_token( stackpair *stkp, void *v )
 	int res = pop_tokenhead( &( stkp->data ),  &th );
 	if( !res )
 	{
-		STACK_FAILEDINTFUNC( "pop_tokenhead", assemble_token, res );
+		FAILEDINTFUNC( "pop_tokenhead", assemble_token, res );
 		return( (retframe){ &end_run, (void*)0 } );
 	}
 	
@@ -148,7 +148,7 @@ retframe assemble_token( stackpair *stkp, void *v )
 			res = pop_char( &( stkp->data ),  &b );
 			if( !res )
 			{
-				STACK_FAILEDINTFUNC( "pop_char", assemble_token, res );
+				FAILEDINTFUNC( "pop_char", assemble_token, res );
 				return( (retframe){ &end_run, (void*)0 } );
 			}
 			a->text[ th.length ] = b;
@@ -157,13 +157,13 @@ retframe assemble_token( stackpair *stkp, void *v )
 		res = push_uintptr( &( stkp->data ),  (uintptr_t)a );
 		if( !res )
 		{
-			STACK_FAILEDINTFUNC( "pop_char", assemble_token, res );
+			FAILEDINTFUNC( "pop_char", assemble_token, res );
 			return( (retframe){ &end_run, (void*)0 } );
 		}
 		
 	} else {
 		
-		STACK_BADNULL( assemble_token, &a );
+		BADNULL( assemble_token, &a );
 		return( (retframe){ &end_run, (void*)0 } );
 	}
 	
@@ -179,13 +179,13 @@ retframe dealloc_token( stackpair *stkp, void *v )
 	int res = pop_uintptr( stk,  &a );
 	if( !res )
 	{
-		STACK_FAILEDINTFUNC( "pop_uintptr", dealloc_token, res );
+		FAILEDINTFUNC( "pop_uintptr", dealloc_token, res );
 		return( (retframe){ &end_run, (void*)0 } );
 	}
 	
 	lib4_result res = lib4_stdmemfuncs.dealloc( lib4_stdmemfuncs.data, (void*)a );
 #define dealloc_token_ONFAIL( err ) \
-		STACK_MONADICFAILURE( dealloc_token, "lib4_stdmemfuncs.dealloc()", ( err ) ); \
+		MONADICFAILURE( dealloc_token, "lib4_stdmemfuncs.dealloc()", ( err ) ); \
 		return( (retframe){ &end_run, (void*)0 } );
 	LIB4_RESULT_BODYMATCH( res, LIB4_OP_SETa, dealloc_token_ONFAIL );
 	
@@ -216,13 +216,13 @@ int token_queue_init()
 	token_queue.f = tmpfile();
 	if( !token_queue.f )
 	{
-		STACK_BADNULL( token_queue_init, &( token_queue.f ) );
+		BADNULL( token_queue_init, &( token_queue.f ) );
 		return( -1 );
 	}
 	token_queue.shuffle = tmpfile();
 	if( !token_queue.shuffle )
 	{
-		STACK_BADNULL( token_queue_init, &( token_queue.shuffle ) );
+		BADNULL( token_queue_init, &( token_queue.shuffle ) );
 		fclose( token_queue.f );
 		token_queue.f = (FILE*)0;
 		return( -2 );
@@ -253,13 +253,13 @@ int token_queue_push( token *tok )
 		int res = fseek( token_queue.f, token_queue.used * sizeof( uintptr_t ), SEEK_SET );
 		if( res != 0 )
 		{
-			STACK_FAILEDINTFUNC( "fseek", token_queue_push, res );
+			FAILEDINTFUNC( "fseek", token_queue_push, res );
 			return( -3 );
 		}
 		res = fwrite( (const void*)&tmp, sizeof( uintptr_t ), 1, token_queue.f );
 		if( !res )
 		{
-			STACK_FAILEDINTFUNC( "fwrite", token_queue_push, res );
+			FAILEDINTFUNC( "fwrite", token_queue_push, res );
 			return( -4 );
 		}
 		++token_queue.used;
@@ -275,12 +275,12 @@ int token_queue_pop( token **tok )
 	{
 		if( *tok )
 		{
-			STACK_BADNULL( token_queue_pop, &tok );
+			BADNULL( token_queue_pop, &tok );
 			return( -2 );
 		}
 		if( !token_queue.used )
 		{
-			STACK_BADNULL( token_queue_pop, &( token_queue.used ) );
+			BADNULL( token_queue_pop, &( token_queue.used ) );
 			return( -3 );
 		}
 		
@@ -290,13 +290,13 @@ int token_queue_pop( token **tok )
 		int res = fseek( token_queue.f, token_queue.used * sizeof( uintptr_t ), SEEK_SET );
 		if( res != 0 )
 		{
-			STACK_FAILEDINTFUNC( "fseek", token_queue_pop, res );;
+			FAILEDINTFUNC( "fseek", token_queue_pop, res );;
 			return( -4 );
 		}
 		res = fread( (void*)&tmp, sizeof( uintptr_t ), 1, token_queue.f );
 		if( !res )
 		{
-			STACK_FAILEDINTFUNC( "fread", token_queue_pop, res );
+			FAILEDINTFUNC( "fread", token_queue_pop, res );
 			return( -5 );
 		}
 		*tok = (token*)tmp;
@@ -315,14 +315,14 @@ retframe token_queue_fetch( stackpair *stkp, void *v )
 		int res = token_queue_pop( &tok );
 		if( !res )
 		{
-			STACK_FAILEDINTFUNC( "token_queue_pop", token_queue_fetch, res );
+			FAILEDINTFUNC( "token_queue_pop", token_queue_fetch, res );
 			return( (retframe){ &end_run, (void*)0 } );
 		}
 		
 		res = push_uintptr( &( stkp->data ),  (uintptr_t)a );
 		if( !res )
 		{
-			STACK_FAILEDINTFUNC( "push_uintptr", token_queue_fetch, res );
+			FAILEDINTFUNC( "push_uintptr", token_queue_fetch, res );
 			return( (retframe){ &end_run, (void*)0 } );
 		}
 		
@@ -355,13 +355,13 @@ int token_queue_shufflepush( token *tok )
 		int res = fseek( token_queue.shuffle, token_queue.shuffleused * sizeof( uintptr_t ), SEEK_SET );
 		if( res != 0 )
 		{
-			STACK_FAILEDINTFUNC( "fseek", token_queue_shufflepush, res );
+			FAILEDINTFUNC( "fseek", token_queue_shufflepush, res );
 			return( -3 );
 		}
 		res = fwrite( (const void*)&tmp, sizeof( uintptr_t ), 1, token_queue.shuffle );
 		if( !res )
 		{
-			STACK_FAILEDINTFUNC( "fwrite", token_queue_shufflepush, res );
+			FAILEDINTFUNC( "fwrite", token_queue_shufflepush, res );
 			return( -4 );
 		}
 		++token_queue.shuffleused;
@@ -377,12 +377,12 @@ int token_queue_shufflepop( token **tok )
 	{
 		if( *tok )
 		{
-			STACK_BADNULL( token_queue_shufflepop, &tok );
+			BADNULL( token_queue_shufflepop, &tok );
 			return( -2 );
 		}
 		if( !token_queue.shuffleused )
 		{
-			STACK_BADNULL( token_queue_shufflepop, &( token_queue.shuffleused ) );
+			BADNULL( token_queue_shufflepop, &( token_queue.shuffleused ) );
 			return( -3 );
 		}
 		
@@ -392,13 +392,13 @@ int token_queue_shufflepop( token **tok )
 		int res = fseek( token_queue.shuffle, token_queue.shuffleused * sizeof( uintptr_t ), SEEK_SET );
 		if( res != 0 )
 		{
-			STACK_FAILEDINTFUNC( "fseek", token_queue_shufflepop, res );
+			FAILEDINTFUNC( "fseek", token_queue_shufflepop, res );
 			return( -4 );
 		}
 		res = fread( (void*)&tmp, sizeof( uintptr_t ), 1, token_queue.shuffle );
 		if( !res )
 		{
-			STACK_FAILEDINTFUNC( "fread", token_queue_shufflepop, res );
+			FAILEDINTFUNC( "fread", token_queue_shufflepop, res );
 			return( -5 );
 		}
 		*tok = (token*)tmp;
@@ -428,13 +428,13 @@ int token_queue_shuffle2queue()
 	int res = token_queue_shufflepop( &tmp );
 	if( !res )
 	{
-		STACK_FAILEDINTFUNC( "token_queue_shufflepop", token_queue_shuffle2queue, res );
+		FAILEDINTFUNC( "token_queue_shufflepop", token_queue_shuffle2queue, res );
 		return( -3 );
 	}
 	res = token_queue_push( tmp );
 	if( ! )
 	{
-		STACK_FAILEDINTFUNC( "token_queue_push", token_queue_shuffle2queue, res );
+		FAILEDINTFUNC( "token_queue_push", token_queue_shuffle2queue, res );
 		return( -4 );
 	}
 	
@@ -448,7 +448,7 @@ int token_queue_deinit()
 	int res = fclose( token_queue.shuffle );
 	if( res == EOF )
 	{
-		STACK_FAILEDINTFUNC( "fclose", token_queue_deinit, res );
+		FAILEDINTFUNC( "fclose", token_queue_deinit, res );
 		return( -2 );
 	}
 	token_queue.shuffle = (FILE*)0;
@@ -456,7 +456,7 @@ int token_queue_deinit()
 	res = fclose( token_queue.f );
 	if( res != EOF )
 	{
-		STACK_FAILEDINTFUNC( "fclose", token_queue_deinit, res );
+		FAILEDINTFUNC( "fclose", token_queue_deinit, res );
 		return( -3 );
 	}
 	token_queue.f = (FILE*)0;
@@ -465,110 +465,6 @@ int token_queue_deinit()
 }
 
 
-
-lib4_intresult bin2num( char c )
-{
-	if( c == '0' )
-	{
-		LIB4_INTRESULT_RETURNSUCCESS( 0 );
-		
-	} else if( c == '1' )
-	{
-		LIB4_INTRESULT_RETURNSUCCESS( 1 );
-		
-	} else {
-		
-		LIB4_INTRESULT_RETURNFAILURE( (int)c );
-	}
-}
-lib4_intresult oct2num( char c )
-{
-	if( c < '0' )
-	{
-		LIB4_INTRESULT_RETURNFAILURE( (int)c );
-		
-	} else if( c > '7' )
-	{
-		LIB4_INTRESULT_RETURNFAILURE( (int)c );
-		
-	} else {
-		
-		LIB4_INTRESULT_RETURNSUCCESS( ( c - '0' ) );
-	}
-}
-lib4_intresult dec2num( char c )
-{
-	if( c < '0' )
-	{
-		LIB4_INTRESULT_RETURNFAILURE( (int)c );
-		
-	} else if( c > '9' )
-	{
-		LIB4_INTRESULT_RETURNFAILURE( (int)c );
-		
-	} else {
-		
-		LIB4_INTRESULT_RETURNSUCCESS( ( c - '0' ) );
-	}
-}
-lib4_intresult hexa2num( char c )
-{
-	if( c >= '0' && c <= '9' )
-	{
-		LIB4_INTRESULT_RETURNSUCCESS( ( c - '0' ) );
-		
-	} else if( c >= 'a' && c <= 'f' )
-	{
-		LIB4_INTRESULT_RETURNSUCCESS( ( c - 'a' ) );
-		
-	} else if( c >= 'A' && c <= 'F' )
-	{
-		LIB4_INTRESULT_RETURNSUCCESS( ( c - 'A' ) );
-		
-	} else {
-		
-		LIB4_INTRESULT_RETURNFAILURE( (int)c );
-	}
-}
-	/* Roughly the system of the ILLIAC 1, the first private (particularly */
-	/*  college) owned computer. Yes, it seems odd, but it was very early, */
-	/*  and the letters may have started as abbreviations. */
-	/* Probably worth noting that this isn't actually used: I just put it in */
-	/*  because it came to mind (blame Dave's Garage on Youtube). */
-lib4_intresult sexa2num( char c )
-{
-	if( c >= '0' && c <= '9' )
-	{
-		LIB4_INTRESULT_RETURNSUCCESS( ( c - '0' ) );
-		
-	} else {
-		
-		switch( c )
-		{
-			case 'k':
-			case 'K':
-				LIB4_INTRESULT_RETURNSUCCESS( 10 );
-			case 's':
-			case 'S':
-				LIB4_INTRESULT_RETURNSUCCESS( 11 );
-			case 'n':
-			case 'N':
-				LIB4_INTRESULT_RETURNSUCCESS( 12 );
-			case 'j':
-			case 'J':
-				LIB4_INTRESULT_RETURNSUCCESS( 13 );
-			case 'f':
-			case 'F':
-				LIB4_INTRESULT_RETURNSUCCESS( 14 );
-			case 'l':
-			case 'L':
-				LIB4_INTRESULT_RETURNSUCCESS( 15 );
-				
-			default:
-				LIB4_INTRESULT_RETURNFAILURE( (int)c );
-		}
-	}
-}
 
 int is_bslash( int c )
 {
@@ -589,7 +485,7 @@ int tokenize_char__accumulate( stackpair *stkp, void *v,  token_head *th, char *
 		char a = *a_, b = *b_;
 		
 #define tokenize_char__accumulate_FETCHFAIL( err ) \
-	STACK_MONADICFAILURE( tokenize_char__accumulate, "charin", err ); \
+	MONADICFAILURE( tokenize_char__accumulate, "charin", err ); \
 	return( (retframe){ &end_run, (void*)0 } );
 	
 		switch( a )
@@ -610,7 +506,7 @@ int tokenize_char__accumulate( stackpair *stkp, void *v,  token_head *th, char *
 					res2 = push_char( &( stkp->data ),  b );
 					if( !res2 )
 					{
-						STACK_FAILEDINTFUNC( "push_char", tokenize_char__accumulate, res2 );
+						FAILEDINTFUNC( "push_char", tokenize_char__accumulate, res2 );
 						return( (retframe){ &end_run, (void*)0 } );
 					}
 					th->length += 1;
@@ -628,7 +524,7 @@ int tokenize_char__accumulate( stackpair *stkp, void *v,  token_head *th, char *
 					res2 = push_char( &( stkp->data ),  b );
 					if( !res2 )
 					{
-						STACK_FAILEDINTFUNC( "push_char", tokenize_char__accumulate, res2 );
+						FAILEDINTFUNC( "push_char", tokenize_char__accumulate, res2 );
 						return( (retframe){ &end_run, (void*)0 } );
 					}
 					th->length += 1;
@@ -646,7 +542,7 @@ int tokenize_char__accumulate( stackpair *stkp, void *v,  token_head *th, char *
 					res2 = push_char( &( stkp->data ),  b );
 					if( !res2 )
 					{
-						STACK_FAILEDINTFUNC( "push_char", tokenize_char__accumulate, res2 );
+						FAILEDINTFUNC( "push_char", tokenize_char__accumulate, res2 );
 						return( (retframe){ &end_run, (void*)0 } );
 					}
 					th->length += 1;
@@ -670,7 +566,7 @@ int tokenize_char__accumulate( stackpair *stkp, void *v,  token_head *th, char *
 					res2 = push_char( &( stkp->data ),  b );
 					if( !res2 )
 					{
-						STACK_FAILEDINTFUNC( "push_char", tokenize_char__accumulate, res2 );
+						FAILEDINTFUNC( "push_char", tokenize_char__accumulate, res2 );
 						return( (retframe){ &end_run, (void*)0 } );
 					}
 					th->length += 1;
@@ -690,7 +586,7 @@ int tokenize_char__accumulate( stackpair *stkp, void *v,  token_head *th, char *
 		res2 = isspace( b );
 		if( !res2 )
 		{
-			STACK_FAILEDINTFUNC( "isspace", tokenize_char__accumulate, res2 );
+			FAILEDINTFUNC( "isspace", tokenize_char__accumulate, res2 );
 			return( (retframe){ &end_run, (void*)0 } );
 		}
 		
@@ -719,7 +615,7 @@ int tokenize_char( stackpair *stkp, void *v )
 	unsigned char c;
 	
 #define tokenize_char_FETCHFAIL( err ) \
-		STACK_MONADICFAILURE( tokenize_char, "charin", err ); \
+		MONADICFAILURE( tokenize_char, "charin", err ); \
 		return( (retframe){ &end_run, (void*)0 } );
 	
 	CHAR_RESULT_BODYMATCH( res, LIB4_OP_SETa, tokenize_char_FETCHFAIL )
@@ -740,24 +636,24 @@ int tokenize_char( stackpair *stkp, void *v )
 				break;
 			case -1:
 					/* Null argument(s). */
-				STACK_FAILEDINTFUNC( "tokenize_char__accumulate", tokenize_char, res2 );
-					STACK_NOTELINE(); STACK_DATAPTR( &th );
-					STACK_NOTESPACE(); STACK_DATAPTR( &a );
-					STACK_NOTESPACE(); STACK_DATAPTR( &b );
+				FAILEDINTFUNC( "tokenize_char__accumulate", tokenize_char, res2 );
+					NOTELINE(); DATAPTR( &th );
+					NOTESPACE(); DATAPTR( &a );
+					NOTESPACE(); DATAPTR( &b );
 				return( (retframe){ &end_run, (void*)0 } );
 			case -2:
 					/* Internal error. */
-				STACK_FAILEDINTFUNC( "tokenize_char__accumulate", tokenize_char, res2 );
-					STACK_NOTELINE(); STACK_DATAPTR( &th );
-					STACK_NOTESPACE(); STACK_DATAPTR( &a );
-					STACK_NOTESPACE(); STACK_DATAPTR( &b );
+				FAILEDINTFUNC( "tokenize_char__accumulate", tokenize_char, res2 );
+					NOTELINE(); DATAPTR( &th );
+					NOTESPACE(); DATAPTR( &a );
+					NOTESPACE(); DATAPTR( &b );
 				return( (retframe){ &end_run, (void*)0 } );
 			default:
 					/* Unforeseen error, verify passable returns. */
-				STACK_FAILEDINTFUNC( "tokenize_char__accumulate", tokenize_char, res2 );
-					STACK_NOTELINE(); STACK_DATAPTR( &th );
-					STACK_NOTESPACE(); STACK_DATAPTR( &a );
-					STACK_NOTESPACE(); STACK_DATAPTR( &b );
+				FAILEDINTFUNC( "tokenize_char__accumulate", tokenize_char, res2 );
+					NOTELINE(); DATAPTR( &th );
+					NOTESPACE(); DATAPTR( &a );
+					NOTESPACE(); DATAPTR( &b );
 				return( (retframe){ &end_run, (void*)0 } );
 		}
 		
@@ -775,7 +671,7 @@ int tokenize_char( stackpair *stkp, void *v )
 				res2 = charback( b );
 				if( !res2 )
 				{
-					STACK_FAILEDINTFUNC( "tokenize_char__accumulate", tokenize_char, res2 );
+					FAILEDINTFUNC( "tokenize_char__accumulate", tokenize_char, res2 );
 					return( (retframe){ &end_run, (void*)0 } );
 				}
 			}
@@ -791,7 +687,7 @@ int tokenize_char( stackpair *stkp, void *v )
 			if( b != 10 )
 			{
 					/* Not followed by newline, so NOT DEFINED! */
-				STACK_BADUINT( tokenize_char, &b, 10 );
+				BADUINT( tokenize_char, &b, 10 );
 				return( (retframe){ &end_run, (void*)0 } );
 			}
 			
@@ -800,10 +696,10 @@ int tokenize_char( stackpair *stkp, void *v )
 			
 		} else if( !( b == 9 || b == 11 || b == 12 || b == 32 ) )
 		{
-			STACK_BADUINT( tokenize_char, &b, 9 );
-				STACK_NOTESPACE(); STACK_DECARG( 11 );
-				STACK_NOTESPACE(); STACK_DECARG( 12 );
-				STACK_NOTESPACE(); STACK_DECARG( 32 );
+			BADUINT( tokenize_char, &b, 9 );
+				NOTESPACE(); DECARG( 11 );
+				NOTESPACE(); DECARG( 12 );
+				NOTESPACE(); DECARG( 32 );
 			return( (retframe){ &end_run, (void*)0 } );
 		}
 		
@@ -818,7 +714,7 @@ int tokenize_char( stackpair *stkp, void *v )
 				res2 = push_char( &( stkp->data ),  a );
 				if( !res2 )
 				{
-					STACK_FAILEDINTFUNC( "push_char", tokenize_char, res2 );
+					FAILEDINTFUNC( "push_char", tokenize_char, res2 );
 					return( (retframe){ &end_run, (void*)0 } );
 				}
 				
@@ -855,11 +751,11 @@ int tokenize_char( stackpair *stkp, void *v )
 						break;
 					default:
 							/* Throw an error! */
-						STACK_BADCHAR( tokenize_char, &a, 'b' );
-							STACK_NOTESPACE(); STACK_CHARARG( 'o' );
-							STACK_NOTESPACE(); STACK_CHARARG( 'd' );
-							STACK_NOTESPACE(); STACK_CHARARG( 'u' );
-							STACK_NOTESPACE(); STACK_CHARARG( 'x' );
+						BADCHAR( tokenize_char, &a, 'b' );
+							NOTESPACE(); CHARARG( 'o' );
+							NOTESPACE(); CHARARG( 'd' );
+							NOTESPACE(); CHARARG( 'u' );
+							NOTESPACE(); CHARARG( 'x' );
 						return( (retframe){ &end_run, (void*)0 } );
 				}
 				
@@ -869,7 +765,7 @@ int tokenize_char( stackpair *stkp, void *v )
 					if( !res2 )
 					{
 							/* Throw error. */
-						STACK_FAILEDINTFUNC( "pop_char", tokenize_char, res2 );
+						FAILEDINTFUNC( "pop_char", tokenize_char, res2 );
 						return( (retframe){ &end_run, (void*)0 } );
 					}
 					
@@ -901,14 +797,14 @@ int tokenize_char( stackpair *stkp, void *v )
 						/*  get informed. */
 						/* "Might" get informed because that's somewhere else's */
 						/*  job. */
-					STACK_I_OVERFLOW( tokenize_char, &acc, UCHAR_MAX );
+					I_OVERFLOW( tokenize_char, &acc, UCHAR_MAX );
 				}
 				c = acc;
 				th.length = 1;
 				res2 = push_char( &( stkp->data ),  *( (char*)&c ) );
 				if( !res2 )
 				{
-					STACK_FAILEDINTFUNC( "push_char", tokenize_char, res2 );
+					FAILEDINTFUNC( "push_char", tokenize_char, res2 );
 					return( (retframe){ &end_run, (void*)0 } );
 				}
 				
@@ -918,7 +814,7 @@ int tokenize_char( stackpair *stkp, void *v )
 				res2 = push_char( &( stkp->data ),  b );
 				if( !res2 )
 				{
-					STACK_FAILEDINTFUNC( "push_char", tokenize_char, res2 );
+					FAILEDINTFUNC( "push_char", tokenize_char, res2 );
 					return( (retframe){ &end_run, (void*)0 } );
 				}
 				
@@ -931,7 +827,7 @@ int tokenize_char( stackpair *stkp, void *v )
 		res2 = push_char( &( stkp->data ),  a );
 		if( !res2 )
 		{
-			STACK_FAILEDINTFUNC( "push_char", tokenize_char, res2 );
+			FAILEDINTFUNC( "push_char", tokenize_char, res2 );
 			return( (retframe){ &end_run, (void*)0 } );
 		}
 	}
@@ -939,7 +835,7 @@ int tokenize_char( stackpair *stkp, void *v )
 	res2 = push_tokenhead( &( stkp->data ),  th );
 	if( !res2 )
 	{
-		STACK_FAILEDINTFUNC( "push_tokenhead", tokenize_char, res2 );
+		FAILEDINTFUNC( "push_tokenhead", tokenize_char, res2 );
 		return( (retframe){ &end_run, (void*)0 } );
 	}
 	
@@ -960,20 +856,20 @@ lib4_result stack_testchar( stackpair *stkp, void *v,  int (*testfunc)( int ),  
 		res = pop_tokenhead( &( stkp->data ),  &th );
 		if( !res )
 		{
-			STACK_FAILEDINTFUNC( "pop_tokenhead", stack_testchar, res );
+			FAILEDINTFUNC( "pop_tokenhead", stack_testchar, res );
 			LIB4_RESULT_RETURNFAILURE( LIB4_RESULT_FAILURE_UNDIFFERENTIATED );
 		}
 		
 		if( th.length <= 0 )
 		{
-			STACK_BADNULL( stack_testchar, &( th.length ) );
+			BADNULL( stack_testchar, &( th.length ) );
 			LIB4_RESULT_RETURNFAILURE( LIB4_RESULT_FAILURE_BELOWBOUNDS );
 		}
 		if( th.length > 1 && fail_on_multichar )
 		{
 			/* TODO: this is probably worthy of a custom message. */
 			
-			STACK_I_OVERFLOW( stack_testchar, &( th.length ), 1 );
+			I_OVERFLOW( stack_testchar, &( th.length ), 1 );
 			LIB4_RESULT_RETURNFAILURE( LIB4_RESULT_FAILURE_ABOVEBOUNDS );
 		}
 		
@@ -982,13 +878,13 @@ lib4_result stack_testchar( stackpair *stkp, void *v,  int (*testfunc)( int ),  
 		res = peek_char( &( stkp->data ),  0,  &c );
 		if( !res )
 		{
-			STACK_FAILEDINTFUNC( "peek_char", stack_testchar, res );
+			FAILEDINTFUNC( "peek_char", stack_testchar, res );
 			LIB4_RESULT_RETURNFAILURE( LIB4_RESULT_FAILURE_UNDIFFERENTIATED );
 		}
 		res = push_tokenhead( &( stkp->data ),  th );
 		if( !res )
 		{
-			STACK_FAILEDINTFUNC( "push_tokenhead", stack_testchar, res );
+			FAILEDINTFUNC( "push_tokenhead", stack_testchar, res );
 			LIB4_RESULT_RETURNFAILURE( LIB4_RESULT_FAILURE_UNDIFFERENTIATED );
 		}
 		
@@ -1008,116 +904,27 @@ retframe stack_testchar2( stackpair *stkp, void *v,  int (*testfunc)( int ), cha
 		lib4_success_result a;
 		
 #define stack_testchar2__TESTFAIL( err ) \
-	STACK_MONADICFAILURE( stack_testchar2, "stack_testchar", ( err ) ); \
-	STACK_NOTELINE(); STACK_DATAPTR( stkp ); \
-	STACK_NOTESPACE(); STACK_DATAPTR( v ); \
-	STACK_NOTESPACE(); STACK_HEXARG( (uintptr_t)test_func ); \
-	STACK_NOTESPACE(); STACK_DECARG( 0 );
+	MONADICFAILURE( stack_testchar2, "stack_testchar", ( err ) ); \
+	NOTELINE(); DATAPTR( stkp ); \
+	NOTESPACE(); DATAPTR( v ); \
+	NOTESPACE(); HEXARG( (uintptr_t)test_func ); \
+	NOTESPACE(); DECARG( 0 );
 		LIB4_RESULT_BODYMATCH( res, LIB4_OP_SETa, stack_testchar2__TESTFAIL )
 		
 		int res2 = push_int( &( stkp->data ),  a.val );
 		if( !res2 )
 		{
-			STACK_FAILEDINTFUNC( "push_int", stack_testchar2, res2 );
-				STACK_NOTELINE(); STACK_DATAPTR( &( stkp->data ) );
-				STACK_NOTESPACE(); STACK_SIGNEDARG( a.val );
+			FAILEDINTFUNC( "push_int", stack_testchar2, res2 );
+				NOTELINE(); DATAPTR( &( stkp->data ) );
+				NOTESPACE(); SIGNEDARG( a.val );
 			return( (retframe){ &end_run, (void*)0 } );
 		}
 		
 		RETFRAMEFUNC( stack_testchar2 );
 	}
 	
-	STACK_BADNULL2( stack_testchar2, &stkp, &v );
+	BADNULL2( stack_testchar2, &stkp, &v );
 	return( (retframe){ &end_run, (void*)0 } );
-}
-
-int popas_extrachar( stackpair *stkp, void *v,  extrachar *ec )
-{
-	if( stkp && ec )
-	{
-		token_head th;
-		
-		int res = pop_tokenhead( &( stkp->data ),  &th );
-		if( !res )
-		{
-			STACK_FAILEDINTFUNC( "pop_tokenhead", popas_extrachar, res );
-				STACK_NOTELINE(); STACK_DATAPTR( &( stkp->data ) );
-			return( -2 );
-		}
-		if( th.length != 1 )
-		{
-			STACK_BADINT( popas_extrachar, &( th.length ), 1 );
-			return( -3 );
-		}
-		
-		res = pop_char( &( stkp->data ),  &( ec->c ) );
-		if( !res )
-		{
-			STACK_FAILEDINTFUNC( "pop_char", popas_extrachar, res );
-				STACK_NOTELINE(); STACK_DATAPTR( &( stkp->data ) );
-			return( -4 );
-		}
-		ec->was_freshline = th.was_freshline;
-		ec->is_delimited = th.is_delimited;
-		
-		return( 1 );
-	}
-	
-	STACK_BADNULL2( popas_extrachar, &stkp, &v );
-	return( -1 );
-}
-
-
-	/* Bit of shallow magic here: backstock holds a "failure value" if it's */
-	/*  empty, and a "success value" if it's not empty. The following three */
-	/*  functions (get_*, peek_*, and unget_* extrachar() functions) use */
-	/*  this, in conjunction with the if() test embedded within */
-	/*  *_BODYMATCH(), to implement a single-character get/peek/unget */
-	/*  facility. */
-extrachar_result backstock = EXTRACHAR_BUILDFAILURE( LIB4_RESULT_GENERICFALSE );
-extrachar_result get_extrachar( stackpair *stkp, void *v )
-{
-	extrachar_result a;
-	int res;
-	
-#define get_extrachar_SUCC( val ) \
-		a = ( val ); \
-		backstock = EXTRACHAR_BUILDFAILURE( LIB4_RESULT_GENERICFALSE );
-#define get_extrachar_FAIL( val ) \
-		res = tokenize_char( stkp, v ); \
-		if( !res ) { \
-			STACK_FAILEDINTFUNC( "tokenize_char", get_extrachar, res ); \
-				STACK_NOTELINE(); STACK_DATAPTR( stkp ); \
-				STACK_NOTESPACE(); STACK_DATAPTR( v ); \
-			a = EXTRACHAR_BUILDFAILURE( LIB4_RESULT_FAILURE_UNDIFFERENTIATED ); } \
-		else { \
-			res = popas_extrachar( stkp, v,  &a ); \
-			if( !res ) { \
-				STACK_FAILEDINTFUNC( "popas_extrachar", get_extrachar, res ); \
-					STACK_NOTELINE(); STACK_DATAPTR( stkp ); \
-					STACK_NOTESPACE(); STACK_DATAPTR( v ); \
-				a = EXTRACHAR_BUILDFAILURE( LIB4_RESULT_FAILURE_UNDIFFERENTIATED ); \
-			} }
-	EXTRACHAR_BODYMATCH( backstock, get_extrachar_SUCC, get_extrachar_FAIL );
-	
-	return( a );
-}
-extrachar_result peek_extrachar( stackpair *stkp, void *v )
-{
-#define peek_extrachar_FAIL( val ) \
-		backstock = get_extrachar( stkp, v );
-	EXTRACHAR_BODYMATCH( backstock, EXTRACHAR_RETURNSUCCESS, peek_extrachar_FAIL );
-	
-	return( backstock );
-}
-int unget_extrachar( extrachar ec )
-{
-#define unget_extrachar_SUCC( val ) \
-		return( LIB4_RESULT_FAILURE_ABOVEBOUNDS );
-#define unget_extrachar_FAIL( val ) \
-		backstock = EXTRACHAR_BUILDSUCCESS( ec ); \
-		return( 1 );
-	EXTRACHAR_BODYMATCH( backstock, succ, fail )
 }
 
 

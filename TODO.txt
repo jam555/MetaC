@@ -13,14 +13,13 @@ demo_errs.c:
 	has a lot of STACK_* macros: the STACK_* bit on front has no particular point.
 
 lexalike.c:
-	has a lot of STACK_* macros: the STACK_* bit on frpont has no particular point.
-	has a lot of functions like bin2num: these should be moved to a distinct file for reusability & increased comprehensibility.
-	The extrachar stuff should probably be moved to a different file for the same reasons.
+	any functions left that belong elsewhere?
 	has at least one TODO about an old comment- update that comment.
 	Line 974 in stack_testchar has a TODO about a custom error message.
 	Needs trigraph support added in.
 lexalike.h:
 	Will need to be synced with some lexalike.c changes.
+	is_freshline() should be declared elsewhere- move it.
 
 source.c:
 	There's a TODO at the top asking about error reporting. Do we want to move the error reporting system in?

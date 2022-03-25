@@ -20,7 +20,9 @@
 	
 	#include "err/err.h"
 	
+	#include "input/char2num.h"
 	#include "input/source.h"
+	#include "input/extrachar.h"
 	#include "input/lexalike.h"
 	
 	#include "metaCpreproc/basics.h"
