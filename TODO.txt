@@ -4,13 +4,14 @@ Special note:
 
 Aaaand the file is already out of date. Have been using already-defined stuff for the FAILED * FUNC macro note above. So, lots of line numbers below are off...
 
+Check .c files for "stackpair std_stacks;"- it may have accidentally been copied to multiple places when adding the new error system.
+
 
 err.c:
 	Line 1017: What goes there?
 	might need some sort of debug/release mode?
 
 demo_errs.c:
-	has a lot of STACK_* macros: the STACK_* bit on front has no particular point.
 
 lexalike.c:
 	any functions left that belong elsewhere?
@@ -20,18 +21,19 @@ lexalike.c:
 lexalike.h:
 	Will need to be synced with some lexalike.c changes.
 	is_freshline() should be declared elsewhere- move it.
-
-source.c:
-	There's a TODO at the top asking about error reporting. Do we want to move the error reporting system in?
+		Actually, is that true?
 
 basics.c:
 	Line 249 has a bit of error reporting that's probably worthy of it's own custom error reporter.
 	Where is pack_arglist() defined (Note: components.c- so why is it declared in basics.h)? Same for vm_pop_macroarg() (same, so same)?
+	Note: the pack_arglist() & similar is NOW in macroargs.c
 
 components.c:
 	Starting at line 80, "default" isn't really defined.
 	Line 128, searchstack_deinit() isn't filled out at all.
 	components_sequencedsearchproceed() has a note saying it needs to be reviewed
+	Just split off the macroargs.c stuff- are all of those error reporting macros still needed?
+	Also, since so much stuff got split off, every note below here is probably obsolete.
 	Line 549 has a note about the macroargs stuff needing to be in it's own file.
 	Line 800- verify if something else needs to go at the "???".
 	Line 834- see "Line 800".
@@ -39,7 +41,9 @@ components.c:
 	Line 1259- Again "???", but also a not about free()s. Check into that.
 	Line 1292- "???", with a note to do deallocation.
 	Line 1382- Some note that might need to be deleted, moved, or rewritten.
-	Various things (e.g. the macro_link stuff) may deserve to be broken out into it's own files to improve clarity.
+macroargs.c:
+	This has been freshly split off of components.c- need to go through to double check things.
+	Need to make a .h for this, and move the relevant declarations into it. See exec.h?
 
 exec.h:
 	The whole file needs to be examined for rewriting.
@@ -50,8 +54,7 @@ freshline_directives.c:
 	This frankly hasn't REALLY been written yet.
 
 echo_tokens.c:
-	Do we want to add error reporting to echo_tokenhead()?
-	More STACK_* macros that don't need to start like that.
+	The error reporting for the putc() and printf() calls needs to be finished. Don't know if it should exit the function or not.
 
 complexlex.c:
 	dealloc_tokengroup() and similar need to have the old "refid" error reporting removed from function sigs.
@@ -66,7 +69,7 @@ simplelex.c:
 	Line 689: Maybe have the wrong variable?
 	Line 763: And again.
 	Line 832: and again...
-	Line 921: Do we want to actrually add this check?
+	Line 921: Do we want to actually add this check?
 	Line 925: See line 832.
 	Line 1041: Again.
 	
@@ -94,7 +97,6 @@ stack.c:
 	Line 545: There's a note here about verifying the proper use of (token_head*)->length.
 
 tokenmatching.c:
-	Various STACK_* macros should probably have the STACK_ bit removed.
 	Various functions have args from the previous style of error reporting: need to fix that.
 	Line 406: Should this REALLY be fixed instead of deleted? I think I may have moved past this.
 

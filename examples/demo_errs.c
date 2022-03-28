@@ -35,9 +35,9 @@ stackpair std_stacks;
 /*  initialization of "errs" at the end of the file: by placing the */
 /*  initialization there, all of the members can be simply defined before */
 /*  they're actually needed. */
-#define STACK_BADNULL( funcname, ptr ) \
+#define BADNULL( funcname, ptr ) \
 	STDMSG_BADNULL_WRAPPER( &errs, funcname, ( ptr ) )
-#define STACK_BADNULL2( funcname, ptr1, ptr2 ) \
+#define BADNULL2( funcname, ptr1, ptr2 ) \
 	STDMSG_BADNULL2_WRAPPER( &errs, funcname, ( ptr1 ), ( ptr2 ) )
 
 	/* "calltext" here should be a text string representing the call that */
@@ -45,26 +45,26 @@ stackpair std_stacks;
 	/*  the arguments, while the actual error is provided via the */
 	/*  monad-failure macro itself. Look in "errs/inner_err.h" for the full */
 	/*  list of options. */
-#define STACK_MONADICFAILURE( funcname, calltext, err ) \
+#define MONADICFAILURE( funcname, calltext, err ) \
 		STDMSG_MONADICFAILURE_WRAPPER( &errs, funcname, ( calltext ), ( err ) )
-	#define STACK_NOTELINE() STDMSG_NOTELINE_WRAPPER( &errs )
-	#define STACK_NOTESPACE() STDMSG_NOTESPACE_WRAPPER( &errs )
+	#define NOTELINE() STDMSG_NOTELINE_WRAPPER( &errs )
+	#define NOTESPACE() STDMSG_NOTESPACE_WRAPPER( &errs )
 	
-	#define STACK_SIGNEDARG( integer ) STDMSG_SIGNEDARG_WRAPPER( &errs, integer )
-	#define STACK_DECARG( uint ) STDMSG_DECARG_WRAPPER( &errs, ( uint ) )
-	#define STACK_HEXARG( hex ) STDMSG_HEXARG_WRAPPER( &errs, hex )
-	#define STACK_CHARARG( chara ) STDMSG_CHARARG_WRAPPER( &errs, ( chara ) )
-	#define STACK_DATAPTR( ptr ) STDMSG_DATAPTRARG_WRAPPER( &errs, ( ptr ) )
+	#define SIGNEDARG( integer ) STDMSG_SIGNEDARG_WRAPPER( &errs, integer )
+	#define DECARG( uint ) STDMSG_DECARG_WRAPPER( &errs, ( uint ) )
+	#define HEXARG( hex ) STDMSG_HEXARG_WRAPPER( &errs, hex )
+	#define CHARARG( chara ) STDMSG_CHARARG_WRAPPER( &errs, ( chara ) )
+	#define DATAPTR( ptr ) STDMSG_DATAPTRARG_WRAPPER( &errs, ( ptr ) )
 
 	/* These are differentiated on 'type' of "val". */
-#define STACK_FAILEDINTFUNC( calleestr, callername, val ) \
+#define FAILEDINTFUNC( calleestr, callername, val ) \
 	STDMSG_FAILEDINTFUNC_WRAPPER( &errs, ( calleestr ), callername, ( val ) )
-#define STACK_FAILEDPTRFUNC( calleestr, callername, val ) \
+#define FAILEDPTRFUNC( calleestr, callername, val ) \
 	STDMSG_FAILEDPTRFUNC_WRAPPER( &errs, ( calleestr ), callername, ( val ) )
 
 	/* Used for areas in code that SHOULD never be traversed, but might be */
 	/*  for unforeseen reasons. */
-#define STACK_TRESPASSPATH( funcname, msgstr ) \
+#define TRESPASSPATH( funcname, msgstr ) \
 	STDMSG_TRESPASSPATH_WRAPPER( &errs, funcname, ( msgstr ) )
 
 
@@ -73,19 +73,19 @@ int init_stack( stackframe *stk )
 {
 	if( !stk )
 	{
-		STACK_BADNULL( init_stack, &stk );
+		BADNULL( init_stack, &stk );
 		return( -1 );
 	}
 	if( stk->stack || stk->used )
 	{
-		STACK_BADNULL2( init_stack, &( stk->stack ), &( stk->used ) );
+		BADNULL2( init_stack, &( stk->stack ), &( stk->used ) );
 		return( -2 );
 	}
 	
 #define init_stack_SUCCESS( arr ) \
 		stk->stack = ( arr ); stk->used = 0;
 #define init_stack_FAILURE( err ) \
-		STACK_MONADICFAILURE( init_stack, "char_pascalarray_build( 64 )", ( err ) ); \
+		MONADICFAILURE( init_stack, "char_pascalarray_build( 64 )", ( err ) ); \
 		return( -3 );
 	
 	char_pascalarray_result res =
@@ -100,7 +100,7 @@ int resize_stack( stackframe *stk,  int deltaChars )
 	
 	if( !stk || len < 0 )
 	{
-		STACK_BADNULL2( resize_stack, &stk, &len );
+		BADNULL2( resize_stack, &stk, &len );
 		return( -1 );
 	}
 	
@@ -108,9 +108,9 @@ int resize_stack( stackframe *stk,  int deltaChars )
 		char_pascalarray_rebuild( stk->stack, len );
 #define resize_stack_SUCCESS( arr ) stk->stack = ( arr );
 #define resize_stack_FAILURE( err ) \
-		STACK_MONADICFAILURE( resize_stack, "char_pascalarray_rebuild()", ( err ) ); \
-		STACK_NOTELINE(); STACK_DATAPTRARG( stk->stack ); \
-		STACK_NOTESPACE(); STACK_DECARG( len ); \
+		MONADICFAILURE( resize_stack, "char_pascalarray_rebuild()", ( err ) ); \
+		NOTELINE(); DATAPTRARG( stk->stack ); \
+		NOTESPACE(); DECARG( len ); \
 		return( err );
 	LIB4_DEFINE_PASCALARRAY_RESULT_BODYMATCH( res, resize_stack_SUCCESS, resize_stack_FAILURE )
 	
@@ -125,15 +125,15 @@ int clear_stack( stackframe *stk )
 {
 	if( !stk )
 	{
-		STACK_BADNULL( clear_stack, &stk );
+		BADNULL( clear_stack, &stk );
 		return( -1 );
 	}
 	
 	lib4_result res = char_pascalarray_destroy( stk->stack );
 #define pop_frame_SUCCESS( var ) ;
 #define pop_frame_FAILURE( err ) \
-		STACK_MONADICFAILURE( clear_stack, "char_pascalarray_destroy()", ( err ) ); \
-		STACK_NOTELINE(); STACK_DATAPTRARG( stk->stack ); \
+		MONADICFAILURE( clear_stack, "char_pascalarray_destroy()", ( err ) ); \
+		NOTELINE(); DATAPTRARG( stk->stack ); \
 		return( err );
 	LIB4_RESULT_BODYMATCH( res, pop_frame_SUCCESS, pop_frame_FAILURE )
 	
