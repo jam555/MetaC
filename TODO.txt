@@ -42,7 +42,9 @@ components.c:
 macroargs.c:
 	This has been freshly split off of components.c- need to go through to double check things.
 	Need to make a .h for this, and move the relevant declarations into it. See exec.h?
-
+	Pulled the shufflequeue stuff out for an exec.c file.
+exec.c:
+	Freshly split- needs review.
 exec.h:
 	The whole file needs to be examined for rewriting.
 	Some stuff from components.c seems to be declared here- is it also declared in components.h?
