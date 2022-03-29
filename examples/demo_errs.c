@@ -14,8 +14,6 @@
 
 
 
-stackpair std_stacks;
-
 #if defined( __cplusplus ) && __cplusplus >= 199711L
 	namespace
 	{
