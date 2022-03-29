@@ -25,10 +25,6 @@ lexalike.h:
 
 basics.c:
 	Line 249 has a bit of error reporting that's probably worthy of it's own custom error reporter.
-	Where is pack_arglist() defined (Note: components.c- so why is it declared in basics.h)? Same for vm_pop_macroarg() (same, so same)?
-	Note: the pack_arglist() & similar is NOW in macroargs.c
-basics.h:
-	The macroargs functions (and those functions with the note in the .c...) are declared here, but should be in their own file.
 
 components.c:
 	Starting at line 80, "default" isn't really defined.
@@ -39,19 +35,16 @@ components.c:
 	Line 549 has a note about the macroargs stuff needing to be in it's own file.
 	Line 800- verify if something else needs to go at the "???".
 	Line 834- see "Line 800".
-	All of the pack_arglist() stuff has references to old-style error reporting in it's arguments- fix that in both use & definition.
 	Line 1259- Again "???", but also a not about free()s. Check into that.
 	Line 1292- "???", with a note to do deallocation.
 	Line 1382- Some note that might need to be deleted, moved, or rewritten.
 macroargs.c:
 	This has been freshly split off of components.c- need to go through to double check things.
-	Need to make a .h for this, and move the relevant declarations into it. See exec.h?
 	Pulled the shufflequeue stuff out for an exec.c file.
 exec.c:
 	Freshly split- needs review.
 exec.h:
 	The whole file needs to be examined for rewriting.
-	Some stuff from components.c seems to be declared here- is it also declared in components.h?
 	Line 107 has a "???" in a struct definition.
 
 freshline_directives.c:
@@ -61,7 +54,6 @@ echo_tokens.c:
 	The error reporting for the putc() and printf() calls needs to be finished. Don't know if it should exit the function or not.
 
 complexlex.c:
-	dealloc_tokengroup() and similar need to have the old "refid" error reporting removed from function sigs.
 	Line 159: Apparently I was uncertain about something here. Best to check.
 	Line 613: A note about a function set/function that should be built. Might be further down in same file already...
 complexlex.h:
@@ -90,18 +82,16 @@ token.h:
 
 headers.h:
 	Need to verify that all the relevant headers are included. Maybe make sub-headers for modularity?
+	Note: the relevant headers are now definitely not up to date.
 
 stack.c:
 	Do we want to add the error reporting to the stack functions?
-	Line 376: If a specific error is going to be used, then it should be BY NAME, not simply by number.
-	Line 453: Same.
-	Line 464: And again.
-	Line 476: And again.
-	Line 519: I suspect this needs an error return.
-	Line 545: There's a note here about verifying the proper use of (token_head*)->length.
+	Line 183: changed the return values, need to check if this breaks anything.
+		Note: have changed A LOT of return values. This SHOULDN'T break things, but it MIGHT. Best to check.
+		This file shouldn't have problems- fixing it is part of why there's lots of changes...
+	Line 593: There's a note here about verifying the proper use of (token_head*)->length.
 
 tokenmatching.c:
-	Various functions have args from the previous style of error reporting: need to fix that.
 	Line 406: Should this REALLY be fixed instead of deleted? I think I may have moved past this.
 
 

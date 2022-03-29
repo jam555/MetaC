@@ -108,9 +108,6 @@ retframe smart_dealloc_token( stackpair *stkp, void *v )
 			(
 				stkp, v,
 				
-				&complexlex_refid,
-				REFID_SUBIDS_complexlex__smart_dealloc_token__innerfunc1,
-				
 				tgrp
 			);
 		if( !ret.handler && !ret.data )
@@ -123,16 +120,7 @@ retframe smart_dealloc_token( stackpair *stkp, void *v )
 	{
 		tokenbranch *tb = (tokenbranch*)th;
 		
-		ret =
-			dealloc_tokenbranch
-			(
-				stkp, v,
-				
-				&complexlex_refid,
-				REFID_SUBIDS_complexlex__smart_dealloc_token__innerfunc2,
-				
-				tb
-			);
+		ret = dealloc_tokenbranch( stkp, v,  tb );
 		if( !ret.handler && !ret.data )
 		{
 			BADNULL2( smart_dealloc_token, &( ret.handler ), &( ret.data ) );
@@ -180,12 +168,7 @@ retframe smart_dealloc_token( stackpair *stkp, void *v )
 
 
 
-tokengroup* build_tokengroup
-(
-	uintptr_t *refid,
-	
-	size_t elems
-)
+tokengroup* build_tokengroup( size_t elems )
 {
 	tokengroup *ret;
 	void *a;
@@ -228,8 +211,6 @@ tokengroup* build_tokengroup
 }
 int regrow_tokengroup
 (
-	uintptr_t *refid,
-	
 	tokengroup *tgrp,
 	size_t newlen
 )
@@ -262,9 +243,6 @@ int regrow_tokengroup
 }
 int pushto_tokengroup
 (
-	uintptr_t *refid,
-	int err_subsource,
-	
 	tokengroup *tgrp,
 	token_head *thd
 )
@@ -283,7 +261,7 @@ int pushto_tokengroup
 			newlen = 1;
 		}
 		
-		int res = regrow_tokengroup( refid,  tgrp, newlen );
+		int res = regrow_tokengroup( tgrp, newlen );
 		if( !res )
 		{
 			FAILEDINTFUNC( "regrow_tokengroup", pushto_tokengroup, res );
@@ -302,7 +280,7 @@ int pushto_tokengroup
 	
 	return( 1 );
 }
-int place_tokenhead( uintptr_t *refid, token_head **dest, token_head *tok )
+int place_tokenhead( token_head **dest, token_head *tok )
 {
 	int res;
 	
@@ -322,20 +300,20 @@ int place_tokenhead( uintptr_t *refid, token_head **dest, token_head *tok )
 		/* Build new tokengroup & push both *dest and tok into it, before */
 		/*  putting it into *dest. */
 		
-		tokengroup *tg = build_tokengroup( refid, 2 );
+		tokengroup *tg = build_tokengroup( 2 );
 		if( !tg )
 		{
 			FAILEDPTRFUNC( "build_tokengroup", place_tokenhead, tg );
 			return( -2 );
 		}
 		
-		res = pushto_tokengroup( refid, 0,  tg, *dest );
+		res = pushto_tokengroup( tg, *dest );
 		if( !res )
 		{
 			FAILEDINTFUNC( "pushto_tokengroup", place_tokenhead, res );
 			return( -3 );
 		}
-		res = pushto_tokengroup( refid, 0,  tg, tok );
+		res = pushto_tokengroup( tg, tok );
 		if( !res )
 		{
 			FAILEDINTFUNC( "pushto_tokengroup", place_tokenhead, res );
@@ -348,7 +326,7 @@ int place_tokenhead( uintptr_t *refid, token_head **dest, token_head *tok )
 		
 		/* *dest is a tokengroup, so just push tok to the end of it. */
 		
-		res = pushto_tokengroup( refid, 0,  (tokengroup*)( *dest ), tok );
+		res = pushto_tokengroup( (tokengroup*)( *dest ), tok );
 		if( !res )
 		{
 			FAILEDINTFUNC( "pushto_tokengroup", place_tokenhead, res );
@@ -361,10 +339,6 @@ int place_tokenhead( uintptr_t *refid, token_head **dest, token_head *tok )
 retframe dealloc_tokengroup
 (
 	stackpair *stkp, void *v,
-	
-	uintptr_t *refid,
-	int err_source,
-	int err_subsource,
 	
 	tokengroup *tgrp
 )
@@ -442,12 +416,7 @@ retframe dealloc_tokengroup
 }
 
 
-tokenbranch* build_tokenbranch
-(
-	uintptr_t *refid,
-	
-	size_t elems
-)
+tokenbranch* build_tokenbranch( size_t elems )
 {
 	tokenbranch *ret;
 	void *a;
@@ -478,7 +447,7 @@ tokenbranch* build_tokenbranch
 	
 	return( ret );
 }
-int set_lead_tokenbranch( uintptr_t *refid,  tokenbranch *tb, token_head *tok )
+int set_lead_tokenbranch( tokenbranch *tb, token_head *tok )
 {
 		/* We actually DON'T CARE if refid is set. */
 	if( !tb || !tok )
@@ -497,7 +466,7 @@ int set_lead_tokenbranch( uintptr_t *refid,  tokenbranch *tb, token_head *tok )
 	
 	return( 1 );
 }
-int push_body_tokenbranch( uintptr_t *refid,  tokenbranch *tb, token_head *tok )
+int push_body_tokenbranch( tokenbranch *tb, token_head *tok )
 {
 		/* We actually DON'T CARE if refid is set. */
 	if( !tb || !tok )
@@ -506,7 +475,7 @@ int push_body_tokenbranch( uintptr_t *refid,  tokenbranch *tb, token_head *tok )
 		return( -1 );
 	}
 	
-	int res = place_tokenhead( refid, &( tb->body ), tok );
+	int res = place_tokenhead( &( tb->body ), tok );
 	if( !res )
 	{
 		FAILEDINTFUNC( "place_tokenhead", push_body_tokenbranch, res );
@@ -515,7 +484,7 @@ int push_body_tokenbranch( uintptr_t *refid,  tokenbranch *tb, token_head *tok )
 	
 	return( 1 );
 }
-int set_tail_tokenbranch( uintptr_t *refid,  tokenbranch *tb, token_head *tok )
+int set_tail_tokenbranch( tokenbranch *tb, token_head *tok )
 {
 		/* We actually DON'T CARE if refid is set. */
 	if( !tb || !tok )
@@ -537,10 +506,6 @@ int set_tail_tokenbranch( uintptr_t *refid,  tokenbranch *tb, token_head *tok )
 retframe dealloc_tokenbranch
 (
 	stackpair *stkp, void *v,
-	
-	uintptr_t *refid,
-	int err_source,
-	int err_subsource,
 	
 	tokenbranch *tb
 )
@@ -660,7 +625,7 @@ retframe accumulate_whitespace( stackpair *stkp, void *v )
 		tmp = (token_head*)0;
 	}
 	
-	res = place_tokenhead( &complexlex_refid, &tmp, th );
+	res = place_tokenhead( &tmp, th );
 	if( !res )
 	{
 		FAILEDINTFUNC( "place_tokenhead", accumulate_whitespace, res );;
@@ -706,14 +671,14 @@ retframe accumulate_token( stackpair *stkp, void *v )
 	}
 	
 	
-	tokenbranch *tb = build_tokenbranch( uintptr_t *refid,  1 );
+	tokenbranch *tb = build_tokenbranch( 1 );
 	if( !tb )
 	{
 		FAILEDPTRFUNC( "build_tokenbranch", accumulate_token, tb );
 		return( ret );
 	}
 	
-	res = push_body_tokenbranch( uintptr_t *refid,  tb, (token_head*)top );
+	res = push_body_tokenbranch( tb, (token_head*)top );
 	if( !res )
 	{
 		FAILEDINTFUNC( "push_body_tokenbranch", accumulate_token, res );
@@ -762,7 +727,7 @@ retframe conclude_accumulate_token( stackpair *stkp, void *v )
 	{
 		if( ( (tokenbranch*)bottom )->tail == (token_head*)0 )
 		{
-			res = set_tail_tokenbranch( uintptr_t *refid,  (tokenbranch*)bottom, (token_head*)white );
+			res = set_tail_tokenbranch( (tokenbranch*)bottom, (token_head*)white );
 			if( !res )
 			{
 				FAILEDINTFUNC( "set_tail_tokenbranch", conclude_accumulate_token, res );

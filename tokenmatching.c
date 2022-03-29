@@ -152,13 +152,12 @@ int stdcompare_genericnamed( const void *a_, const void *b_ )
 
 
 
-genname_parr* build_gennamearr( size_t count, uintptr_t *errkey )
+genname_parr* build_gennamearr( size_t count )
 {
 	genname_parr *a = (genericnamed_pascalarray*)0;
 	
 #define build_gennamearr_ONERR( err ) \
 		MONADICFAILURE( build_gennamearr, "genericnamed_pascalarray_build()", err ); \
-		NOTELINE(); DATAPTR( errkey ); \
 		NOTESPACE(); DECARG( count );
 	genericnamed_pascalarray_result res =
 		genericnamed_pascalarray_build( count );
@@ -241,7 +240,7 @@ genericnamed* bsearch1_gennamearr( genname_parr *parr, token *tok )
 
 
 
-int lexparse1_pushsearchtable( uintptr_t *refid, genname_parrparr **keys, size_t *keys_used, int err_subsource, int errsubsub, genname_parr *pushable )
+int lexparse1_pushsearchtable( genname_parrparr **keys, size_t *keys_used,  genname_parr *pushable )
 {
 	if( !keys || !keys_used )
 	{
@@ -270,7 +269,7 @@ int lexparse1_pushsearchtable( uintptr_t *refid, genname_parrparr **keys, size_t
 	
 	return( 1 );
 }
-int lexparse1_popsearchtable( uintptr_t *refid, genname_parrparr **keys, size_t *keys_used, int err_subsource, int errsubsub )
+int lexparse1_popsearchtable( genname_parrparr **keys, size_t *keys_used )
 {
 	if( !keys || !keys_used )
 	{
@@ -286,12 +285,8 @@ retframe lexparse1_tokensearch
 (
 	stackpair *stkp,
 	
-	uintptr_t *refid,
-	
 	genname_parrparr **keys,
 	size_t *keys_used,
-	
-	int err_subsource,
 	
 	retframe seekother
 )
@@ -353,13 +348,8 @@ retframe lexparse1_tokensearch
 			(
 				lexparse1_pushsearchtable
 				(
-					refid,
-					
 					keys,
 					keys_used,
-					
-					err_subsource,
-					6,
 					
 					(genname_parr*)( found->ref )
 				)

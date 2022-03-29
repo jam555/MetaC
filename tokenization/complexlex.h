@@ -37,56 +37,33 @@
 	
 	
 	
-	tokengroup* build_tokengroup
-	(
-		uintptr_t *refid,
-		
-		size_t elems
-	);
+	tokengroup* build_tokengroup( size_t elems );
 	int regrow_tokengroup
 	(
-		uintptr_t *refid,
-		
 		tokengroup *tgrp,
 		size_t newlen
 	);
 	int pushto_tokengroup
 	(
-		uintptr_t *refid,
-		int err_subsource,
-		
 		tokengroup *tgrp,
 		token_head *thd
 	);
-	int place_tokenhead( uintptr_t *refid, token_head **dest, token_head *tok );
+	int place_tokenhead( token_head **dest, token_head *tok );
 	retframe dealloc_tokengroup
 	(
 		stackpair *stkp, void *v,
-		
-		uintptr_t *refid,
-		int err_source,
-		int err_subsource,
 		
 		tokengroup *tgrp
 	);
 	
 	
-	tokenbranch* build_tokenbranch
-	(
-		uintptr_t *refid,
-		
-		size_t elems
-	);
-	int set_lead_tokenbranch( uintptr_t *refid,  tokenbranch *tb, token_head *tok );
-	int push_body_tokenbranch( uintptr_t *refid,  tokenbranch *tb, token_head *tok );
-	int set_tail_tokenbranch( uintptr_t *refid,  tokenbranch *tb, token_head *tok );
+	tokenbranch* build_tokenbranch( size_t elems );
+	int set_lead_tokenbranch( tokenbranch *tb, token_head *tok );
+	int push_body_tokenbranch( tokenbranch *tb, token_head *tok );
+	int set_tail_tokenbranch( tokenbranch *tb, token_head *tok );
 	retframe dealloc_tokenbranch
 	(
 		stackpair *stkp, void *v,
-		
-		uintptr_t *refid,
-		int err_source,
-		int err_subsource,
 		
 		tokenbranch *tb
 	);

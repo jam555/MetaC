@@ -36,19 +36,19 @@ int init_stack( stackframe *stk )
 	if( !stk )
 	{
 		STACK_BADNULL( init_stack, &stk );
-		return( -1 );
+		return( LIB4_STDERRS_BADARGS_SIMPLE );
 	}
 	if( stk->stack || stk->used )
 	{
 		STACK_BADNULL2( init_stack, &( stk->stack ), &( stk->used ) );
-		return( -2 );
+		return( LIB4_STDERRS_BADARGS_SIMPLE - 1 );
 	}
 	
 #define init_stack_SUCCESS( arr ) \
 		stk->stack = ( arr ); stk->used = 0;
 #define init_stack_FAILURE( err ) \
 		STACK_MONADICFAILURE( init_stack, "char_pascalarray_build( 64 )", ( err ) ); \
-		return( -3 );
+		return( LIB4_STDERRS_BADARGS_SIMPLE - 2 );
 	
 	char_pascalarray_result res =
 		char_pascalarray_build( 64 );
@@ -63,7 +63,7 @@ int resize_stack( stackframe *stk,  int deltaChars )
 	if( !stk || len < 0 )
 	{
 		STACK_BADNULL2( resize_stack, &stk, &len );
-		return( -1 );
+		return( LIB4_STDERRS_BADARGS_SIMPLE );
 	}
 	
 	char_pascalarray_result res =
@@ -88,7 +88,7 @@ int clear_stack( stackframe *stk )
 	if( !stk )
 	{
 		STACK_BADNULL( clear_stack, &stk );
-		return( -1 );
+		return( LIB4_STDERRS_BADARGS_SIMPLE );
 	}
 	
 	lib4_result res = char_pascalarray_destroy( stk->stack );
@@ -108,13 +108,18 @@ int clear_stack( stackframe *stk )
 
 int push_char( stackframe *stk,  char val )
 {
+	if( !stk )
+	{
+		return( LIB4_STDERRS_BADARGS_SIMPLE );
+	}
+	
 	if( stk->used >= stk->stack->len )
 	{
 		int res = resize_stack( stk,  stk->stack->len );
 		
 		if( res < 0 )
 		{
-			return( -2 );
+			return( LIB4_STDERRS_BADARGS_SIMPLE - 1 );
 		}
 	}
 	
@@ -125,9 +130,14 @@ int push_char( stackframe *stk,  char val )
 }
 int pop_char( stackframe *stk,  char *dest )
 {
+	if( !stk )
+	{
+		return( LIB4_STDERRS_BADARGS_SIMPLE );
+	}
+	
 	if( stk->used <= 0 )
 	{
-		return( -2 );
+		return( LIB4_STDERRS_BADARGS_SIMPLE - 1 );
 	}
 	
 	--( stk->used );
@@ -142,9 +152,9 @@ int pop_char( stackframe *stk,  char *dest )
 }
 int peek_char( stackframe *stk,  size_t off,  char *dest )
 {
-	if( !dest || off >= stk->used )
+	if( !stk || !dest || off >= stk->used )
 	{
-		return( -1 );
+		return( LIB4_STDERRS_BADARGS_SIMPLE );
 	}
 	
 	*dest = stk->stack->body[ stk->used - ( off + 1 ) ];
@@ -158,6 +168,11 @@ int push_int( stackframe *stk,  int val )
 	unsigned char tmp;
 	unsigned int acc = *( (unsigned int*)&val ), l = 0;
 	
+	if( !stk )
+	{
+		return( LIB4_STDERRS_BADARGS_SIMPLE );
+	}
+	
 	while( l < sizeof( int ) )
 	{
 		tmp = acc & ( (unsigned int)( 1 << CHARBITS ) - 1 );
@@ -165,7 +180,7 @@ int push_int( stackframe *stk,  int val )
 		
 		if( !val )
 		{
-			return( -l );
+			return( LIB4_STDERRS_BADARGS_SIMPLE - ( l + 1 ) );
 		}
 		
 		acc >> CHARBIT;
@@ -180,6 +195,11 @@ int pop_int( stackframe *stk,  int *dest )
 	unsigned int acc = 0;
 	char tmp;
 	
+	if( !stk )
+	{
+		return( LIB4_STDERRS_BADARGS_SIMPLE );
+	}
+	
 	while( l < sizeof( int ) )
 	{
 		res = pop_char( stk,  &tmp );
@@ -190,7 +210,7 @@ int pop_int( stackframe *stk,  int *dest )
 				*dest = *( (int*)&acc );
 			}
 			
-			return( -( l + 1 ) );
+			return( LIB4_STDERRS_BADARGS_SIMPLE - ( l + 1 ) );
 		}
 		
 		acc << CHARBIT;
@@ -208,7 +228,7 @@ int pop_int( stackframe *stk,  int *dest )
 }
 int peek_int( stackframe *stk,  size_t off,  int *dest )
 {
-	if( dest )
+	if( stk && dest )
 	{
 		int res, l = 0;
 		char tmp;
@@ -219,7 +239,7 @@ int peek_int( stackframe *stk,  size_t off,  int *dest )
 			res = peek_char( stk,  off + l,  &tmp );
 			if( !res )
 			{
-				return( -( l + 3 ) );
+				return( LIB4_STDERRS_BADARGS_SIMPLE - ( l + 1 ) );
 			}
 			
 			acc << CHARBIT;
@@ -233,13 +253,18 @@ int peek_int( stackframe *stk,  size_t off,  int *dest )
 		return( 1 );
 	}
 	
-	return( -1 );
+	return( LIB4_STDERRS_BADARGS_SIMPLE );
 }
 
 int push_uintptr( stackframe *stk,  uintptr_t val )
 {
 	unsigned char tmp;
 	int res, l = 0;
+	
+	if( !stk )
+	{
+		return( LIB4_STDERRS_BADARGS_SIMPLE );
+	}
 	
 	while( l < sizeof( uintptr_t ) )
 	{
@@ -248,7 +273,7 @@ int push_uintptr( stackframe *stk,  uintptr_t val )
 		
 		if( !res )
 		{
-			return( -l );
+			return( LIB4_STDERRS_BADARGS_SIMPLE - ( l + 1 ) );
 		}
 		
 		val >> CHARBIT;
@@ -262,6 +287,11 @@ int pop_uintptr( stackframe *stk,  uintptr_t *dest )
 	int res, l = 0;
 	char tmp;
 	
+	if( !stk || !dest )
+	{
+		return( LIB4_STDERRS_BADARGS_SIMPLE );
+	}
+	
 	*dest = 0;
 	
 	while( l < sizeof( uintptr_t ) )
@@ -269,7 +299,7 @@ int pop_uintptr( stackframe *stk,  uintptr_t *dest )
 		res = pop_char( stk,  &tmp );
 		if( !res )
 		{
-			return( -( l + 1 ) );
+			return( LIB4_STDERRS_BADARGS_SIMPLE - ( l + 1 ) );
 		}
 		
 		*dest << CHARBIT;
@@ -294,7 +324,7 @@ int peek_uintptr( stackframe *stk,  size_t off,  uintptr_t *dest )
 			res = peek_char( stk,  off + l,  &tmp );
 			if( !res )
 			{
-				return( -( l + 3 ) );
+				return( LIB4_STDERRS_BADARGS_SIMPLE - ( l + 1 ) );
 			}
 			
 			*dest << CHARBIT;
@@ -306,18 +336,31 @@ int peek_uintptr( stackframe *stk,  size_t off,  uintptr_t *dest )
 		return( 1 );
 	}
 	
-	return( -1 );
+	return( LIB4_STDERRS_BADARGS_SIMPLE );
 }
 
 int push_retframe( stackframe *stk,  retframe rf )
 {
+	if( !stk )
+	{
+		return( LIB4_STDERRS_BADARGS_SIMPLE );
+	}
+	
 	int res = push_uintptr( stk,  (uintptr_t)( rf.handler ) );
+	if( res == LIB4_STDERRS_BADARGS_SIMPLE )
+	{
+		return( LIB4_STDERRS_BADARGS_SIMPLE - 1 );
+	}
 	if( !res )
 	{
-		return( -3 );
+		return( LIB4_STDERRS_BADARGS_SIMPLE - 2 );
 	}
 	
 	res = push_uintptr( stk,  (uintptr_t)( rf.data ) );
+	if( res == LIB4_STDERRS_BADARGS_SIMPLE )
+	{
+		return( LIB4_STDERRS_BADARGS_SIMPLE - 3 );
+	}
 	if( !res )
 	{
 		res = -res;
@@ -326,7 +369,7 @@ int push_retframe( stackframe *stk,  retframe rf )
 			pop_char( stk,  (char*)0 );
 			--res;
 		}
-			return( -4 );
+		return( LIB4_STDERRS_BADARGS_SIMPLE - 4 );
 	}
 	
 	return( 1 );
@@ -373,73 +416,78 @@ int peek_retframe( stackframe *stk,  size_t off,  retframe *rf )
 		rf->data = (void*)tmp;
 		
 		res = peek_uintptr( stk,  off + sizeof( uintptr_t ),  &tmp );
-		if( res == -1 )
+		if( res == LIB4_STDERRS_BADARGS_SIMPLE )
 		{
 				/* How?!? */
-			return( -2 );
+			return( -sizeof( uintptr_t ) );
 		}
 		if( !res )
 		{
-			return( res - sizeof( uintptr_t ) );
+			return( res - ( sizeof( uintptr_t ) + 1 ) );
 		}
 		rf->handler = (framefunc)tmp;
 		
 		return( 1 );
 	}
 	
-	return( -1 );
+	return( LIB4_STDERRS_BADARGS_SIMPLE );
 }
 
 int push_tokenhead( stackframe *stk,  token_head val )
 {
+	if( !stk )
+	{
+		return( LIB4_STDERRS_BADARGS_SIMPLE );
+	}
+	
 	if( !push_int( stk,  val.is_delimited ) )
 	{
-		return( -2 );
+		return( LIB4_STDERRS_BADARGS_SIMPLE - 1 );
 	}
 	if( !push_int( stk,  val.was_freshline ) )
 	{
-		return( -3 );
+		return( LIB4_STDERRS_BADARGS_SIMPLE - 2 );
 	}
 	if( !push_int( stk,  val.length ) )
 	{
-		return( -4 );
+		return( LIB4_STDERRS_BADARGS_SIMPLE - 3 );
 	}
 	if( !push_uintptr( stk,  val.toktype ) )
 	{
-		return( -5 );
+		return( LIB4_STDERRS_BADARGS_SIMPLE - 4 );
 	}
 	
 	return( 1 );
 }
 int pop_tokenhead( stackframe *stk,  token_head *dest )
 {
-	if( dest )
+	if( stk && dest )
 	{
 		if( !pop_uintptr( stk,  &( dest->toktype ) ) )
 		{
-			return( -2 );
+			return( LIB4_STDERRS_BADARGS_SIMPLE - 1 );
 		}
 		if( !pop_int( stk,  &( dest->length ) ) )
 		{
-			return( -3 );
+			return( LIB4_STDERRS_BADARGS_SIMPLE - 2 );
 		}
 		if( !pop_int( stk,  &( dest->was_freshline ) ) )
 		{
-			return( -4 );
+			return( LIB4_STDERRS_BADARGS_SIMPLE - 3 );
 		}
 		if( !pop_int( stk,  &( dest->is_delimited ) ) )
 		{
-			return( -5 );
+			return( LIB4_STDERRS_BADARGS_SIMPLE - 4 );
 		}
 		
 		return( 1 );
 	}
 	
-	return( -1 );
+	return( LIB4_STDERRS_BADARGS_SIMPLE );
 }
 int peek_tokenhead( stackframe *stk,  size_t off,  token_head *dest )
 {
-	if( rf )
+	if( stk && rf )
 	{
 		token_head tmp;
 		
@@ -450,10 +498,10 @@ int peek_tokenhead( stackframe *stk,  size_t off,  token_head *dest )
 		}
 		
 		res = peek_int( stk,  off + sizeof( uintptr_t ),  &( tmp.length ) );
-		if( res == -1 )
+		if( res == LIB4_STDERRS_BADARGS_SIMPLE )
 		{
 				/* How?!? */
-			return( -2 );
+			return( -sizeof( uintptr_t ) );
 		}
 		if( !res )
 		{
@@ -461,7 +509,7 @@ int peek_tokenhead( stackframe *stk,  size_t off,  token_head *dest )
 		}
 		
 		res = peek_int( stk,  off + sizeof( uintptr_t ),  &( tmp.was_freshline ) );
-		if( res == -1 )
+		if( res == LIB4_STDERRS_BADARGS_SIMPLE ) /* ??? */
 		{
 				/* How?!? */
 			return( -sizeof( uintptr_t ) * 2 );
@@ -473,7 +521,7 @@ int peek_tokenhead( stackframe *stk,  size_t off,  token_head *dest )
 		}
 		
 		res = peek_int( stk,  off + sizeof( uintptr_t ),  &( tmp.is_delimited ) );
-		if( res == -1 )
+		if( res == LIB4_STDERRS_BADARGS_SIMPLE )
 		{
 				/* How?!? */
 			return( -sizeof( uintptr_t ) * 3 );
@@ -488,15 +536,15 @@ int peek_tokenhead( stackframe *stk,  size_t off,  token_head *dest )
 		return( 1 );
 	}
 	
-	return( -1 );
+	return( LIB4_STDERRS_BADARGS_SIMPLE );
 }
 
 
 int push_block( stackframe *stk,  const char *src, size_t len )
 {
-	if( !src )
+	if( !stk || !src )
 	{
-		return( -1 );
+		return( LIB4_STDERRS_BADARGS_SIMPLE );
 	}
 	
 	while( len )
@@ -504,7 +552,7 @@ int push_block( stackframe *stk,  const char *src, size_t len )
 		int ret = push_char( stk,  *src );
 		if( !ret )
 		{
-			return( ret - 1 );
+			return( ret + LIB4_STDERRS_BADARGS_SIMPLE );
 		}
 		
 		++src;
@@ -515,8 +563,9 @@ int push_block( stackframe *stk,  const char *src, size_t len )
 }
 int pop_block( stackframe *stk,  char *dest, size_t len )
 {
-	if( !dest )
+	if( !stk || !dest )
 	{
+		return( LIB4_STDERRS_BADARGS_SIMPLE );
 	}
 	
 	while( len )
@@ -526,7 +575,7 @@ int pop_block( stackframe *stk,  char *dest, size_t len )
 		int ret = pop_char( stk,  dest + len );
 		if( !ret )
 		{
-			return( ret - 1 );
+			return( ret + LIB4_STDERRS_BADARGS_SIMPLE );
 		}
 	}
 	
@@ -535,10 +584,10 @@ int pop_block( stackframe *stk,  char *dest, size_t len )
 
 int push_token( stackframe *stk,  token_head *src )
 {
-	if( !src )
+	if( !stk || !src )
 	{
 		STACK_BADNULL( push_token, &src );
-		return( -1 );
+		return( LIB4_STDERRS_BADARGS_SIMPLE );
 	}
 	
 	/* Note to self: verify that all tokens use ->length correctly, so that */
@@ -548,13 +597,13 @@ int push_token( stackframe *stk,  token_head *src )
 	if( !res )
 	{
 		STACK_BADNULL( push_token, &res );
-		return( -2 );
+		return( LIB4_STDERRS_BADARGS_SIMPLE - 1 );
 	}
 	res = push_tokenhead( stk,  *src );
 	if( !res )
 	{
 		STACK_BADNULL( push_token, &res );
-		return( -3 );
+		return( LIB4_STDERRS_BADARGS_SIMPLE - 2 );
 	}
 	
 	return( 1 );
@@ -563,17 +612,17 @@ int pop_token( stackframe *stk,  token_head **dest )
 {
 	token_head tmp, *a = (token_head*)0;
 	
-	if( !dest )
+	if( !stk || !dest )
 	{
 		STACK_BADNULL( pop_token, &dest );
-		return( -1 );
+		return( LIB4_STDERRS_BADARGS_SIMPLE );
 	}
 	
 	int res = pop_tokenhead( stk,  &tmp );
 	if( !res )
 	{
 		STACK_BADNULL( pop_token, &res );
-		return( -2 );
+		return( LIB4_STDERRS_BADARGS_SIMPLE - 1 );
 	}
 	
 	size_t len = sizeof( token ) + ( sizeof( char ) * tmp.length );
@@ -581,14 +630,14 @@ int pop_token( stackframe *stk,  token_head **dest )
 		STACK_MONADICFAILURE( pop_token, "lib4_stdmemfuncs.alloc()", ( err ) ); \
 		STACK_NOTELINE(); STACK_DATAPTR( lib4_stdmemfuncs.data ); \
 		STACK_NOTESPACE(); STACK_DECARG( len ); \
-		return( -3 );
+		return( LIB4_STDERRS_BADARGS_SIMPLE - 2 );
 	lib4_ptrresult ptrres =
 		lib4_stdmemfuncs.alloc( lib4_stdmemfuncs.data, len );
 	LIB4_PTRRESULT_BODYMATCH( ptrres, LIB4_OP_SETa, pop_token_FAIL )
 	if( !a )
 	{
 		STACK_BADNULL( pop_token, &a );
-		return( -4 );
+		return( LIB4_STDERRS_BADARGS_SIMPLE - 3 );
 	}
 	
 	res = pop_block( stk,  ( (const char*)a ) + sizeof( token_head ), tmp.length );
@@ -597,7 +646,7 @@ int pop_token( stackframe *stk,  token_head **dest )
 	if( !res )
 	{
 		STACK_BADNULL( pop_token, &res );
-		return( -5 );
+		return( LIB4_STDERRS_BADARGS_SIMPLE - 4 );
 	}
 	
 	*dest = a;

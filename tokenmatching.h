@@ -14,7 +14,7 @@ int stdcompare_genericnamed( const void *a_, const void *b_ );
 
 
 
-genname_parr* build_gennamearr( size_t count, uintptr_t *errkey );
+genname_parr* build_gennamearr( size_t count );
 genname_parr* resize_gennamearr( genname_parr *parr, size_t newlen );
 void destroy_gennamearr( genname_parr *parr,  void (*release_ref)( genericnamed* ) );
 
@@ -25,9 +25,9 @@ genericnamed* bsearch1_gennamearr( genname_parr *parr, token *tok );
 
 
 	/* Pushes pushable onto the end of keys. Negative is error, positive is success. */
-int lexparse1_pushsearchtable( uintptr_t *refid, genname_parrparr **keys, size_t *keys_used, int err_subsource, int errsubsub, genname_parr *pushable );
+int lexparse1_pushsearchtable( genname_parrparr **keys, size_t *keys_used,  genname_parr *pushable );
 	/* Obvious purpose, same returns as pushing. */
-int lexparse1_popsearchtable( uintptr_t *refid, genname_parrparr **keys, size_t *keys_used, int err_subsource, int errsubsub );
+int lexparse1_popsearchtable( genname_parrparr **keys, size_t *keys_used );
 	/* A token that can be given to bsearch1_gennamearr() must be on the top */
 	/*  of the stack. Bsearch will search through keys[][], and the function */
 	/*  then either returns the result (if the genericnamed->reftype says */
@@ -48,12 +48,8 @@ retframe lexparse1_tokensearch
 		/* Was a stackframe*, but the revised retrn macro needs the pair. */
 	stackpair *stkp,
 	
-	uintptr_t *refid,
-	
 	genname_parrparr **keys,
 	size_t *keys_used,
-	
-	int err_subsource,
 	
 	retframe seekother
 );

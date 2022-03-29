@@ -219,7 +219,7 @@ retframe shufflequeue_macro_run( stackpair *stkp, void *v )
 				--
 					arglist*
 			*/
-		int res = pack_arglist( stkp,  REFID_SUBIDS_searchstack__???, 2 );
+		int res = pack_arglist( stkp );
 		if( !res )
 		{
 			FAILEDINTFUNC( "pack_arglist", shufflequeue_macro_run_continue, res );
@@ -335,7 +335,7 @@ retframe shufflequeue_macro_directive( stackpair *stkp, void *v )
 				--
 					arglist*
 			*/
-		int res = pack_arglist( stkp,  REFID_SUBIDS_searchstack__???, 2 );
+		int res = pack_arglist( stkp );
 		if( !res )
 		{
 			FAILEDINTFUNC( "pack_arglist", shufflequeue_macro_directive_continue, res );

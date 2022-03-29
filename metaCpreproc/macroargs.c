@@ -217,7 +217,7 @@ int macroargs_peekset( size_t off,  tokhdptr_parr **dest )
 		--
 			arglist*
 	*/
-int pack_arglist( stackpair *stkp,  uintptr_t *refid, int errgate )
+int pack_arglist( stackpair *stkp )
 {
 	uintptr_t shufcount;
 	token *tmp;
