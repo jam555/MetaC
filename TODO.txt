@@ -60,18 +60,8 @@ complexlex.h:
 	Line 95: Same note as 613 in .c
 
 simplelex.c:
-	Line 195: I think I got the two returns below this wrong. They probably need to be errors.
-	Line 420: Does anything else belong here?
-	Line 689: Maybe have the wrong variable?
-	Line 763: And again.
-	Line 832: and again...
-	Line 921: Do we want to actually add this check?
-	Line 925: See line 832.
-	Line 1041: Again.
-	
-	New:
-	Line 187: Add a TRESPASSPATH error.
-	Also, have done a lot of rework, so line numbers are wrong now.
+	Line 410: This default in numberentry_lex() can technically use a character verifier.
+	Line 621: A note in brackop_lex() that it would be good to verify the value of th.toktype.
 simplelex.h:
 	Need some note on unused vs other chars.
 

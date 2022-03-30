@@ -16,21 +16,21 @@
 #endif
 
 
-#define STACK_BADNULL( funcname, ptr ) \
+#define BADNULL( funcname, ptr ) \
 	STDMSG_BADNULL_WRAPPER( &errs, funcname, ( ptr ) )
 
-#define STACK_MONADICFAILURE( funcname, calltext, err ) \
+#define MONADICFAILURE( funcname, calltext, err ) \
 		STDMSG_MONADICFAILURE_WRAPPER( &errs, funcname, ( calltext ), ( err ) )
 		
-		#define STACK_NOTELINE() STDMSG_NOTELINE_WRAPPER( &errs )
+		#define NOTELINE() STDMSG_NOTELINE_WRAPPER( &errs )
 		
-		#define STACK_SIGNEDARG( integer ) STDMSG_SIGNEDARG_WRAPPER( &errs, integer )
-		#define STACK_HEXARG( hex ) STDMSG_HEXARG_WRAPPER( &errs, hex )
+		#define SIGNEDARG( integer ) STDMSG_SIGNEDARG_WRAPPER( &errs, integer )
+		#define HEXARG( hex ) STDMSG_HEXARG_WRAPPER( &errs, hex )
 
-#define STACK_FAILEDINTFUNC( calleestr, callername, val ) \
+#define FAILEDINTFUNC( calleestr, callername, val ) \
 	STDMSG_FAILEDINTFUNC_WRAPPER( &errs, ( calleestr ), callername, ( val ) )
 
-#define STACK_TRESPASSPATH( funcname, msgstr ) \
+#define TRESPASSPATH( funcname, msgstr ) \
 	STDMSG_TRESPASSPATH_WRAPPER( &errs, funcname, ( msgstr ) )
 
 
@@ -43,25 +43,25 @@
 #define PUSHCHAR( stk, val,  caller, scratch ) \
 	( scratch ) = push_char( ( stk ),  ( val ) ); \
 	if( !( scratch ) ) { \
-		STACK_FAILEDINTFUNC( "push_char", ( caller ), ( scratch ) ); \
+		FAILEDINTFUNC( "push_char", ( caller ), ( scratch ) ); \
 		return( (retframe){ &end_run, (void*)0 } ); }
 
 #define POPTOKENHEAD( stk, varptr,  caller, scratch ) \
 	( scratch ) = pop_tokenhead( ( stk ),  ( varptr ) ); \
 	if( !( scratch ) ) { \
-		STACK_FAILEDINTFUNC( "push_tokenhead", ( caller ), ( scratch ) ); \
+		FAILEDINTFUNC( "push_tokenhead", ( caller ), ( scratch ) ); \
 		return( (retframe){ &end_run, (void*)0 } ); }
 #define PUSHTOKENHEAD( stk, val,  caller, scratch ) \
 	( scratch ) = push_tokenhead( ( stk ),  ( val ) ); \
 	if( !( scratch ) ) { \
-		STACK_FAILEDINTFUNC( "push_tokenhead", ( caller ), ( scratch ) ); \
+		FAILEDINTFUNC( "push_tokenhead", ( caller ), ( scratch ) ); \
 		return( (retframe){ &end_run, (void*)0 } ); }
 
 #define UNGETEXTRACHAR_1( val,  caller, scratch ) \
 	if( 1 ) { \
 		( scratch ) = unget_extrachar( ( val ) ); \
 		if( !( scratch ) ) { \
-			STACK_FAILEDINTFUNC( "unget_extrachar", ( caller ), ( scratch ) ); \
+			FAILEDINTFUNC( "unget_extrachar", ( caller ), ( scratch ) ); \
 			return( (retframe){ &end_run, (void*)0 } ); } }
 #define SETHAND_ENDRUN() hand = &end_run;
 #define RETURN_ENDRUN() return( (retframe){ &end_run, (void*)0 } );
@@ -72,7 +72,7 @@
 			PUSHTOKENHEAD( &( ( stk )->data ), ( tokhead ),  ( caller ), ( scratch ) ); \
 			RETFRAMEFUNC( ( caller ) ); \
 		} else { /* Failure. */ \
-			STACK_FAILEDINTFUNC( "unget_extrachar", ( caller ), ( scratch ) ); \
+			FAILEDINTFUNC( "unget_extrachar", ( caller ), ( scratch ) ); \
 			( onerr )(); } }
 
 
@@ -89,7 +89,7 @@ retframe head_lex( stackpair *stkp, void *v )
 	{
 		extrachar_result ecr = get_extrachar( stkp, v );
 #define head_lex_GETFAIL( err ) \
-	STACK_MONADICFAILURE( head_lex, "get_extrachar", (err) ); \
+	MONADICFAILURE( head_lex, "get_extrachar", (err) ); \
 	return( (retframe){ &end_run, (void*)0 } );
 	
 		EXTRACHAR_BODYMATCH( ecr, LIB4_OP_SETa, head_lex_GETFAIL )
@@ -166,7 +166,7 @@ retframe head_lex( stackpair *stkp, void *v )
 		
 		th.toktype = ( a.c == '$' ? TOKTYPE_DOLLAR : TOKTYPE_GRAVE );
 		
-		PUSHCHAR( &( stkp->data ), a.c,   head_lex, res2);
+		PUSHCHAR( &( stkp->data ), a.c,   head_lex, res2 );
 		PUSHTOKENHEAD( &( stkp->data ), th,  head_lex, res2 );
 		
 		RETFRAMEFUNC( head_lex );
@@ -177,7 +177,7 @@ retframe head_lex( stackpair *stkp, void *v )
 		
 		th.toktype = TOKTYPE_OCTO;
 		
-		PUSHCHAR( &( stkp->data ), a.c,   head_lex, res2);
+		PUSHCHAR( &( stkp->data ), a.c,   head_lex, res2 );
 		PUSHTOKENHEAD( &( stkp->data ), th,  head_lex, res2 );
 		
 		RETFRAMEFUNC( head_lex );
@@ -195,16 +195,16 @@ retframe head_lex( stackpair *stkp, void *v )
 		
 		th.toktype = TOKTYPE_OTHER;
 		
-		PUSHCHAR( &( stkp->data ), a.c,   head_lex, res2);
+		PUSHCHAR( &( stkp->data ), a.c,   head_lex, res2 );
 		PUSHTOKENHEAD( &( stkp->data ), th,  head_lex, res2 );
 		
 		RETFRAMEFUNC( head_lex );
 	}
 	
-	PUSHCHAR( &( stkp->data ), a.c,   head_lex, res2);
+	PUSHCHAR( &( stkp->data ), a.c,   head_lex, res2 );
 	PUSHTOKENHEAD( &( stkp->data ), th,  head_lex, res2 );
 	
-		/* TODO: add a TRESPASSPATH() error here. */
+	TRESPASSPATH( head_lex, "ERROR: head_lex() exited via it's ending." );
 	return( ret );
 }
 
@@ -219,14 +219,14 @@ retframe space_lex( stackpair *stkp, void *v )
 	POPTOKENHEAD( &( stkp->data ), &th,  space_lex, res );
 	if( th.toktype != TOKTYPE_SPACE )
 	{
-		STACK_TRESPASSPATH( space_lex, "ERROR: space_lex encountered a non-_SPACE token type." );
+		TRESPASSPATH( space_lex, "ERROR: space_lex encountered a non-_SPACE token type." );
 		return( (retframe){ &end_run, (void*)0 } );
 	}
 	
 	{
 		extrachar_result ecr = get_extrachar( stkp, v );
 #define space_lex_GETFAIL( err ) \
-	STACK_MONADICFAILURE( space_lex, "get_extrachar", (err) ); \
+	MONADICFAILURE( space_lex, "get_extrachar", (err) ); \
 	return( (retframe){ &end_run, (void*)0 } );
 		EXTRACHAR_BODYMATCH( ecr, LIB4_OP_SETa, space_lex_GETFAIL )
 	}
@@ -259,14 +259,14 @@ retframe newline_lex( stackpair *stkp, void *v )
 	POPTOKENHEAD( &( stkp->data ), &th,  newline_lex, res );
 	if( th.toktype != TOKTYPE_NEWLINE )
 	{
-		STACK_TRESPASSPATH( newline_lex, "ERROR: newline_lex encountered a non-_NEWLINE token type." );
+		TRESPASSPATH( newline_lex, "ERROR: newline_lex encountered a non-_NEWLINE token type." );
 		return( (retframe){ &end_run, (void*)0 } );
 	}
 	
 	{
 		extrachar_result ecr = get_extrachar( stkp, v );
 #define newline_lex_GETFAIL( err ) \
-	STACK_MONADICFAILURE( newline_lex, "get_extrachar", (err) ); \
+	MONADICFAILURE( newline_lex, "get_extrachar", (err) ); \
 	return( (retframe){ &end_run, (void*)0 } );
 		EXTRACHAR_BODYMATCH( ecr, LIB4_OP_SETa, newline_lex_GETFAIL )
 	}
@@ -299,14 +299,14 @@ retframe name_lex( stackpair *stkp, void *v )
 	POPTOKENHEAD( &( stkp->data ), &th,  name_lex, res );
 	if( th.toktype != TOKTYPE_NAME )
 	{
-		STACK_TRESPASSPATH( name_lex, "ERROR: name_lex encountered a non-_NAME token type." );
+		TRESPASSPATH( name_lex, "ERROR: name_lex encountered a non-_NAME token type." );
 		return( (retframe){ &end_run, (void*)0 } );
 	}
 	
 	{
 		extrachar_result ecr = get_extrachar( stkp, v );
 #define name_lex_GETFAIL( err ) \
-	STACK_MONADICFAILURE( name_lex, "get_extrachar", (err) ); \
+	MONADICFAILURE( name_lex, "get_extrachar", (err) ); \
 	return( (retframe){ &end_run, (void*)0 } );
 		EXTRACHAR_BODYMATCH( ecr, LIB4_OP_SETa, name_lex_GETFAIL )
 	}
@@ -338,27 +338,20 @@ retframe numberentry_lex( stackpair *stkp, void *v )
 	POPTOKENHEAD( &( stkp->data ), &th,  numberentry_lex, res );
 	if( th.toktype != TOKTYPE_NUMBER )
 	{
-		STACK_TRESPASSPATH( numberentry_lex, "ERROR: numberentry_lex encountered a non-_NUMBER token type." );
+		TRESPASSPATH( numberentry_lex, "ERROR: numberentry_lex encountered a non-_NUMBER token type." );
 		return( (retframe){ &end_run, (void*)0 } );
 	}
 	
 	{
 		extrachar_result ecr = peek_extrachar( stkp, v );
 #define numberentry_lex1_GETFAIL( err ) \
-	STACK_MONADICFAILURE( numberentry_lex, "peek_extrachar", (err) ); \
+	MONADICFAILURE( numberentry_lex, "peek_extrachar", (err) ); \
 	return( (retframe){ &end_run, (void*)0 } );
 		EXTRACHAR_BODYMATCH( ecr, LIB4_OP_SETa, numberentry_lex1_GETFAIL )
 	}
 	
 	switch( a.c )
 	{
-		default:
-				/* Don't even need to look at the next character, it's */
-				/*  decimal. */
-			hand = &numberdecimal_lex;
-			
-			break;
-			
 		case '0':
 			{
 					/* The extrachar that we peek'd isn't needed anymore, so */
@@ -367,7 +360,7 @@ retframe numberentry_lex( stackpair *stkp, void *v )
 				
 #define numberentry_lex2_FETCHFAIL( err ) \
 	if( 1 ) { \
-		STACK_MONADICFAILURE( numberentry_lex, "get_extrachar", (err) ); \
+		MONADICFAILURE( numberentry_lex, "get_extrachar", (err) ); \
 		return( (retframe){ &end_run, (void*)0 } ); }
 				ecr = get_extrachar( stkp, v );
 				EXTRACHAR_BODYMATCH( ecr, LIB4_OP_SETa, numberentry_lex2_FETCHFAIL )
@@ -413,6 +406,17 @@ retframe numberentry_lex( stackpair *stkp, void *v )
 			PUSHCHAR( &( stkp->data ), a.c,  numberentry_lex, res );
 			
 			break;
+			
+		default:
+				/* Don't even need to look at the next character, it's */
+				/*  decimal. */
+			hand = &numberdecimal_lex;
+			
+			/* Note: This could technically use validation, but it shouldn't */
+			/*  ever be called via anything other than this file, so not */
+			/*  important. */
+			
+			break;
 	}
 	
 	PUSHTOKENHEAD( &( stkp->data ), th,  numberentry_lex, res );
@@ -430,14 +434,14 @@ retframe numberdecimal_lex( stackpair *stkp, void *v )
 	POPTOKENHEAD( &( stkp->data ), &th,  numberdecimal_lex, res );
 	if( th.toktype != TOKTYPE_NUMBER )
 	{
-		STACK_TRESPASSPATH( numberdecimal_lex, "ERROR: numberdecimal_lex encountered a non-_NUMBER token type." );
+		TRESPASSPATH( numberdecimal_lex, "ERROR: numberdecimal_lex encountered a non-_NUMBER token type." );
 		return( (retframe){ &end_run, (void*)0 } );
 	}
 	
 	{
 		extrachar_result ecr = get_extrachar( stkp, v );
 #define numberdecimal_lex_FETCHFAIL( err ) \
-	STACK_MONADICFAILURE( numberdecimal_lex, "get_extrachar", (err) ); \
+	MONADICFAILURE( numberdecimal_lex, "get_extrachar", (err) ); \
 	return( (retframe){ &end_run, (void*)0 } );
 		EXTRACHAR_BODYMATCH( ecr, LIB4_OP_SETa, numberdecimal_lex_FETCHFAIL )
 	}
@@ -448,8 +452,9 @@ retframe numberdecimal_lex( stackpair *stkp, void *v )
 		UNGETEXTRACHAR_2( stkp, a, th,  numberdecimal_lex, res, RETURN_ENDRUN );
 	}
 	
-	PUSHCHAR( &( stkp->data ), a.c,  numberdecimal_lex, res );
+		/* Grow the string back onto the stack. */
 	th.length += 1;
+	PUSHCHAR( &( stkp->data ), a.c,  numberdecimal_lex, res );
 	PUSHTOKENHEAD( &( stkp->data ), th,  numberdecimal_lex, res );
 	
 	return( (retframe){ hand, (void*)0 } );
@@ -465,14 +470,14 @@ retframe numberhexadecimal_lex( stackpair *stkp, void *v )
 	POPTOKENHEAD( &( stkp->data ), &th,  numberhexadecimal_lex, res );
 	if( th.toktype != TOKTYPE_NUMBER )
 	{
-		STACK_TRESPASSPATH( numberhexadecimal_lex, "ERROR: numberhexadecimal_lex encountered a non-_NUMBER token type." );
+		TRESPASSPATH( numberhexadecimal_lex, "ERROR: numberhexadecimal_lex encountered a non-_NUMBER token type." );
 		return( (retframe){ &end_run, (void*)0 } );
 	}
 	
 	{
 		extrachar_result ecr = get_extrachar( stkp, v );
 #define numberhexadecimal_lex_FETCHFAIL( err ) \
-	STACK_MONADICFAILURE( numberhexadecimal_lex, "get_extrachar", (err) ); \
+	MONADICFAILURE( numberhexadecimal_lex, "get_extrachar", (err) ); \
 	return( (retframe){ &end_run, (void*)0 } );
 		EXTRACHAR_BODYMATCH( ecr, LIB4_OP_SETa, numberhexadecimal_lex_FETCHFAIL )
 	}
@@ -483,7 +488,7 @@ retframe numberhexadecimal_lex( stackpair *stkp, void *v )
 		UNGETEXTRACHAR_2( stkp, a, th,  numberhexadecimal_lex, res, RETURN_ENDRUN );
 	}
 	
-		/* This will probably trigger a compile error: look up proper var. */
+		/* Grow the string back onto the stack. */
 	th.length += 1;
 	PUSHCHAR( &( stkp->data ), a.c,  numberhexadecimal_lex, res );
 	PUSHTOKENHEAD( &( stkp->data ), th,  numberhexadecimal_lex, res );
@@ -501,14 +506,14 @@ retframe numberoctal_lex( stackpair *stkp, void *v )
 	POPTOKENHEAD( &( stkp->data ), &th,  numberoctal_lex, res );
 	if( th.toktype != TOKTYPE_NUMBER )
 	{
-		STACK_TRESPASSPATH( numberoctal_lex, "ERROR: numberoctal_lex encountered a non-_NUMBER token type." );
+		TRESPASSPATH( numberoctal_lex, "ERROR: numberoctal_lex encountered a non-_NUMBER token type." );
 		return( (retframe){ &end_run, (void*)0 } );
 	}
 	
 	{
 		extrachar_result ecr = get_extrachar( stkp, v );
 #define numberoctal_lex_FETCHFAIL( err ) \
-	STACK_MONADICFAILURE( numberoctal_lex, "get_extrachar", (err) ); \
+	MONADICFAILURE( numberoctal_lex, "get_extrachar", (err) ); \
 	return( (retframe){ &end_run, (void*)0 } );
 		EXTRACHAR_BODYMATCH( ecr, LIB4_OP_SETa, numberoctal_lex_GETFAIL )
 	}
@@ -522,7 +527,7 @@ retframe numberoctal_lex( stackpair *stkp, void *v )
 		UNGETEXTRACHAR_2( stkp, a, th,  numberoctal_lex, res, RETURN_ENDRUN );
 	}
 	
-		/* This will probably trigger a compile error: look up proper var. */
+		/* Grow the string back onto the stack. */
 	th.length += 1;
 	PUSHCHAR( &( stkp->data ), a.c,  numberoctal_lex, res );
 	PUSHTOKENHEAD( &( stkp->data ), th,  numberoctal_lex, res );
@@ -540,14 +545,14 @@ retframe numberbinary_lex( stackpair *stkp, void *v )
 	POPTOKENHEAD( &( stkp->data ), &th,  numberbinary_lex, res );
 	if( th.toktype != TOKTYPE_NUMBER )
 	{
-		STACK_TRESPASSPATH( numberbinary_lex, "ERROR: numberbinary_lex encountered a non-_NUMBER token type." );
+		TRESPASSPATH( numberbinary_lex, "ERROR: numberbinary_lex encountered a non-_NUMBER token type." );
 		return( (retframe){ &end_run, (void*)0 } );
 	}
 	
 	{
 		extrachar_result ecr = get_extrachar( stkp, v );
 #define numberbinary_lex_FETCHFAIL( err ) \
-	STACK_MONADICFAILURE( numberbinary_lex, "get_extrachar", (err) ); \
+	MONADICFAILURE( numberbinary_lex, "get_extrachar", (err) ); \
 	return( (retframe){ &end_run, (void*)0 } );
 		EXTRACHAR_BODYMATCH( ecr, LIB4_OP_SETa, numberbinary_lex_GETFAIL )
 	}
@@ -558,7 +563,7 @@ retframe numberbinary_lex( stackpair *stkp, void *v )
 		UNGETEXTRACHAR_2( stkp, a, th,  numberbinary_lex, res, RETURN_ENDRUN );
 	}
 	
-		/* This will probably trigger a compile error: look up proper var. */
+		/* Grow the string back onto the stack. */
 	th.length += 1;
 	PUSHCHAR( &( stkp->data ), a.c,  numberbinary_lex, res );
 	PUSHTOKENHEAD( &( stkp->data ), th,  numberbinary_lex, res );
@@ -582,14 +587,14 @@ retframe brackop_lex( stackpair *stkp, void *v )
 		th.toktype == TOKTYPE_OPPAR
 	) )
 	{
-		STACK_TRESPASSPATH( brackop_lex, "ERROR: brackop_lex encountered a non- opening-bracket token type." );
+		TRESPASSPATH( brackop_lex, "ERROR: brackop_lex encountered a non- opening-bracket token type." );
 		return( (retframe){ &end_run, (void*)0 } );
 	}
 	
 	{
 		extrachar_result ecr = get_extrachar( stkp, v );
 #define brackop_lex_FETCHFAIL( err ) \
-	STACK_MONADICFAILURE( brackop_lex, "get_extrachar", (err) ); \
+	MONADICFAILURE( brackop_lex, "get_extrachar", (err) ); \
 	return( (retframe){ &end_run, (void*)0 } );
 		EXTRACHAR_BODYMATCH( ecr, LIB4_OP_SETa, brackop_lex_GETFAIL )
 	}
@@ -617,7 +622,7 @@ retframe brackop_lex( stackpair *stkp, void *v )
 	/*  important. */
 	
 	
-		/* This will probably trigger a compile error: look up proper var. */
+		/* Grow the string back onto the stack. */
 	th.length += 1;
 	PUSHCHAR( &( stkp->data ), a.c,  brackop_lex, res );
 	PUSHTOKENHEAD( &( stkp->data ), th,  brackop_lex, res );
@@ -640,31 +645,32 @@ retframe str_lex( stackpair *stkp, void *v )
 		th.toktype == TOKTYPE_DQSTR
 	) )
 	{
-		STACK_TRESPASSPATH( str_lex, "ERROR: str_lex encountered a non-quote token type." );
+		TRESPASSPATH( str_lex, "ERROR: str_lex encountered a non-quote token type." );
 		return( (retframe){ &end_run, (void*)0 } );
 	}
 	
 	{
 		extrachar_result ecr = get_extrachar( stkp, v );
 #define str_lex_FETCHFAIL( err ) \
-	STACK_MONADICFAILURE( str_lex, "get_extrachar", (err) ); \
+	MONADICFAILURE( str_lex, "get_extrachar", (err) ); \
 	return( (retframe){ &end_run, (void*)0 } );
 		EXTRACHAR_BODYMATCH( ecr, LIB4_OP_SETa, str_lex_GETFAIL )
 	}
 	
 	if( th.toktype == TOKTYPE_SQSTR && a.c == '\"' )
 	{
-		STACK_TRESPASSPATH( str_lex, "ERROR: str_lex encountered character / token type mismatch." );
+		TRESPASSPATH( str_lex, "ERROR: str_lex encountered character / token type mismatch." );
 		
 	} else if( th.toktype == TOKTYPE_DQSTR && a.c == '\'' )
 	{
-		STACK_TRESPASSPATH( str_lex, "ERROR: str_lex encountered character / token type mismatch." );
+		TRESPASSPATH( str_lex, "ERROR: str_lex encountered character / token type mismatch." );
 		
 	} else if( a.c == '\\' )
 	{
 		hand = &escstr_lex;
 	}
 	
+		/* Grow the string back onto the stack. */
 	th.length += 1;
 	PUSHCHAR( &( stkp->data ), a.c,  str_lex, res );
 	PUSHTOKENHEAD( &( stkp->data ), th,  str_lex, res );
@@ -693,19 +699,19 @@ retframe escstr_lex( stackpair *stkp, void *v )
 		th.toktype == TOKTYPE_DQSTR
 	) )
 	{
-		STACK_TRESPASSPATH( escstr_lex, "ERROR: escstr_lex encountered a non-quote token type." );
+		TRESPASSPATH( escstr_lex, "ERROR: escstr_lex encountered a non-quote token type." );
 		return( (retframe){ &end_run, (void*)0 } );
 	}
 	
 	{
 		extrachar_result ecr = get_extrachar( stkp, v );
 #define escstr_lex_FETCHFAIL( err ) \
-	STACK_MONADICFAILURE( escstr_lex, "get_extrachar", (err) ); \
+	MONADICFAILURE( escstr_lex, "get_extrachar", (err) ); \
 	return( (retframe){ &end_run, (void*)0 } );
 		EXTRACHAR_BODYMATCH( ecr, LIB4_OP_SETa, escstr_lex_GETFAIL )
 	}
 	
-		/* This will probably trigger a compile error: look up proper var. */
+		/* Grow the string back onto the stack. */
 	th.length += 1;
 	PUSHCHAR( &( stkp->data ), a.c,  escstr_lex, res );
 	PUSHTOKENHEAD( &( stkp->data ), th,  escstr_lex, res );
@@ -732,14 +738,14 @@ retframe syms_lex( stackpair *stkp, v )
 	POPTOKENHEAD( &( stkp->data ), &th,  syms_lex, res );
 	if( th.toktype != TOKTYPE_SYM )
 	{
-		STACK_TRESPASSPATH( syms_lex, "ERROR: syms_lex encountered a non-_SYM token type." );
+		TRESPASSPATH( syms_lex, "ERROR: syms_lex encountered a non-_SYM token type." );
 		return( (retframe){ &end_run, (void*)0 } );
 	}
 	
 	{
 		extrachar_result ecr = get_extrachar( stkp, v );
 #define name_lex_GETFAIL( err ) \
-	STACK_MONADICFAILURE( syms_lex, "get_extrachar", (err) ); \
+	MONADICFAILURE( syms_lex, "get_extrachar", (err) ); \
 	return( (retframe){ &end_run, (void*)0 } );
 		EXTRACHAR_BODYMATCH( ecr, LIB4_OP_SETa, name_lex_GETFAIL )
 	}
@@ -913,12 +919,12 @@ retframe syms_lex( stackpair *stkp, v )
 					return( symssinglet_lex( &( stkp->data ),  (void*)0, &th, a.c, b ) );
 			}
 			
+				/* Grow the string back onto the stack. This stretches to */
+				/*  the first statement following this switch. */
 			th.length += 1;
 			PUSHCHAR( &( stkp->data ), b.c,  syms_lex, res );
-			
 			break;
 	}
-	
 	PUSHTOKENHEAD( &( stkp->data ), th,  syms_lex, res );
 	
 	RETFRAMEFUNC( syms_lex );
@@ -927,7 +933,7 @@ retframe symssinglet_lex( stackpair *stkp, void *arg, token_head *th, char a, ex
 {
 	if( !th )
 	{
-		STACK_BADNULL( symssinglet_lex, &th );
+		BADNULL( symssinglet_lex, &th );
 		return( (retframe){ &end_run, (void*)0 } );
 	}
 	
@@ -999,7 +1005,8 @@ retframe symssinglet_lex( stackpair *stkp, void *arg, token_head *th, char a, ex
 			break;
 	}
 	
-	
+		/* Restore the token header to the stack. We now have a full "leaf" */
+		/*  token stored on the stack. */
 	PUSHTOKENHEAD( &( stkp->data ), th,  symssinglet_lex, res );
 	
 	RETFRAMEFUNC( symssinglet_lex );
@@ -1011,22 +1018,22 @@ retframe symsext_lex( stackpair *stkp, void *arg, token_head *th, extrachar a, e
 	
 	if( !th )
 	{
-		STACK_BADNULL( symsext_lex, &th );
+		BADNULL( symsext_lex, &th );
 		return( (retframe){ &end_run, (void*)0 } );
 	}
 	
 	{
 		extrachar_result ecr = get_extrachar( stkp, v );
 #define symsext_lex_FETCHFAIL( err ) \
-	STACK_MONADICFAILURE( symsext_lex, "get_extrachar", (err) ); \
+	MONADICFAILURE( symsext_lex, "get_extrachar", (err) ); \
 	return( (retframe){ &end_run, (void*)0 } );
 		EXTRACHAR_BODYMATCH( ecr, LIB4_OP_SETc, symsext_lex_FETCHFAIL )
 	}
 	
 #define symsext_lex_STDERR( calleestr, err ) \
 	if( !res ) { \
-		STACK_FAILEDINTFUNC( ( calleestr ), symsext_lex, res ); \
-		STACK_NOTELINE(); STACK_SIGNEDARG( (err) ); \
+		FAILEDINTFUNC( ( calleestr ), symsext_lex, res ); \
+		NOTELINE(); SIGNEDARG( (err) ); \
 		return( (retframe){ &end_run, (void*)0 } ); } }
 #define symsext_lex_DITOK( erra, errb ) \
 	if( 1 ) { \
@@ -1059,7 +1066,7 @@ retframe symsext_lex( stackpair *stkp, void *arg, token_head *th, extrachar a, e
 				
 			} else {
 				
-				STACK_TRESPASSPATH( symsext_lex, "ERROR: symsext_lex encountered dual contiguous > characters." );
+				TRESPASSPATH( symsext_lex, "ERROR: symsext_lex encountered dual contiguous > characters." );
 				return( (retframe){ &end_run, (void*)0 } );
 			}
 			
@@ -1082,7 +1089,7 @@ retframe symsext_lex( stackpair *stkp, void *arg, token_head *th, extrachar a, e
 				
 			} else {
 				
-				STACK_TRESPASSPATH( symsext_lex, "ERROR: symsext_lex encountered dual contiguous < characters." );
+				TRESPASSPATH( symsext_lex, "ERROR: symsext_lex encountered dual contiguous < characters." );
 				return( (retframe){ &end_run, (void*)0 } );
 			}
 			
@@ -1107,7 +1114,7 @@ retframe symsext_lex( stackpair *stkp, void *arg, token_head *th, extrachar a, e
 				
 			} else {
 				
-				STACK_TRESPASSPATH( symsext_lex, "ERROR: symsext_lex encountered an isolated ? character." );
+				TRESPASSPATH( symsext_lex, "ERROR: symsext_lex encountered an isolated ? character." );
 				return( (retframe){ &end_run, (void*)0 } );
 			}
 			
@@ -1115,13 +1122,14 @@ retframe symsext_lex( stackpair *stkp, void *arg, token_head *th, extrachar a, e
 			break;
 			
 		default:
-			STACK_TRESPASSPATH( symsext_lex, "ERROR: symsext_lex encountered an unforeseen character: 0x" );
-			STACK_HEXARG( a.c );
+			TRESPASSPATH( symsext_lex, "ERROR: symsext_lex encountered an unforeseen character: 0x" );
+			HEXARG( a.c );
 			return( (retframe){ &end_run, (void*)0 } );
 	}
 	
 	/* Success. */
 	
+		/* Store the token header back, and then the token is finished. */
 	PUSHTOKENHEAD( &( stkp->data ), th,  symsext_lex, res );
 	
 	RETFRAMEFUNC( symsext_lex );
@@ -1138,14 +1146,14 @@ retframe at_lex( stackpair *stkp, void *v )
 	POPTOKENHEAD( &( stkp->data ), &th,  at_lex, res );
 	if( th.toktype != TOKTYPE_AT )
 	{
-		STACK_TRESPASSPATH( at_lex, "ERROR: at_lex encountered a non-_AT token type." );
+		TRESPASSPATH( at_lex, "ERROR: at_lex encountered a non-_AT token type." );
 		return( (retframe){ &end_run, (void*)0 } );
 	}
 	
 	{
 		extrachar_result ecr = get_extrachar( stkp, v );
 #define at_FETCHFAIL( err ) \
-	STACK_MONADICFAILURE( at_lex, "get_extrachar", (err) ); \
+	MONADICFAILURE( at_lex, "get_extrachar", (err) ); \
 	return( (retframe){ &end_run, (void*)0 } );
 		EXTRACHAR_BODYMATCH( ecr, LIB4_OP_SETa, at_FETCHFAIL )
 	}
