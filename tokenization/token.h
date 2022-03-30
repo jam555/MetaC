@@ -17,9 +17,6 @@
 		
 	} token_head;
 	
-		/* So, turns out that this is a semi-duplicate. I'll need to fix that */
-		/*  later. */
-		/* Note: this is the CORRECT form. */
 	typedef struct token token;
 	struct token
 	{
