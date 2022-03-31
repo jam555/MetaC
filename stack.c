@@ -30,6 +30,58 @@ stackpair std_stacks;
 	#define STACK_DATAPTR( ptr ) STDMSG_DATAPTRARG_WRAPPER( &errs, ( ptr ) )
 
 
+#define STACKCHECK( stack,  caller, endfunc ) \
+	STACK_CHECK( ( stack ),  &err, ( caller ), ( endfunc ) )
+
+
+
+int enable_loop( stackpair *stkp )
+{
+	if( !stkp )
+	{
+		STACK_BADNULL( run_loop, &enter );
+		return( LIB4_STDERRS_BADARGS_SIMPLE );
+	}
+	
+	stkp->run = 1;
+	
+	return( 1 );
+}
+int run_loop( retframe *enter,  stackpair *stkp )
+{
+	if( !enter || !stkp )
+	{
+		STACK_BADNULL2( run_loop, &enter, &stkp );
+		return( LIB4_STDERRS_BADARGS_SIMPLE );
+	}
+	if( !( *enter ) || !( enter->handler ) )
+	{
+		STACK_BADNULL( run_loop, &enter );
+		return( LIB4_STDERRS_BADARGS_DEEP );
+	}
+	
+	while( stkp->run && *enter )
+	{
+		if( !( enter->handler ) )
+		{
+			return( LIB4_STDERRS__LAST_UNALLOC_ERR );
+		}
+		
+		*enter = ( enter->handler )( stkp, enter->data );
+	}
+	
+	return( 1 );
+}
+retframe end_run( stackpair *stkp, void *v )
+{
+	STACKCHECK( stkp,  end_run, stack_ENDRETFRAME );
+	
+	stkp->run = 0;
+	
+	return( (retframe){ (framefunc)0, (void*)0 } );
+}
+
+
 
 int init_stack( stackframe *stk )
 {

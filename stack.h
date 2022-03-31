@@ -19,6 +19,7 @@
 	struct stackpair
 	{
 		stackframe ret, data;
+		int run;
 		
 	};
 	extern stackpair std_stacks;
@@ -31,6 +32,11 @@
 		framefunc handler;
 		void *data;
 	};
+	
+	
+	int enable_loop( stackpair* );
+	int run_loop( retframe*,  stackpair* );
+	retframe end_run( stackpair*, void* );
 	
 	
 	
