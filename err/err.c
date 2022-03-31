@@ -979,22 +979,25 @@ void msg_interface( msg_styleset *source, ERR_KEYTYPE first_key, ... )
 			/* Error, log & exit! Not that we have a method for the first */
 			/*  two. */
 			source = (msg_styleset*)0;
-		}
-		
-		if( curkey )
+			
+		} else if( curkey )
 		{
 			if( source->members[ curkey - 1 ].is_set )
 			{
+				/* It's a set of styles, so climb it. */
+				
 				source = source->members[ curkey - 1 ].data.set;
 				curkey = va_arg( vals, ERR_KEYTYPE );
 				
 				if( !source )
 				{
 					/* Error, but how to report it? Regardless, we'll soon */
-					/*  be returning regardless... */
+					/*  be returning... */
 				}
 				
 			} else {
+				
+				/* It's a "leaf" style, so execute it directly. */
 				
 				if( !msg_inner( source->members[ curkey - 1 ].data.style, args ) )
 				{
@@ -1005,7 +1008,8 @@ void msg_interface( msg_styleset *source, ERR_KEYTYPE first_key, ... )
 			
 		} else if( -curkey < std_messages.len )
 		{
-				/* Standard hardwired handlers? */
+			/* Standard hardwired handlers. */
+			
 			if( !msg_inner( std_messages.body[ -curkey ], va_list vals ) )
 			{
 				/* Error, but how to report it? */
@@ -1014,7 +1018,9 @@ void msg_interface( msg_styleset *source, ERR_KEYTYPE first_key, ... )
 			
 		} else {
 			
-			???
+			/* ERROR! This should never happen. */
+			
+			source = (msg_styleset*)0;
 		}
 	}
 	

@@ -8,7 +8,6 @@ freshline_directives.c looks likely to just be an older version of exec.c and ma
 
 
 err.c:
-	Line 1017: What goes there?
 	might need some sort of debug/release mode?
 
 demo_errs.c:
