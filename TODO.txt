@@ -78,6 +78,10 @@ stack.c:
 		Note: have changed A LOT of return values. This SHOULDN'T break things, but it MIGHT. Best to check.
 		This file shouldn't have problems- fixing it is part of why there's lots of changes...
 	Line 593: There's a note here about verifying the proper use of (token_head*)->length.
+	
+	New:
+	Added an int to stackpair, and several functions to the trop of the file. This will throw off line numbers. Again.
+	Check to see if the new stackpair->run member should be initialized anywhere.
 
 tokenmatching.c:
 	Line 406: Should this REALLY be fixed instead of deleted? I think I may have moved past this.
