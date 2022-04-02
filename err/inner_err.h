@@ -6,6 +6,7 @@
 	
 	
 	
+	typedef struct msg_styleset msg_styleset;
 	typedef struct msg_style msg_style;
 	struct msg_style
 	{

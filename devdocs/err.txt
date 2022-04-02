@@ -1,0 +1,154 @@
+
+err.h:
+		This function:
+			void msg_interface( msg_styleset *source, ERR_KEYTYPE first_key, ... );
+	... and this typedef:
+			ERR_KEYTYPE
+	... are used to report error messages and other alerts. The source pointer
+	provides any number of custom error messages, while the ERR_KEYTYPE
+	value(s) indicate WHICH of those custom error messages are to be used,
+	though a negative keytype causes a standard error message to be used
+	instead, regardless of how long of a chain of positive keytypes preceeded
+	it. Speaking of which, msg_styleset also allows NESTED msg_stylesets,
+	allowing the programmer to group related ones together if desired.
+		The message itself is a slightly extended version of a printf() style
+	format string.
+		After the message has been specified via source & keytypes, any
+	arguments to the message are provided via the same function call by just
+	placing them after the key(s).
+	
+inner_err.h:
+		These two function signatures:
+			typedef struct
+			{
+				void *destdata;
+					/* This function is intentionally based around fputc(). */
+				int (*destfunc)( int, void* );
+			} char_receiver;
+			int (*customprint_signature)( void*, ssize_t, ssize_t,  char_receiver,  intmax* );
+	... are used to implement custom printing functions inside msg_interface().
+	The user provides a pair of a void pointer, followed by a
+	customprint_signature value (hence forth called CPS). The void pointer will
+	be later provided by msg_interface() to CPS() as it's first argument, with
+	the following arguments being (in order) the C language printf()'s "width"
+	specifier, "precision" specifier, a char_receiver that's been populated by
+	msg_interface() for CPS() to use as it's "communications sink", and a
+	pointer to a variable that IF THE POINTER IS NON-NULL MUST be set to (NOT
+	added to!) the number of characters that CPS() has printed.
+		The format specifier for these custom printers is the standard printf()
+	"pointer" specifier, in combination with the "L" data-length specifier.
+	This was choosen to both represent the "complex" nature of data+function
+	pointers, and to also leave the "l" and "h" set of specifiers for far/near
+	pointers.
+	
+	
+		These three structures:
+			struct msg_style
+			{
+				char *layout;
+			};
+			typedef struct msg_piece
+			{
+				union
+				{
+					msg_styleset *set;
+					msg_style *style;
+				} data;
+				
+				char is_set;
+				
+			} msg_piece;
+			struct msg_styleset
+			{
+				msg_piece *members;
+				size_t count;
+			};
+	... are used to implement a listing of custom error formats. These (more
+	particularly, a pointer to a msg_styleset) is REQUIRED by msg_interface(),
+	though as long as you only use the "standard" messages, you don't actually
+	have to implement any messages. Note that for each nesting of msg_styleset,
+	an additional ERR_KEYTYPE will need to be provided to msg_interface()-
+	otherwise an argument will be misinterpreted as a key.
+		In general, a single msg_styleset should be declared at the start of
+	the file, and defined at the end, using other stuff defined along the way
+	to actually populate that top-level msg_styleset. Don't bother sharing a
+	msg_styleset across multiple files, since that'll make it a nuisance to
+	deal with- this is why msg_interface() takes a msg_styleset pointer instead
+	of just using a global.
+	
+	
+		These two macros:
+			BUILD_MSGPIECE_STYLE( styledef )
+			BUILD_MSGPIECE_SET( setdef )
+	... just format their argument into a properly formed aggregate initializer
+	for a msg_piece. After all, it's a nuisance to remember the proper
+	terminology so you can verify your syntax...
+	
+		These:
+			LIB4_MONAD_EITHER_BUILDTYPE_DEFINITION(
+				msg_piece_result,
+				
+				msg_piece,
+				lib4_failure_uipresult
+			);
+			
+			MSG_PIECE_RESULT_BUILDSUCCESS( val )
+			MSG_PIECE_RESULT_BUILDFAILURE( val )
+			
+				/* The *BODY* version takes statements, *EXPR* takes expressions. */
+				/*  The matches must be function-style, though function macros are */
+				/*  allowed. */
+			MSG_PIECE_RESULT_BODYMATCH( var, matcha, matchb )
+			MSG_PIECE_RESULT_EXPRMATCH( var, matcha, matchb )
+			
+				/* Convenience wrappers. See monads.h for more details. */
+			MSG_PIECE_RESULT_RETURNSUCCESS( val )
+			MSG_PIECE_RESULT_RETURNFAILURE( val )
+	... are the predictable convenience monad stuf. Except that I don't recall
+	why they exist. Pretty sure that all msg_piece instances will be
+	file-static.
+	
+	
+		These:
+			STDMSG_BADNULL_WRAPPER( stylesetptr, funcname, objaddr )
+			STDMSG_BADNONNULL_WRAPPER( stylesetptr, funcname, objaddr )
+			
+			STDMSG_BADNULL2_WRAPPER( stylesetptr, funcname, obj1addr, obj2addr )
+			STDMSG_BADNONNULL2_WRAPPER( stylesetptr, funcname, obj1addr, obj2addr )
+			
+			STDMSG_MONADICFAILURE_WRAPPER( stylesetptr, funcname, failmsg, failval )
+				STDMSG_NOTELINE_WRAPPER( stylesetptr )
+				STDMSG_NOTESPACE_WRAPPER( stylesetptr )
+				
+				STDMSG_SIGNEDARG_WRAPPER( stylesetptr, val )
+				STDMSG_DECARG_WRAPPER( stylesetptr, val )
+				STDMSG_HEXARG_WRAPPER( stylesetptr, val )
+				STDMSG_LDOUBLEARG_WRAPPER( stylesetptr, val )
+				STDMSG_CHARARG_WRAPPER( stylesetptr, val )
+				STDMSG_STRARG_WRAPPER( stylesetptr, val )
+				STDMSG_DATAPTRARG_WRAPPER( stylesetptr, val )
+			
+			STDMSG_FAILEDINTFUNC_WRAPPER( stylesetptr, calleestr, callername, val )
+			STDMSG_FAILEDUINTFUNC_WRAPPER( stylesetptr, calleestr, callername, val )
+			STDMSG_FAILEDPTRFUNC_WRAPPER( stylesetptr, calleestr, callername, val )
+			
+			STDMSG_TRESPASSPATH_WRAPPER( stylesetptr, funcname, msgstr )
+			
+			STDMSG_BADCHAR_WRAPPER( stylesetptr, funcname, objaddr, expected )
+			STDMSG_BADINT_WRAPPER( stylesetptr, funcname, objaddr, expected )
+			STDMSG_BADUINT_WRAPPER( stylesetptr, funcname, objaddr, expected )
+			
+			STDMSG_I_UNDERFLOW_WRAPPER( stylesetptr, funcname, objaddr, limit )
+			STDMSG_I_OVERFLOW_WRAPPER( stylesetptr, funcname, objaddr, limit )
+	... are a bunch of macros that wrap around msg_interface(), specify some
+	particular standard format specifier, and structure the arguments provided
+	so that the needed stuff will be clear without documentation. I've been
+	wrapping them with file-specific macros so I don't need to provide a
+	msg_styleset pointer manually all the time. The ones after
+	*_MONADICFAILURE_* with extra indentation are just for providing extra
+	notes, since e.g. the function-failure ones won't have any sane way to
+	specify the arguments that were provided otherwise.
+		*_TRESPASSPATH_* is sorta a generic error case, but should never be
+	used for anything except errors that SHOULD presumably never happen.
+	Roughly speaking, it's relevant for the same things as asserts usually are
+	used for.
