@@ -38,8 +38,7 @@
 	{
 		genericnamed name;
 		retframe frame;
-		
-	} genericnamed_retframe_refid;
+	};
 		/* Note: obj must be a pointer to the genericnamed_retframe that the */
 		/*  resulting value will be stored inside of. Predefine to match. */
 	#define BUILD_genericnamed_retframe( obj,  name_cparr, func, vdata ) \
@@ -78,8 +77,7 @@
 	{
 		generictyped name;
 		retframe frame;
-		
-	} generictyped_retframe_refid;
+	};
 	
 	LIB4_DEFINE_PASCALARRAY_STDDEFINE( generictyped_, generictyped );
 	typedef generictyped_pascalarray gentyped_parr;

@@ -1,0 +1,201 @@
+Ultimately, the only stuff worth using right now is MAYBE the extrachar stuff,
+getANDassemble_token(), MAYBE dealloc_token(), maybe the char2num.h stuff, the
+tokenqueue/shuffle functions, and the stack_is*() functions. The source.h stuff
+is meant to allow "#include" to be implemented, but there's no way to actually
+put a file into the read system yet, so inclusion isn't yet possible.
+
+char2num.h:
+		This is just a bunch of functions that convert a single character into
+	an integer. It uses a lib4_intresult so that errors can be reported.
+
+extrachar.h:
+	
+		These two definitions:
+			typedef struct extrachar
+			{
+				char c;
+				int was_freshline;
+				int is_delimited;
+			};
+			LIB4_MONAD_EITHER_BUILDTYPE_DEFINITION(
+				extrachar_result,
+				
+				extrachar,
+				lib4_failure_result
+			);
+	... create the needed extrachar types. ->was_freshline indicates whether
+	any non-whitespace characters came after the most recent newline but before
+	the current character. ->is_delimited indicates whether a backslash
+	character came before this character.
+	
+	
+		This function:
+			int popas_extrachar( stackpair *stkp, void *v,  extrachar *ec );
+	... pops a tokebn_head and a single character from the data stack, and uses
+	them to set the target of ec.
+	
+	
+		These functions:
+			extrachar_result get_extrachar( stackpair *stkp, void *v );
+			extrachar_result peek_extrachar( stackpair *stkp, void *v );
+			int unget_extrachar( extrachar ec );
+	... implement an extrachar equivalent to C's getc()/ungetc() functions. The
+	buffer will ONLY hold one extrachar, and if there isn't one available then
+	get_extrachar() will call tokenize_char() (defined elsewhere), and then
+	popas_extrachar() (defined in extrachar.c, of course). peek_extrachar()
+	calls get_extrachar(), and then just stores the result back into the
+	buffer, so that peek doesn't even have to care about whether anything is in
+	the buffer or not.
+	
+	
+		The usual either-monad convenience macros are defined as well.
+
+lexalike.h:
+	
+		This function:
+			int is_freshline();
+	... probably doesn't need to be in a header. Regardless, you can probably
+	guess from extrachar roughly what it's used for.
+	
+		This function:
+			intptr_t set_lexentry( lexentry lentry );
+	... ALSO probably doesn't need to be in the header, but it's there in case
+	it's needed. The default lexentry is currently head_lex(). The return is
+	the PREVIOUS lexentry value, allowing you to implement chaining.
+	
+	
+		This function:
+			retframe assemble_token( stackpair *stkp, void *v );
+	... grabs a token_head from the data stack, builds a token with the empty
+	space specified by token_head->length, copies the token_head inside it, and
+	fills the rest of the token with characters grabbed from the data stack.
+	Then it shoves a POINTER to the whole thing back onto the data stack.
+	
+		This function:
+			retframe getANDassemble_token( stackpair *stkp, void *v );
+	... is supposed to do EXACTLY what it says in it's name (using
+	assemble_token() and whatever is the current lexentry function), but it's
+	broken so it ONLY returns. There's a note in TODO.txt about this bug.
+	
+	
+		This function:
+			retframe dealloc_token( stackpair *stkp, void *v );
+	... serves as a deallocator ONLY for tokens that don't have any pointers
+	that need to be cleaned up.
+	
+	
+		This macro:
+			lexalike_ENDRETFRAME()
+	... is a convenience tool for e.g. PUSH_SHUFFLE()- it's to be used for the
+	"endfunc" argument if your function has a "retframe" as it's return type.
+	
+	
+		These functions:
+			int token_queue_init();
+			int token_queue_deinit();
+	... are exactly what they look like, they initialize & deinitialize a
+	token_queue facility. Note that *_deinit() DOES NOT deallocate ANY
+	tokens- that needs to be done elsewhere if it's wanted.
+		Both of these are called in main(), so don't bother calling them
+	yourself.
+	
+		These functions:
+			size_t token_queue_used();
+			int token_queue_push( token *tok );
+			int token_queue_pop( token **tok );
+			retframe token_queue_fetch( stackpair *stkp, void *v );
+	... implement an "ungetc()" type of facility for tokens. This facility uses
+	a FILE for the queue (which is actually a stack).
+	
+		These functions:
+			size_t token_queue_shuffleused();
+			int token_queue_shufflepop( token **tok );
+			int token_queue_shufflepush( token *tok );
+	... also implement a token stack, but it's mean for cases where you e.g.
+	want to reverse the order of tokens. ALSO implemented via file.
+	
+		This function:
+			int token_queue_shuffle2queue();
+	... moves a token from the "shuffle" stack to the other token_queue stack.
+	Just a convenience function.
+	
+		These macros:
+			POP_SHUFFLE( scratchint, destptrptr,  errfunc, err,  ... )
+			PUSH_SHUFFLE( tokptr,  stylesetptr, caller, scratch, endfunc )
+	... are convenience macros. POP_SHUFFLE() probably needs to be rewritten to
+	add an "endfunc" to it.
+	
+	
+		This function:
+			int is_bslash( int c );
+	... is exactly what it looks like. It's basically a placeholder that exists
+	on the off-chance that some other options for the delimiter char are needed
+	in the future.
+	
+		This function:
+			int tokenize_char__accumulate( stackpair *stkp, void *v,  token_head *th, char *a_, char *b_ );
+	... accumulates characters for a "delimited sequence". It DOES NOT
+	interpret the characters to determine what they should evaluate to, it just
+	collects them onto the data stack. Arguments a_ (and sometimes b_)
+	determine what it attempts to accumulate. The number of characters
+	accumulated will be stored into th->length. The last character consumed is
+	expected to return a positive from C's isspace(), and anything else is an
+	error- this space will NOT be saved, because it's superfluous, and just
+	part of the backslash syntax.
+	
+		This function:
+			int tokenize_char( stackpair *stkp, void *v );
+	... does the ACTUAL parsing for the backslash syntax- e.g. "\a " gets
+	swapped for the ASCII "alert"/"bell" character (yes, THREE characters get
+	replaced with ONLY ONE).
+	
+	
+		These functions:
+			lib4_result stack_testchar( stackpair *stkp, void *v,  int (*testfunc)( int ),  int fail_on_multichar );
+			retframe stack_testchar2( stackpair *stkp, void *v,  int (*testfunc)( int ), char *funcname );
+	... are used to adapt "int (*testfunc)( int )" style character test
+	functions to stackpairs. This lets you use the standard C test functions,
+	or whatever else follows the same pattern (e.g. "is_bslash").
+	
+		These functions:
+			retframe stack_isalnum( stackpair *stkp, void *v );
+			retframe stack_isalpha( stackpair *stkp, void *v );
+			retframe stack_isblank( stackpair *stkp, void *v );
+			retframe stack_iscntrl( stackpair *stkp, void *v );
+			retframe stack_isdigit( stackpair *stkp, void *v );
+			retframe stack_isgraph( stackpair *stkp, void *v );
+			retframe stack_islower( stackpair *stkp, void *v );
+			retframe stack_isprint( stackpair *stkp, void *v );
+			retframe stack_ispunct( stackpair *stkp, void *v );
+			retframe stack_isspace( stackpair *stkp, void *v );
+			retframe stack_isupper( stackpair *stkp, void *v );
+			retframe stack_isxdigit( stackpair *stkp, void *v );
+	... are the result of using "stack_testchar2()" to adapt the standard C
+	character-test functions to be "native" stackpair functions.
+
+source.h:
+	
+		These functions:
+			int init();
+			void deinit();
+			int reinit();
+	... do the obvious. For the most part you'll never use them, because
+	init() and deinit() are already in main(), but reinit() MIGHT be useful if
+	a "fast cgi" equivalent is desired.
+	
+		These functions:
+			char_result charin();
+			int charback( char val );
+	... implement the "direct" character input system. Again obvious. There's
+	no need to use them, because they ultimately get used by
+	tokenize_char__accumulate(), on the way to the extrachar stuff.
+	
+		These functions:
+			source* build_source2( char_pascalarray *name, uintmax_t inclusionpoint, const char *opentype );
+			source* build_source( char_pascalarray *name, uintmax_t inclusionpoint );
+			int discard_source( source *src );
+	... are currently mostly useless, because there's no way to use source, so
+	there's no reason to get one. They're meant to be used by the "#include"
+	directive, so the code in this file will need to be expanded at some point.
+		Also, there's a bug in build_source2() (mentioned in TODO.txt) that
+	needs to get fixed.

@@ -53,6 +53,10 @@
 	
 	
 	
+	#define lexalike_ENDRETFRAME() return( (retframe){ &end_run, (void*)0 } )
+	
+	
+	
 	int token_queue_init();
 	
 		/* These implement an "unget" capability for tokens: use */
@@ -69,8 +73,6 @@
 	size_t token_queue_shuffleused();
 	int token_queue_shufflepop( token **tok );
 	int token_queue_shufflepush( token *tok );
-	
-	#define lexalike_ENDRETFRAME() return( (retframe){ &end_run, (void*)0 } )
 	
 	#define POP_SHUFFLE( scratchint, destptrptr,  errfunc, err,  ... ) \
 		( scratchint ) = token_queue_shufflepop( destptrptr ); \

@@ -17,50 +17,108 @@ lexalike.c:
 	has at least one TODO about an old comment- update that comment.
 	Line 974 in stack_testchar has a TODO about a custom error message.
 	Needs trigraph support added in.
+	!!! getANDassemble_token() is completely broken! Instead of doing a call
+		and returning via something else, it just returns directly! !!!
+	tokenize_char() needs to be modified to provide file/line info to allow the
+		origin of text to be tracked for error-reporting and macro programming
+		purposes.
+	The token-queue system has no way to track if or which macro that tokens
+		have come from, so that needs to get changed so that we can avoid
+		cyclic macro invocations.
 lexalike.h:
 	Will need to be synced with some lexalike.c changes.
 	is_freshline() should be declared elsewhere- move it.
 		Actually, is that true?
 
-basics.c:
-	Line 249 has a bit of error reporting that's probably worthy of it's own custom error reporter.
+extrachar.c:
+	Needs some changes to support/use the file/line info that needs to be added
+		to lexalike.c
 
+source.c:
+	I think that inbuf isn't getting initialized: that needs to be fixed.
+	When setting ptrres in build_source2(), shouldn't it be sized off of struct
+		source instead of stackframe?
+source.h:
+	Remove gentyped_tokencomp() and gentyped_gencomp() ONLY from the header.
+		There's no compeling reason for those to be exposed, since the
+		related *_qsort() and *_bsearch() functions actually use them while
+		also ensuring that the correct types are provided. If you need the
+		comparisons, then put the signatures in a inner_source.h file.
+
+basics.c:
+	Line 249 has a bit of error reporting that's probably worthy of it's own
+		custom error reporter.
+	bsearch1_gennamearr() and it's related functions should probably be moved
+		here from... whereever they are.
+	I think that the two/three search functions (preproc_search2(),
+		preproc_search1(), and gentyped_search()) should be replaced with
+		similar functions that have more thought applied to them. They seem
+		like decent references, but not directly suitable for use.
+	See the "genericnamed_retframe" note for components.h
+
+components.h:
+	genericnamed_retframe isn't usefully compatible with genname_parr, and
+		various functions in at least basics.c require genname_parr; look at
+		doing something to compensate for that, so that genericnamed_retframe
+		can make itself useful. See also generictyped_retframe.
 components.c:
 	Starting at line 80, "default" isn't really defined.
 	Line 128, searchstack_deinit() isn't filled out at all.
-	components_sequencedsearchproceed() has a note saying it needs to be reviewed
-	Just split off the macroargs.c stuff- are all of those error reporting macros still needed?
-	Also, since so much stuff got split off, every note below here is probably obsolete.
-	Line 549 has a note about the macroargs stuff needing to be in it's own file.
+	components_sequencedsearchproceed() has a note saying it needs to be
+		reviewed.
+	Just split off the macroargs.c stuff- are all of those error reporting
+		macros still needed?
+	Also, since so much stuff got split off, every note below here is probably
+		obsolete.
+	Line 549 has a note about the macroargs stuff needing to be in it's own
+		file.
 	Line 800- verify if something else needs to go at the "???".
 	Line 834- see "Line 800".
 	Line 1259- Again "???", but also a not about free()s. Check into that.
 	Line 1292- "???", with a note to do deallocation.
 	Line 1382- Some note that might need to be deleted, moved, or rewritten.
+	components_skipendersearchdeinit() tests variable "b" before it gets
+		initialized. Probably meant to be "a".
 macroargs.c:
-	This has been freshly split off of components.c- need to go through to double check things.
+	This has been freshly split off of components.c- need to go through to
+		double check things.
 	Pulled the shufflequeue stuff out for an exec.c file.
+	There's a comment near the end that mentions accumulate_whitespace()- I
+		think this belongs elsewhere, and may well be there. Need to look to
+		see if the comment needs to be there, and one way or another remove it
+		from macroargs.c
 exec.c:
 	Freshly split- needs review.
+	shufflequeue_step_macro_calltool() has a usage of "a" before it gets
+		declared. Probably supposed to be "ops_".
+	Should shufflequeue_macro_run() REALLY pop the list of arguments from
+		macro_args? Where does that value even get pushed?
+	You know what? Just review the entire damned file.
 exec.h:
 	The whole file needs to be examined for rewriting.
 	Line 107 has a "???" in a struct definition.
 
 freshline_directives.c:
-	This frankly hasn't REALLY been written yet.
+	This frankly hasn't REALLY been written yet. It was a sort-of scratchpad
+		for e.g. macroargs.c, because it basically NEEDS some stuff like that
+		in order to know how the directives need to work.
 
 echo_tokens.c:
-	The error reporting for the putc() and printf() calls needs to be finished. Don't know if it should exit the function or not.
+	The error reporting for the putc() and printf() calls needs to be finished.
+		Don't know if it should exit the function or not.
 
 complexlex.c:
 	Line 159: Apparently I was uncertain about something here. Best to check.
-	Line 613: A note about a function set/function that should be built. Might be further down in same file already...
+	Line 613: A note about a function set/function that should be built. Might
+		be further down in same file already...
 complexlex.h:
 	Line 95: Same note as 613 in .c
 
 simplelex.c:
-	Line 410: This default in numberentry_lex() can technically use a character verifier.
-	Line 621: A note in brackop_lex() that it would be good to verify the value of th.toktype.
+	Line 410: This default in numberentry_lex() can technically use a character
+		verifier.
+	Line 621: A note in brackop_lex() that it would be good to verify the value
+		of th.toktype.
 simplelex.h:
 	Need some note on unused vs other chars.
 
@@ -69,7 +127,8 @@ token.h:
 	Line 163 & 165: Finish these defines.
 
 headers.h:
-	Need to verify that all the relevant headers are included. Maybe make sub-headers for modularity?
+	Need to verify that all the relevant headers are included. Maybe make
+		sub-headers for modularity?
 	Note: the relevant headers are now definitely NOT up to date.
 
 stack.c:
@@ -80,11 +139,14 @@ stack.c:
 	Line 593: There's a note here about verifying the proper use of (token_head*)->length.
 	
 	New:
-	Added an int to stackpair, and several functions to the trop of the file. This will throw off line numbers. Again.
-	Check to see if the new stackpair->run member should be initialized anywhere.
+	Added an int to stackpair, and several functions to the trop of the file.
+		This will throw off line numbers. Again.
+	Check to see if the new stackpair->run member should be initialized
+		anywhere.
 
 tokenmatching.c:
-	Line 406: Should this REALLY be fixed instead of deleted? I think I may have moved past this.
+	Line 406: Should this REALLY be fixed instead of deleted? I think I may
+		have moved past this.
 
 
 Finally: Finish the whole preprocessor!

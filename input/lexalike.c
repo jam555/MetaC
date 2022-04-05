@@ -155,7 +155,7 @@ retframe assemble_token( stackpair *stkp, void *v )
 		res = push_uintptr( &( stkp->data ),  (uintptr_t)a );
 		if( !res )
 		{
-			FAILEDINTFUNC( "pop_char", assemble_token, res );
+			FAILEDINTFUNC( "push_uintptr", assemble_token, res );
 			return( (retframe){ &end_run, (void*)0 } );
 		}
 		

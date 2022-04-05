@@ -108,8 +108,8 @@
 	};
 	
 	
-	/* These functions essentially define the actual execution engine for */
-	/*  macros & directives. */
+	/* These functions essentially define the public interface to the actual */
+	/*  execution engine for macros & directives. */
 	
 	
 	/* These two define a convenient entry-point for normal code: the others */
@@ -150,23 +150,7 @@
 			*/
 		retframe shufflequeue_exit_macro_wrapper( stackpair *stkp, void *v );
 	
-	/* These are the handlers for individual macro_* derivatives of */
-	/*  token_head. It's important to note that directives require THEIR OWN */
-	/*  versions of these for shufflequeue_macro_directive() to invoke. This */
-	/*  is because they perform "special magic", such as building the lists */
-	/*  of these macro_* instances in the first place. */
-		/*
-				*macro_link macro_args:tokenheadptr_pascalarray* shuffle:token*[]
-			--
-				macro_args:tokenheadptr_pascalarray* shuffle:token*[]+(arglist[subcall->link])
-		*/
-	retframe shufflequeue_macro_link( stackpair *stkp, void *v );
-		/*
-				macro_token* args:*arglist shuffle:token*[]
-			--
-				args:*arglist shuffle:token*[]+(subcall->link)
-		*/
-	retframe shufflequeue_macro_token( stackpair *stkp, void *v );
+	
 		/* This is the one for actual macros: note that it is a SET of */
 		/*  functions instead of just one. These functions implement the */
 		/*  "caller side" of a macro invocation: they essentially use */
@@ -201,16 +185,8 @@
 			)
 		*/
 	retframe shufflequeue_macro_run( stackpair *stkp, void *v );
-			/*
-					(
-							macro_run* shuffledlength shufflestack:token*[shuffledlength] macro_args:tokenheadptr_pascalarray*
-						--
-							macro_call* tokenheadptr_pascalarray* macro_args:tokenheadptr_pascalarray*
-						--
-							shuffledlength shufflestack:token*[?] macro_args:
-					)
-			*/
-		retframe shufflequeue_macro_run_continue( stackpair *stkp, void *v );
+	
+	
 			/* This performs similarly to shufflequeue_macro_run(), but */
 			/*  instead of calling shufflequeue_entry_macro_call() at the */
 			/*  end, it calls the function in macro_directive->handler with */
@@ -256,77 +232,5 @@
 				)
 			*/
 	retframe shufflequeue_macro_directive( stackpair *stkp, void *v );
-			/*
-					(
-							macro_directive* shuffledlength shufflestack:token*[shuffledlength] macro_args:tokenheadptr_pascalarray*
-						--
-							tokenheadptr_pascalarray* macro_args:tokenheadptr_pascalarray*
-						--
-							shuffledlength shufflestack:token*[?] macro_args:
-					)
-			*/
-		retframe shufflequeue_macro_directive_continue( stackpair *stkp, void *v );
-	
-	
-	/* These functions form the "callee side" of running a macro. They see */
-	/*  to it that all of the handler functions above all get called in */
-	/*  order with the correct stack structure, and process the final result */
-	/*  for whichever consumer to use later, whether the base-level of the */
-	/*  preprocessor, or (in the case of macros and directives) later stages */
-	/*  of the handlers themselves: directives need to partially implement */
-	/*  this themselves, though the *_tool() functions should hopefully make */
-	/*  that task easier. Note that the shufflequeue_exit_macro_wrapper() */
-	/*  wrapper function is responsible for mkoving the generated tokens to */
-	/*  the token source- it isn't desirable until the parent-most macro has */
-	/*  been fully executed. Note that this DOES NOT calculate the arguments */
-	/*  themselves: that is the job of the "caller side", not the callee... */
-	/*
-		The signature of the whole call sequence:
-		(
-				*callbody args:*arglist
-			--
-				shufflecount shuffle:token*[shufflecount]
-		)
-	*/
-		/*
-			Forth stack notation:
-				(
-						macro_call* tokenheadptr_pascalarray*
-					--
-						shufflebookmark tokhdptr_parr* '0' macro_args:tokenheadptr_pascalarray*
-				)
-			Note that the tokenheadptr_pascalarray* is specifically a pointer to
-			the pascal array that holds the actual arguments provided TO the macro
-			in the macro call (as opposed to the names that those arguments are
-			associated with within the body of the macro).
-		*/
-	retframe shufflequeue_entry_macro_call( stackpair *stkp, void *v );
-		/* Just a wrapper. Will need an imitator for directives. */
-	retframe shufflequeue_step_macro_call( stackpair *stkp, void *v );
-			/*
-				Forth stack notation:
-					(
-							shufflebookmark tokhdptr_parr* x macro_args:tokenheadptr_pascalarray* shuffle:token*[?]
-						--
-							shufflebookmark tokhdptr_parr* x+1 ( token_header* |  ) macro_args:tokenheadptr_pascalarray* shuffle:token*[?]
-					)
-			*/
-		retframe shufflequeue_step_macro_calltool( stackpair *stkp, void *v,  retframe loop, retframe ret );
-		/*
-			Forth stack notation:
-				(
-						shufflebookmark tokhdptr_parr* x macro_args:tokenheadptr_pascalarray* shufflestack:token*[shuffledlength]
-					--
-						shuffledlength shufflestack:token*[shuffledlength]
-				)
-			Yes, upon exit, all of that stuff will be gone.
-		*/
-	retframe shufflequeue_exit_macro_call( stackpair *stkp, void *v );
-				/*
-						shufflebookmark shuffle:token*[shufflecount]
-					--
-						shufflecount shuffle:token*[shufflecount]
-				*/
-		retframe shufflequeue_exit_macro_calltool( stackpair *stkp, void *v );
 	
 #endif

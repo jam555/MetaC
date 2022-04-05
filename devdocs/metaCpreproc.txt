@@ -1,0 +1,298 @@
+basics.h:
+	
+		These functions:
+			void gentyped_qsort( gentyped_parr *parr );
+			generictyped* gentyped_bsearch( gentyped_parr *parr, token *tok );
+	... are wrappers for the C library's qsort() and bsearch() standard
+	functions. They're really intended for use inside basics.c, but it's fine
+	to use them for other stuff.
+	
+	
+		This function:
+			retframe preproc_search2( stackpair *stkp, void *table_ );
+	... is used to search a genname_parr* provided via table_, apparently based
+	on the text value of the token. If nothing is found then an "echo" function
+	will be returned; if a GENNAMETYPE_RETFRAMEFUNC is found then a retframe
+	referenced in the entry will be returned; and if a GENNAMETYPE_TABLEENTRY
+	is found then accumulate_token will be returned, with this function
+	(preproc_search2()) will be enqueued as the return route, with a
+	genmname_parr* referenced in the entry as it's void* argument.
+		Note that a ointer to a token instance is required on the top of
+	stkp->data, and this will NOT be popped, but instead peeked. Something else
+	will need to be done to compensate for that.
+	
+		These functions:
+			retframe preproc_search1( stackpair *stkp, void *v );
+			retframe gentyped_search( stackpair *stkp, gentyped_parr *table, retframe (*tablehand)( stackpair*, void* ) );
+	... do roughly the same thing as preproc_search2(), but instead of
+	searching on the basis of the text representation of the token, they search
+	on the basis of token_head->toktype. preproc_search1() is specifically a
+	simple wrapper for gentyped_search() that uses a variable in basics.c for
+	"table", and uses preproc_search1() as the handler function for the
+	GENNAMETYPE_TABLEENTRY case instead of using gentyped_search() for the
+	purpose.
+		The other two search cases, and the note about peek vs pop, are
+	unchanged.
+	
+	
+	Honestly, I'm not convinced that anything from this file other than
+	*_qsort() and *_bsearch() should actually be used. The other two (and a
+	half...) functions are probably a decent basis point for "real" functions,
+	but I think their warts are too much to justify actually executing them.
+
+components.h:
+	
+		This structure:
+			struct genericnamed
+			{
+				char_pascalarray *name;
+				void *ref;
+				uintptr_t reftype;
+			};
+	... is used to search by name, and in particular is used to hold valid
+	matches. "ref" can point to any number of things, with the nature of that
+	thing determined by "reftype", but only four reftype values have currently
+	been defined:
+			GENNAMETYPE_INVALID
+		... which is obviously invalid, and meant only to catch
+		use-before-initialize errors,
+			GENNAMETYPE_NAMEONLY
+		... which is meant to track includes & similar things,
+			GENNAMETYPE_TABLEENTRY
+		... which means that ref points to some sort of table, which presumably
+		will itself be meant as a table to search through, and
+			GENNAMETYPE_RETFRAMEFUNC
+		... which means that ref points to a retframe that's meant to be
+		executed as the next step in whatever the table is being searched in
+		service to.
+	
+		This type:
+			struct genericnamed_retframe
+			{
+				genericnamed name;
+				retframe frame;
+			};
+	... is just a genericnamed and a retframe in a single structure. It exists
+	just so that you'll never need to define it yourself, but:
+			typedef genericnamed_pascalarray genname_parr;
+	... is a pascal-style array of genericnamed INSTEAD OF pointers to
+	genericnamed, so genericnamed_retframe is actually pretty useless right
+	now. Need to do something about that.
+	
+		This type:
+			struct generictyped
+			{
+				uintptr_t toktype;
+				void *ref;
+					/* ->reftype uses the same values as in struct genericnamed. */
+				uintptr_t reftype;
+			};
+	... is directly analogous to genericnamed, including the existence of
+	struct generictyped_retframe as an unusable convenience type.
+	
+	
+		These functions:
+			int searchstack_init();
+			int searchstack_deinit();
+	... obviously initialize and deinitialize (except that *_deinit() is
+	empty...) a searchstack. The search stack is used by the functions below...
+	
+		This type:
+			struct gennameparr_stdpushentry_entry
+			{
+				uintptr_t toktype;
+				genname_parr *table;
+					/* "followup" is invoked after a searchtable has been entered, while */
+					/*  "conclude" is invoked after a searchtable has been removed. Both */
+					/*  need to AT LEAST ensure that the caller of the function that */
+					/*  entered/removed the searchtable is returned to. */
+				retframe followup, conclude;
+			};
+	... is ALSO used with the functions below, with a pointer to a
+	gennameparr_stdpushentry_entry used as the v_ argument to all four.
+	
+		These functions:
+			retframe components_stdsearchinit( stackpair *stkp, void *v_ );
+			retframe components_sequencedsearchproceed( stackpair *stkp, void *v_ );
+			retframe components_stdsearchdeinit( stackpair *stkp, void *v_ );
+			retframe components_skipendersearchdeinit( stackpair *stkp, void *v_ );
+	... work in conjunction with the searchstack. All of them require a pointer
+	to a gennameparr_stdpushentry_entry as their "v_" argument (so in general
+	use wrapper functions for all of them). In essence, then handle situations
+	like comments or argument lists where you have an "opening token" to
+	indicate a new context is being entered, thus being deserving of a change
+	in treatment. gennameparr_stdpushentry_entry->followup is used after a new
+	context has been entered, whereas conclude is used after a context has been
+	left.
+		components_stdsearchinit() is used to setup a search context. It
+	expects a pointer to a token on top of the data stack, and a pointer to a
+	tokengroup right under it. The token will be popped, placed in the "lead"
+	element of a new tokenbranch, a pointer to that tokebnbranch will be pushed
+	onto the stack, then a pointer to a !NEW! tokenGROUP,
+	lexparse1_pushsearchtable() will be called to push v_->table onto the
+	searchstack, and finally v_->followup will be returned as the next retframe
+	to execute.
+		components_sequencedsearchproceed() is used to replace one context with
+	another. It expects a token on the top of the stack (which it does NOT
+	remove), pops the top of the searchstack, pushes a new context back on top,
+	and uses a CALLFRAME invocation to tripper a call both to v_->followup, and
+	v_->conclude.
+		components_stdsearchdeinit() and components_skipendersearchdeinit() are
+	roughly equivalent. Both expect a pointer to a token_head derived struct on
+	top of the stack with either a ->toktype == v_->toktype, or a toktype of
+	EQUIVMERGE (a tokenbranch I think?) with the subtype equal to v_->toktype,
+	which both will pop. Under that, both expect a token_head derivation with a
+	->toktype of SAMEMERGE (a tokengroup), which again they both pop. Then,
+	they both expect a pointer to a tokenbranch, which yes, they both pop.
+	Stuff then gets stored into that final tokenbranch (producing the result),
+	with both storing the tokengroup into ->body, but only
+	components_stdsearchdeinit() storing the triggering token, which goes into
+	->tail. They then peek (not pop!) another tokengroup, push the result
+	tokenbranch into it, and pop the search table that has been getting used.
+	At this point behavior once again diverges, as components_stdsearchdeinit()
+	just proceeds straight to v_->conclude, while
+	components_skipendersearchdeinit() first pushes the triggering token's
+	pointer back onto the stack, before registering v_->conclude for execution,
+	and passing execution to invoke_dealloctoken() so that the triggering token
+	that it re-pushed will be properly deallocated.
+	
+		So, a decent framework to handle context-specific search exists here,
+	but there doesn't seem to actually be a way to search INSIDE it- that will
+	need to be provided elsewhere, or added to this.
+
+exec.h:
+	
+		This type:
+			struct macro_call
+			{
+				token_head header;
+				
+				macrocllaval_parr *args;
+				tokhdptr_parr *body;
+			};
+	... holds the actual DEFINITION for a function macro. "args" is the list of
+	arguments, which is used for actually parsing the macro. "body" holds the
+	sequence of tokens that actually DEFINE the macro, some of which should
+	just get echoed, others of which themselves correspond to directives or
+	other macro invocations.
+	
+		These types:
+			struct macro_run
+			{
+				token_head header;
+				
+				macro_call *mac;
+				tokhdptr_parr *args;
+			};
+			struct macro_directive
+			{
+				token_head header;
+				
+				retframe handler;
+				tokhdptr_parr *args;
+			};
+	... represent code invocations of two types: macro invocations, and
+	directive invocations. macro_run obviously involves the execution of a
+	user-defined macro, while macro_directive corresponds to the execution of a
+	built-in directive. Both of them use "args" for the same purpose, that
+	being a per-argument set of instructions for how to actually obtain the
+	arguments- the allowable set of token_head derived types is limited to
+	macro_run and macro_directive themselves, as well as macro_link (used when
+	the argument is to be obtained from an argument to the ENCLOSING macro_run)
+	and macro_token (which directly holds a pointer to the argument value).
+		macro_run's "mac" holds a pointer to the macro_call instances that
+	actually DEFINES the behavior of the macro, while macro_directive's
+	"handler" is a retframe that implements that particular directive.
+	
+		This function:
+			retframe shufflequeue_entry_macro_wrapper( stackpair *stkp, void *v );
+	... is the "basal" entry point for a function macro. It expects a pointer
+	to a tokenheadptr_pascalarray (with each of it's arguments being a separate
+	argument to the macro) on top of the data stack, and a pointer to
+	macro_call instance below that. Upon return, some number of tokens will
+	have been pushed onto the token-queue stack that's defined in lexalike.
+	The token-queue stack unfortunately currently has no way to track if (and
+	whether) a particular token has come from a macro, so loop prevention is
+	not currently available.
+	
+		This function:
+			retframe shufflequeue_exit_macro_wrapper( stackpair *stkp, void *v );
+	... takes a uintptr_t on the data stack, and a set of token pointers of
+	equal number to the value of that uintptr_t on the shuffle stack, and moves
+	all of those token pointers to the token-queue that tokens are read from in
+	input/lexalike. This function is used internally by
+	shufflequeue_entry_macro_wrapper(), and is appropriate for processing the
+	output of shufflequeue_macro_run() and shufflequeue_macro_directive().
+	
+		This function:
+			retframe shufflequeue_macro_run( stackpair *stkp, void *v );
+	... is the "caller side" of a macro call. It builds an argument list for
+	the designated macro from it's own context, then calls the same function
+	that shufflequeue_entry_macro_wrapper() most immediately delegates to. It's
+	a good target of study if you want to execute macros, and may even be
+	usable directly... but it's honestly intended for internal usage.
+		It expects a pointer to a macro_run on top of the data stack, and a
+	pointer to a tokenheadptr_pascalarray that holds the CALLER'S argument
+	values on top of the macro_args stack. On the "final" return, it will
+	leave a uintptr_t on the data stack, a set of token pointers on the shuffle
+	stack equal in number to the value of the uintptr_t, and the argument list
+	on macro_args will have been popped... but I'm not certain that it SHOULD
+	be popped.
+	
+		This function:
+			retframe shufflequeue_macro_directive( stackpair *stkp, void *v );
+	... is the directive equivalent of shufflequeue_macro_run(). It executes
+	macro_directive->handler with the arguments of :
+		( tokenheadptr_pascalarray* macro_args: )
+	(... except I think macro_asrgs: DOES have an argument list?), which in
+	turn MUST return
+		( shuffledlength shufflestack:token*[shuffledlength] macro_args: tokenheadptr_pascalarray* ),
+	because a function will be enqueued that pops the tokenheadptr_pascalarray
+	pointer. The shufflelength MUST be generated by the handler, and the
+	handler MUST put a number of token pointers onto the shuffle stack that
+	equals shufflelength.
+
+freshline_directives.c:
+	
+		This file is currently useless. It SHOULD hold (or at least support) a
+	bunch of directives that care about "newline" location, but instead it's
+	almost empty, and in particular was where the first vague concept for
+	macroargs.h/c (literally some stuff like "struct macro_link" is in it in a
+	inadequate form) and probably components.h/c was scratched out. So, since
+	those things now exist in a mostly-complete form, it's time to look at
+	building this file again.
+
+macroargs.h:
+	
+		This function:
+			int pack_arglist( stackpair *stkp );
+	... takes a number of token pointers, and packages it up into an array for
+	convenience. It expects a uintptr_t on the data stack, and a set of token
+	pointers on the shuffle stack of number equal to the value of the
+	uintptr_t. The pointers on the shuffle stack get moved into a
+	tokenheadptr_pascalarray, with the pointer on the top of the stack being
+	placed at the end of the tokenheadptr_pascalarray, and a pointer to the
+	tokenheadptr_pascalarray then gets pushed onto the data stack.
+	
+	
+		These functions:
+			int macroargs_init();
+			int macroargs_resize( int deltaMacros );
+			int macroargs_clear();
+	... these are the standard init/deinit funcs, none of which you need to
+	worry about. macroargs_resize() gets used inside the other functions, and
+	the other two are used inside main().
+	
+		These functions:
+			int macroargs_pushset( tokhdptr_parr *val );
+			int macroargs_popset( tokhdptr_parr **dest );
+			int macroargs_peekset( size_t off,  tokhdptr_parr **dest );
+	... do the obvious.
+	
+		This function:
+			retframe vm_pop_macroarg( stackpair *stkp, void *v );
+	... is just a wrapper for macroargs_popset().
+	
+	
+	These functions get used in exec.c to hold the arguments to individual
+	macro invocations.

@@ -2,6 +2,8 @@
 
 #include "err/inner_err.h"
 
+#include "inner_exec.h"
+
 
 #if defined( __cplusplus ) && __cplusplus >= 199711L
 	namespace
@@ -60,6 +62,11 @@
 
 #define RETFRAMEFUNC( stkp,  caller, scratch ) \
 	RET_FRAMEFUNC( ( stkp ),  &errs, ( caller ), ( scratch ), stack_ENDRETFRAME )
+
+
+
+/* These functions essentially define the actual execution engine for macros */
+/*  & directives. */
 
 
 

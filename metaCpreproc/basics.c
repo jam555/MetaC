@@ -179,6 +179,7 @@ retframe preproc_search2( stackpair *stkp, void *table_ )
 			/* Found a function, proceed to return it directly. */
 			
 			return( *( (retframe*)( found->ref ) ) );
+			
 		case GENNAMETYPE_TABLEENTRY:
 			/* Found a lookup table; queue the string searcher as a return */
 			/*  route with it as an argument, and call accumulate_token() to */
