@@ -1,0 +1,260 @@
+token.h:
+	
+		These types:
+			struct token_head
+			{
+				uintptr_t toktype;
+				int length;
+				int was_freshline;
+				int is_delimited;
+			};
+			struct token
+			{
+				token_head header;
+				char text[];
+			};
+			
+			LIB4_DEFINE_PASCALARRAY_STDDEFINE( tokenheadptr_, token_head* );
+			typedef tokenheadptr_pascalarray tokhdptr_parr;
+	... are all in direct support of the token system in general. All of the
+	token types start with a token_head instance (e.g. the macro_run type), and
+	are differentiated by token_head->toktype. For "leaf" tokens (tokens that
+	are literally a packaging of a text token, as opposed to more built-up AST
+	members), the "token" structure itself is used, with the toktype indicating
+	what category it was assigned to while being lexed (a feature useful for
+	both parsing, and extending support to Unicode with it's graphically
+	duplicate codepoints...).
+	
+	
+		This value:
+			TOKTYPE_INVALID
+	... is meant only to ease detection of uninitialized token_head instances,
+	though it may be useful for e.g. ASCII escape characters.
+	
+		These values:
+			TOKTYPE_OTHER
+			TOKTYPE_SYM_UNKNOWN
+	... are meant for characters that otherwise aren't recognized by the
+	preprocessor. They're more likely to be useful for Unicode than ASCII, but
+	may still be useful for ASCII.
+	
+		These are some extras:
+			TOKTYPE_DOLLAR
+			TOKTYPE_GRAVE
+	
+		These values:
+			TOKTYPE_SPACE
+			TOKTYPE_NEWLINE
+	... are obvious.
+	
+		This:
+			TOKTYPE_NAME
+	... is used for things like keywords, function names, etc.
+	
+		This:
+			TOKTYPE_NUMBER
+	... is for numbers, but I don't think it supports floating-point yet.
+	
+		These:
+			TOKTYPE_OPCRL
+			TOKTYPE_OPSQR
+			TOKTYPE_OPPAR
+			TOKTYPE_OPCRLUP
+			TOKTYPE_OPSQRUP
+			
+			TOKTYPE_OPPARUP
+			TOKTYPE_OPCRLANG
+			TOKTYPE_OPSQRANG
+			TOKTYPE_OPPARANG
+			TOKTYPE_OPCRLCOL
+			
+			TOKTYPE_OPSQRCOL
+			TOKTYPE_OPPARCOL
+			TOKTYPE_OPCRLAST
+			TOKTYPE_OPSQRAST
+			TOKTYPE_OPPARAST
+	... are for various types of opener-brackets.
+	
+		These:
+			TOKTYPE_SQSTR
+			TOKTYPE_DQSTR
+	... are used to dileneate character strings. Other than the question of the
+	"exit character", the preprocessor doesn't care which is which.
+	
+		These:
+			TOKTYPE_SYM_COMMENTCL
+			TOKTYPE_SYM_COMMENTOP
+			TOKTYPE_SYM_COMMENTLINE
+	... are the openers and one of the closers (the other is just any newline)
+	for comments.
+	
+		These:
+			TOKTYPE_SYM_DECLCASTCLOSE
+			TOKTYPE_SYM_ARRCASTCLOSE
+			TOKTYPE_SYM_CASTCLOSE
+			TOKTYPE_SYM_PRECRLCL
+			TOKTYPE_SYM_PRESQRCL
+			
+			TOKTYPE_SYM_PREPARCL
+			TOKTYPE_SYM_COMPTCRLCL
+			TOKTYPE_SYM_COMPTSQRCL
+			TOKTYPE_SYM_COMPTPARCL
+			TOKTYPE_SYM_DECLCRLCL
+			
+			TOKTYPE_SYM_DECLSQRCL
+			TOKTYPE_SYM_DECLPARCL
+			TOKTYPE_SYM_CURLYCLOSE
+			TOKTYPE_SYM_SQUARECLOSE
+			TOKTYPE_SYM_PARENCLOSE
+	... are the closing brackets. Their numbers are not contiguous, but instead
+	are dispersed according mostly (or perhaps entirely) to their first
+	character.
+	
+		This:
+			TOKTYPE_SYM_COLON
+	... is the ':' character, while this:
+			TOKTYPE_SYM_SCOPE
+	... is two contiguous colons.
+	
+		These:
+			TOKTYPE_SYM_QUERY
+			TOKTYPE_SYM_CONFUSION
+	... are the only uses of the question mark. "Query" is a single question
+	mark, and "confusion" is three contiguous question marks.
+	
+		These:
+			TOKTYPE_SYM_DOT
+			TOKTYPE_SYM_COMMA
+			TOKTYPE_SYM_BSLASH
+	... are all single-character tokens, though I'm pretty certain that bslash
+	will always be the product of two back slashes and a whitespace character.
+	
+		Standard comparison operators:
+			TOKTYPE_SYM_GREATEQUAL
+			TOKTYPE_SYM_GREATERTHAN
+			TOKTYPE_SYM_EQUALITY
+			TOKTYPE_SYM_NOTEQUAL
+			TOKTYPE_SYM_LESSEREQUAL
+			TOKTYPE_SYM_LESSERTHAN
+	
+		Standard logic:
+			TOKTYPE_SYM_LOGICAND
+			TOKTYPE_SYM_LOGICIOR
+	
+		Assignment:
+			TOKTYPE_SYM_SET
+	
+		"In-place" operators:
+			TOKTYPE_SYM_DECREMENT
+			TOKTYPE_SYM_PLACEDSUB
+			TOKTYPE_SYM_PLACEDMULT
+			TOKTYPE_SYM_PLACEDDIV
+			TOKTYPE_SYM_PLACEDXOR
+			TOKTYPE_SYM_INCREMENT
+			TOKTYPE_SYM_PLACEDADD
+			TOKTYPE_SYM_PLACEDMODULO
+			TOKTYPE_SYM_PLACEDBINARYAND
+			TOKTYPE_SYM_PLACEDBINARYAND
+			TOKTYPE_SYM_PLACEDDIVISIVSHIFT
+			TOKTYPE_SYM_PLACEDMULTIPLYSHIFT
+	
+		Standard binary ops:
+			TOKTYPE_SYM_ADDITION
+			TOKTYPE_SYM_SUBTRACT
+			TOKTYPE_SYM_MULTIPLY
+			TOKTYPE_SYM_DIVIDE
+			TOKTYPE_SYM_MODULO
+			TOKTYPE_SYM_XOR
+			TOKTYPE_SYM_BINARYAND
+			TOKTYPE_SYM_BINARYAND
+			TOKTYPE_SYM_DIVISIVSHIFT
+			TOKTYPE_SYM_MULTIPYSHIFT
+	
+		The "@" character:
+			TOKTYPE_AT
+	... this should never get exposed, as the simplelex.c functions generate it
+	only for internal purposes before they convert it to one of:
+			TOKTYPE_SYM_ADDROF
+			TOKTYPE_SYM_DEREFERENCE
+		This is used for array operations:
+			TOKTYPE_SYM_ELEMEDDEREF
+	
+		Inversions:
+			TOKTYPE_SYM_NOT
+			TOKTYPE_SYM_TILDE
+	
+		This:
+			TOKTYPE_OCTO
+	... is the "#" character. It's "octo" from "octothorpe".
+	
+	
+	
+	These are used for "complex" "tokens" (really abstract syntax tree nodes):
+	
+		This value:
+			TOKTYPE_TOKENGROUP_SAMEMERGE
+	... is used for "tokengroup" instances, and is intended for e.g. contiguous
+	whitespace characters, whereas this value:
+			TOKTYPE_TOKENGROUP_EQUIVMERGE
+	... is used for "tokenbranch" instances, which are innately more complex.
+	
+		This:
+			TOKTYPE_TOKENGROUP_WHITESPACE
+	... is a ->subtype value for for contiguous blocks of whitespace in
+	particular, used with ->toktype TOKTYPE_TOKENGROUP_SAMEMERGE.
+	
+		These two:
+			TOKTYPE_TOKENGROUP_STRMERGE
+			TOKTYPE_TOKENGROUP_COMNTMERGE
+	... are ->subtype values used with ->toktype TOKTYPE_TOKENGROUP_EQUIVMERGE.
+	The ->body member is all that really matters for these, as the subtype says
+	all the rest.
+	
+		This:
+			TOKTYPE_TOKENGROUP_DELIMITED
+	... SEEMS not to be used, and may be legacy of early explorations of how to
+	deal with the backslash character; a character which, in the lexing stage,
+	is now handled before tokenization even happens, rendering this
+	unimportant. But maybe it'll be useful later.
+	
+	
+	
+	These are used in metaCpreproc/exec.c to differentiate the different types
+	of macro behavior. I suspect that "TOKENGROUP" should be removed from these
+	names...
+	
+		This:
+			TOKTYPE_TOKENGROUP_MACROTOKEN
+	... marks a "hardcoded" token insertion.
+	
+		This:
+			TOKTYPE_TOKENGROUP_MACROLINK
+	... is semi-hardcoded, as it refers to a specific argument to the currently
+	executing macro, instead of trying to calculate a value.
+	
+		This:
+			TOKTYPE_TOKENGROUP_MACROCALL
+	... is PROBABLY used to encode the execution of both macros and directives,
+	but I'm not actually certain about the directives: I need to check that.
+	
+		These:
+			TOKTYPE_TOKENGROUP_MACRORUN
+			TOKTYPE_TOKENGROUP_MACRODIRECTIVE
+	... mark the types that hold macro & directive instructions. Which is which
+	should be fairly obvious.
+	
+		This:
+			TOKTYPE_TOKENGROUP_MACROTOKEN_INDIRECTION
+	... is almost guaranteed to be unused. It's supposed to be
+	TOKTYPE_TOKENGROUP_MACROTOKEN, but with a "firewall" to block deallocation.
+	It probably isn't currently supported (though it ideally should be), and
+	I'm not certain that it COULD be needed: I think I moved to a "the macro
+	holds copies of every token it needs" model...
+
+simplelex.h:
+	
+	???
+
+complexlex.h:
+	
+	???

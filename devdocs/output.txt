@@ -1,0 +1,8 @@
+echo_tokens.h:
+	
+		This function:
+			retframe echo_tokens_entrypoint( stackpair *stkp, void *v );
+	... expects a pointer to a token to be on top of the data stack, and after
+	investigating which type of token it is, dispatches execution to the
+	appropriate function, which will print it's representation to standard out.
+	The pointer is poped before return.

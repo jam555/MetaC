@@ -93,6 +93,12 @@ exec.c:
 		declared. Probably supposed to be "ops_".
 	Should shufflequeue_macro_run() REALLY pop the list of arguments from
 		macro_args? Where does that value even get pushed?
+	Does TOKTYPE_TOKENGROUP_MACROCALL execute macros AND directives, or
+		just macros? I believe that both SHOULD be done, but that doesn't mean
+		that it IS done...
+	Also, has support for TOKTYPE_TOKENGROUP_MACROTOKEN_INDIRECTION been added?
+	Should "_TOKENGROUP_" be present in the ->toktype names for this file at
+		all?
 	You know what? Just review the entire damned file.
 exec.h:
 	The whole file needs to be examined for rewriting.
@@ -119,6 +125,8 @@ simplelex.c:
 		verifier.
 	Line 621: A note in brackop_lex() that it would be good to verify the value
 		of th.toktype.
+	Make certain that the inclusive or stuff is properly implemented, instead
+		of all being "and" variations...
 simplelex.h:
 	Need some note on unused vs other chars.
 
