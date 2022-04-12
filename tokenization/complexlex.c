@@ -284,7 +284,6 @@ int place_tokenhead( token_head **dest, token_head *tok )
 {
 	int res;
 	
-		/* We actually DON'T CARE if refid is set. */
 	if( !dest || !tok )
 	{
 		BADNULL2( place_tokenhead, &dest, &tok );
@@ -584,17 +583,13 @@ retframe accumulate_whitespace( stackpair *stkp, void *v )
 	
 	STACKPOP_UINT( &( stkp->data ), &a,  accumulate_whitespace, res, macroargs_ENDRETFRAME );
 	th = (token_head*)a;
-	
-	STACKPOP_UINT( &( stkp->data ), &a,  accumulate_whitespace, res, macroargs_ENDRETFRAME );
-	tmp = (token_head*)a;
-	
 	if
 	(
 		th->toktype == TOKTYPE_TOKENGROUP_SAMEMERGE ||
 		th->toktype == TOKTYPE_TOKENGROUP_EQUIVMERGE
 	)
 	{
-		TRESPASSPATH( accumulate_whitespace, "ERROR: accumulate_whitespace encountered a token type of _SAMEMERGE or _EQUIVMERGE : " );
+		TRESPASSPATH( accumulate_whitespace, "ERROR: accumulate_whitespace() encountered a top-most token type of _SAMEMERGE or _EQUIVMERGE : " );
 		DECARG( th->toktype );
 		return( ret );
 		
@@ -605,9 +600,15 @@ retframe accumulate_whitespace( stackpair *stkp, void *v )
 		th->toktype != TOKTYPE_OTHER
 	)
 	{
+		STACKPUSH_UINT( &( stkp->data ), (uintptr_t)th,  accumulate_whitespace, res, macroargs_ENDRETFRAME );
 		RETFRAMEFUNC( accumulate_whitespace );
 		
-	} else if
+	}
+	
+	
+	STACKPOP_UINT( &( stkp->data ), &a,  accumulate_whitespace, res, macroargs_ENDRETFRAME );
+	tmp = (token_head*)a;
+	if
 	(
 		!tmp ||
 		(
@@ -686,6 +687,7 @@ retframe accumulate_token( stackpair *stkp, void *v )
 	}
 	tb->subtype = ( (token_head*)top )->toktype;
 	
+		/* Swap the token for the tokenbranch that holds a reference to it. */
 	STACKPOP_UINT( &( stkp->data ), &top,  accumulate_token, res, macroargs_ENDRETFRAME );
 	STACKPUSH_UINT( &( stkp->data ), (uintptr_t)&( tb->header ),  accumulate_token, res, macroargs_ENDRETFRAME );
 	
@@ -741,6 +743,11 @@ retframe conclude_accumulate_token( stackpair *stkp, void *v )
 		}
 		
 	} else {
+		
+		/* This SHOULD only happen if there was no trailing whitespace */
+		/*  before the next token, but it's not impossible for this to be */
+		/*  caused by an error instead- it would be best to check "white"'s */
+		/*  toktype here. */
 		
 		STACKPUSH_UINT(
 			&( stkp->data ), white,

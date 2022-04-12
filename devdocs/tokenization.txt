@@ -253,8 +253,135 @@ token.h:
 
 simplelex.h:
 	
-	???
+		This function:
+			retframe head_lex( stackpair *stkp, void *v );
+	... will result in a single token being lexed from the extrachar functions,
+	and stored on the stack, with it's token_head on top of the individual
+	characters. You should in general use getANDassemble_token() from
+	input/lexalike.h, as that's intended to both call this, AND fully transfer
+	the token into a stand-alone instance of "struct token"- note that
+	getANDassemble_token() is currently broken, and basically needs a ~2 line
+	fix to get it to do it's job...
+	
+	While there are other functions, they are frankly just used by head_lex(),
+	and there's in general no point to calling them.
 
 complexlex.h:
 	
-	???
+		These functions:
+			retframe set_dealloctoken( retframe dealc_ );
+			retframe invoke_dealloctoken( stackpair *stkp, void *v );
+	... provide a token deallocation facility. If you want to use a custom
+	version, then you can use:
+			smart_dealloc_token()
+	... as a fall-back for standard token types.
+	
+	
+	
+		These types:
+			struct tokengroup
+			{
+				token_head header;
+				uintptr_t subtype;
+				
+				tokhdptr_parr *arr;
+				size_t used;
+			};
+			struct tokenbranch
+			{
+				token_head header;
+				uintptr_t subtype;
+				
+				token_head *lead, *body, *tail;
+			};
+	... are used with the TOKTYPE_TOKENGROUP_* values defined in token.h.
+	tokengroup is used to hold groups of tokens that should be treated
+	equivalently to each other (e.g. to group up a bunch of whitespace),
+	whereas tokenbranch is used to apply some structure to the relations
+	between different tokens (e.g. to express that a set of tokens are wrapped
+	in parentheses). In both cases, ->header.toktype holds a value in some way
+	identifying of the structure type, while ->subtype holds a value
+	identifying the "meaning" of the tokens contained by the structure.
+	
+		These functions:
+			tokengroup* build_tokengroup( size_t elems );
+			int regrow_tokengroup
+			(
+				tokengroup *tgrp,
+				size_t newlen
+			);
+			int pushto_tokengroup
+			(
+				tokengroup *tgrp,
+				token_head *thd
+			);
+			int place_tokenhead( token_head **dest, token_head *tok );
+			retframe dealloc_tokengroup
+			(
+				stackpair *stkp, void *v,
+				tokengroup *tgrp
+			);
+	... provide low-level operations for tokengroup instances.
+		pushto_tokengroup() places "thd" at the tail of the used space.
+		place_tokenhead() will either store "tok" into "*dest" (if *dest is
+	null), or call pushto_tokengroup() with "tok" as the "thd" value (if
+	"*dest" points to a tokengroup instance already), or will store both
+	"*dest" and "tok" (in that order!) into a new tokengroup instance, and
+	store a pointer to that new instance into "*dest".
+		The action of the other functions should be sufficiently obvious from
+	their names.
+	
+		These functions:
+			tokenbranch* build_tokenbranch( size_t elems );
+			int set_lead_tokenbranch( tokenbranch *tb, token_head *tok );
+			int push_body_tokenbranch( tokenbranch *tb, token_head *tok );
+			int set_tail_tokenbranch( tokenbranch *tb, token_head *tok );
+			retframe dealloc_tokenbranch
+			(
+				stackpair *stkp, void *v,
+				tokenbranch *tb
+			);
+	... provide low-level operations for tokenbranch instances. They should all
+	be obvious from their names.
+	
+	
+		This function:
+			retframe accumulate_whitespace( stackpair *stkp, void *v );
+	... requires two pointers to token_head-lead objects on top of the stack
+	(but the one on top must NOT be a tokengroup or tokenbranch), and will
+	return with a similar or equal pointer on the stack.
+		If the top token is not a whitespace then it's pointer will remain on
+	top of the stack and the function will return without doing anything (or at
+	least anything that isn't reversed). If the next-to-top token is neither a
+	whitespace (TOKTYPE_SPACE, TOKTYPE_NEWLINE, or TOKTYPE_OTHER toktype) token
+	nor a tokengroup of whitespace then it will remain on the stack.
+		If the top-most token is a whitespace token then it (preceeded by the
+	next-to-top token if that is either an individual or group-of whitespace
+	tokens) will be packaged into a whitespace tokengroup by place_tokenhead(),
+	a pointer to which tokengroup will be placed on the stack, and a
+	getANDassemble_token()/accumulate_whitespace() loop will run until the
+	token placed on top of the stack by getANDassemble_token() is not a
+	whitespace token. Note that if the initial next-to-top token is whitespace
+	in this scenario, then place_tokenhead() will only leave it on the stack in
+	the form of the final whitespace tokengroup.
+	
+	
+		This function:
+			retframe accumulate_token( stackpair *stkp, void *v );
+	... packages tokens up with their immediately trailing whitespace, so that
+	the whitespace is tracked without necessarily being in the way.
+		It expects a pointer to a token on top of the stack (though there needs
+	to be TWO instead of just one...). It will peek at that token's type,
+	tail-calling to accumulate_whitespace() if the token is whitespace (hence
+	two token pointers...), and otherwise storing the token pointer into a new
+	tokenbranch, swapping the token pointer on the stack for a pointer to the
+	new tokenbranch, pushing a return to conclude_accumulate_token() onto the
+	return stack, and then returning to accumulate_whitespace() via
+	getANDassemble_token().
+		When conclude_accumulate_token() eventually is returned into, it'll
+	attempt to move the next-to-top token pointer into the tail slot of the
+	tokenbranch (which SHOULD only fail if there was no whitespace at all...),
+	before pushing whatever was at the TOP of the stack back on top, and
+	returning. It is worth noting that in the "no whitespace" case,
+	conclude_accumulate_token() ALSO requires a "padding" token pointer to be
+	underneath the one that accumulate_token() requires.

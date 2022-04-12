@@ -117,6 +117,14 @@ complexlex.c:
 	Line 159: Apparently I was uncertain about something here. Best to check.
 	Line 613: A note about a function set/function that should be built. Might
 		be further down in same file already...
+	In conclude_accumulate_token(), the else case of
+			"if( ( (token_head*)bottom )->toktype ==
+			TOKTYPE_TOKENGROUP_EQUIVMERGE )"
+		just pushes a uintptr_t back onto the stack- it would be better to
+		confirm that instead the "white" token is of *_EQUIVMERGE first, to
+		possibly detect stack corruptions.
+	accumulate_whitespace() PROBABLY doesn't accumulate comments as whitespace-
+		that should probably be changed.
 complexlex.h:
 	Line 95: Same note as 613 in .c
 
