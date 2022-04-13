@@ -40,8 +40,6 @@
 	
 	
 	
-	stackpair std_stacks;
-	
 	int init_stack( stackframe *stk );
 	int resize_stack( stackframe *stk,  int deltaChars );
 	int clear_stack( stackframe *stk );

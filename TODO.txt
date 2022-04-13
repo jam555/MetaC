@@ -55,12 +55,19 @@ basics.c:
 		similar functions that have more thought applied to them. They seem
 		like decent references, but not directly suitable for use.
 	See the "genericnamed_retframe" note for components.h
+basics.h:
+	Probably the gentyped_*() functions should be moved to the tokenmatching
+		functions in the parent directory. That also applies to the definitions
+		in the .c file.
 
 components.h:
 	genericnamed_retframe isn't usefully compatible with genname_parr, and
 		various functions in at least basics.c require genname_parr; look at
 		doing something to compensate for that, so that genericnamed_retframe
 		can make itself useful. See also generictyped_retframe.
+	All the stuff except the searchstack_* stuff should be moved to the
+		tokenmatching files in the parent directory. That includes the
+		definitions in the .c file.
 components.c:
 	Starting at line 80, "default" isn't really defined.
 	Line 128, searchstack_deinit() isn't filled out at all.

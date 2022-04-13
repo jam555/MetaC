@@ -1,0 +1,224 @@
+TODO.txt:
+		The TODO file is formatted roughly akin to this file, but specificly
+	contains per-file lists of things that need to be done.
+
+headers.h:
+	
+		The standard header file. Includes the standard header files:
+			ctype.h
+			stding.h
+			stdlib.h
+	... and the lib4 file:
+			pascalarray.h
+	
+		Uses the above for:
+			LIB4_DEFINE_PASCALARRAY_STDDEFINE( char_, char );
+			LIB4_DEFINE_PASCALARRAY_STDDEFINE( charparrptr_, char_pascalarray* );
+	... thereby defining "char_pascalarray" and "charparrptr_pascalarray". It
+	also defines the macro:
+			BUILD_CHARPARR( string )
+	... to auto-format a C string into a char_pascalarray.
+	
+	
+		Note that this file VERY EXPLICITLY DOES NOT include inner_err.h, as
+	that is only appropriate for implementers of code, not for "users", so it's
+	been left out to constrain "noise".
+
+stack.h:
+	
+		These functions:
+			int enable_loop( stackpair* );
+			int run_loop( retframe*,  stackpair* );
+			retframe end_run( stackpair*, void* );
+	... implement and control the actual run-loop (in the form of run_loop()...
+	hope that didn't surprise you). enable_loop() is required to configure a
+	stack_pair such that the run loop ias able to execute AT ALL, while
+	end_run() is a VM function used by other VM functions to stop further
+	execution- usually it's used in response to an error.
+	
+	
+		These types:
+			struct stackframe
+			{
+				char_pascalarray *stack;
+				size_t used;
+			};
+			struct stackpair
+			{
+				stackframe ret, data;
+				int run;
+			};
+	... are used to implement the "primary" stack setup. Some other stacks will
+	probably need to be moved to stackpair at a later point if we want to allow
+	a single process to handle multiple compilation units. "run" in stackpair
+	is used by the run_loop() function to determine if it should CONTINUE
+	running- it's in stackpair because end_run() needs it to be SOMEWHERE, and
+	this was as sensible a location as any.
+	
+		These types:
+			typedef retframe (*framefunc)( stackpair*, void* );
+			struct retframe
+			{
+				framefunc handler;
+				void *data;
+			};
+	... are used to define the "VM functions" that run_loop() executes- in
+	particular, run_loop() runs ONLY retframe instances, and thus will only
+	provide functions with the arguments specified by the function signature of
+	"framefunc".
+	
+		This declaration:
+			extern stackpair std_stacks;
+	... is just for a "primary" stack setup, since we need one. I'm NOT sure
+	that it actually gets used.
+	
+		These functions:
+			int init_stack( stackframe *stk );
+			int resize_stack( stackframe *stk,  int deltaChars );
+			int clear_stack( stackframe *stk );
+	... do obvious things, though it should be noted that clear_stack() is the
+	name for "deinit_stack()"- I'm not sure why I named it "clear" instead of
+	"deinit".
+	
+		These functions:
+			int push_char( stackframe *stk,  char val );
+			int pop_char( stackframe *stk,  char *dest );
+			int peek_char( stackframe *stk,  size_t off,  char *dest );
+			
+			int push_int( stackframe *stk,  int val );
+			int pop_int( stackframe *stk,  int *dest );
+			int peek_int( stackframe *stk,  size_t off,  int *dest );
+			
+			int push_uintptr( stackframe *stk,  uintptr_t val );
+			int pop_uintptr( stackframe *stk,  uintptr_t *dest );
+			int peek_uintptr( stackframe *stk,  size_t off,  uintptr_t *dest );
+			
+			int push_retframe( stackframe *stk,  retframe rf );
+			int pop_retframe( stackframe *stk,  retframe *rf );
+			int peek_retframe( stackframe *stk,  size_t off,  retframe *rf );
+			
+			int push_tokenhead( stackframe *stk,  token_head val );
+			int pop_tokenhead( stackframe *stk,  token_head *dest );
+			int peek_tokenhead( stackframe *stk,  size_t off,  token_head *dest );
+			
+			int push_block( stackframe *stk,  const char *src, size_t len );
+			int pop_block( stackframe *stk,  char *dest, size_t len );
+			
+			int push_token( stackframe *stk,  token_head *src );
+			int pop_token( stackframe *stk,  token_head **dest );
+	... obviously provide various stack interactions. It's worth noting that
+	the *_token() functions use the *_block() functions DIRECTLY. Also, almost
+	everything just uses the *_uintptr() functions, because...
+	
+		These macros:
+			STACK_PEEK_UINT( stk, offset, dest,  stylesetptr, caller, scratch, endfunc )
+			STACK_POP_UINT( stk, dest,  stylesetptr, caller, scratch, endfunc )
+			STACK_PUSH_UINT( stk, val,  stylesetptr, caller, scratch, endfunc )
+	... implement standard usage patterns for the obvious stack functions.
+	*_PEEK_*() and *_POP_*() both expect that ( dest ) will be something that
+	an address can be taken from, and that after the stack function is run
+	!( dest ) will evaluate to "true". "caller" should be the name of the
+	function that the macro invocation is inside of, but as a token, not a
+	string. "scratch" should be the name (once again, token instead of string)
+	of an int+ compatible variable (so "intmax_t" is fine, but "short int" is
+	playing with unforeseen disasters). "endfunc" is the name (token, not a
+	...) of something that will cause the "correct action" at the end of an
+	error report when treated as a function and "called"- the
+	stack_ENDRETFRAME() macro is a good example, as it inserts:
+			"return( (retframe){ &end_run, (void*)0 } )"
+	... into the code, resulting in the "end_run" VM function being called and
+	nothing else in the calling function being executed afterwards.
+		An important note: because !( dest ) is required to be true, sometimes
+	*_PEEK_*() and *_POP_*() will very much not be the right thing, in
+	particular when a null value is actually valid. For example, some of the
+	exec.h "inner" functions need to do that, because they need a progress
+	value to be maintained on the stack which itself can validly be "0"
+	because it's actually a "next element" value.
+	
+		This macro:
+			stack_ENDRETFRAME()
+	... has already been mentioned in passing, but it exists so that you can
+	shove a
+			"return( (retframe){ &end_run, (void*)0 } )"
+	statement into another macro without writing your own macro for the
+	purpose. It has duplicates of itself under other named shoved into various
+	other headers where it seemed relevnt: as long as you can be reasonably
+	certain that the header will be included, it doesn't matter which one you
+	use.
+	
+		These macros:
+			STACK_CHECK( stack,  stylesetptr, caller, endfunc )
+			STACK_CHECK2( stack, v,  stylesetptr, caller, endfunc )
+	... do the obvious. "caller" and "endfunc" are the same as the stack
+	macros, and "stack" and "v" receive the non-stringified names of pointers
+	that, if null, will cause an error report followed by an invocation of
+	endfunc. *2() exists because a most stuff doesn't care about the void
+	pointer argument in framefunc.
+	
+		These macros:
+			CALL_FRAMEFUNC( stkpair, rethand, retval, callhand, callval,  stylesetptr, caller, scratch, endfunc )
+			RET_FRAMEFUNC( stkpair,  stylesetptr, caller, scratch, endfunc )
+	... do the obvious, and particularly exist to ensure that the obvious is
+	done CORRECTLY.
+
+tokenmatching.h:
+	
+		This function:
+			int match_token( token *tok,  unsigned char *str, size_t len );
+	... compares the provided string against the text represeentation of the
+	token. It exists for internal purposes, but is simple enough that it's
+	probably good to look at using it elsewhere. Returns negative for errors, 0
+	for non-match, 1 for full match, 2 for length-limited matches.
+	
+		Don't use these functions:
+			int stdcompare_str( char *a_, char *b_, size_t len );
+			int stdcompare_token( const void *key_, const void *elem_ );
+			int stdcompare_genericnamed( const void *a_, const void *b_ );
+	... they're internal, just don't bother with them. If they were right for
+	you, then you wouldn't be reading about them here.
+	
+	
+		I have no real idea why these are here:
+			genname_parr* build_gennamearr( size_t count );
+			genname_parr* resize_gennamearr( genname_parr *parr, size_t newlen );
+			void destroy_gennamearr( genname_parr *parr,  void (*release_ref)( genericnamed* ) );
+	... but their purpose is obvious.
+	
+	
+		These functions:
+			void qsort_gennamearr( genname_parr *parr );
+			genericnamed* bsearch1_gennamearr( genname_parr *parr, token *tok );
+	... properly apply the relevant C standard library functions to "parr".
+	Note that "tok->text" MUST correspond to a valid string of text.
+	
+		To confirm the obvious:
+			int lexparse1_pushsearchtable( genname_parrparr **keys, size_t *keys_used,  genname_parr *pushable );
+	... this function pushes "pushable" onto the "end" of "keys", and:
+			int lexparse1_popsearchtable( genname_parrparr **keys, size_t *keys_used );
+	... this one pops the end. The genname_parrparr instance is meant to be the
+	set of keys that we actually search in for names that correspond to token
+	text, so pushing and popping allows us to change the things we're searching
+	over on the basis of which context we're currently in...
+	
+		And this function:
+			retframe lexparse1_tokensearch
+			(
+					/* Was a stackframe*, but the revised retrn macro needs the pair. */
+				stackpair *stkp,
+				
+				genname_parrparr **keys,
+				size_t *keys_used,
+				
+				retframe seekother
+			);
+	... does the actual search in question. The returned retframe should
+	PROBABLY be executed, incidentally: it's meant to be the "relevant
+	implementation function", whether a function specific to an individual
+	name, or a generic function that will handle a newly recognized context
+	(likely through just calling this function). "seekother" is the fall-back
+	VM function, returned when the token wasn't found at all in "keys".
+	
+	
+		Some stuff (gentype and genname stuff) needs to be moved to this file
+	from metaCpreproc/ basics.h/.c and components.h/.c files. It's noted in the
+	TODO.txt file.
