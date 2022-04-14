@@ -17,8 +17,6 @@ lexalike.c:
 	has at least one TODO about an old comment- update that comment.
 	Line 974 in stack_testchar has a TODO about a custom error message.
 	Needs trigraph support added in.
-	!!! getANDassemble_token() is completely broken! Instead of doing a call
-		and returning via something else, it just returns directly! !!!
 	tokenize_char() needs to be modified to provide file/line info to allow the
 		origin of text to be tracked for error-reporting and macro programming
 		purposes.

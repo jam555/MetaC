@@ -50,6 +50,12 @@
 	STDMSG_I_OVERFLOW_WRAPPER( &errs, ( funcname ), ( objaddr ), ( limit ) )
 
 
+#define CALL_FRAMEFUNC( stkpair, rethand, retval, callhand, callval,  caller, scratch, endfunc ) \
+	CALL_FRAMEFUNC( \
+		( stkpair ), \
+			( rethand ), ( retval ), ( callhand ), ( callval ), \
+		&errs, ( caller ), ( scratch ), ( endfunc ) \
+	)
 #define RETFRAMEFUNC( caller ) \
 	RET_FRAMEFUNC( stkp,  &errs, ( caller ), res, stack_ENDRETFRAME )
 
@@ -191,10 +197,17 @@ retframe dealloc_token( stackpair *stkp, void *v )
 }
 retframe getANDassemble_token( stackpair *stkp, void *v )
 {
+	int tmp;
+	
 		/* Setup a return into assemble_token() to get the token material */
 		/*  properly packaged, and then directly head into head_lex() to get */
 		/*  that material itself. */
-	RETFRAMEFUNC( getANDassemble_token );
+	CALL_FRAMEFUNC(
+		stkp,
+			&assemble_token, (void*)0, &head_lex, (void*)0,
+		
+		getANDassemble_token, tmp, lexalike_ENDRETFRAME
+	);
 }
 
 
