@@ -34,57 +34,6 @@
 
 
 
-int gentyped_tokencomp( const void *key_, const void *elem_ )
-{
-	uintptr_t
-		k = ( (token*)key_ ) ? ( (token*)key_ )->header.toktype : TOKTYPE_INVALID,
-		e = ( (generictyped*)elem_ ) ? ( (generictyped*)elem_ )->toktype : TOKTYPE_INVALID;
-	
-	if( k < e )
-	{
-		return( -1 );
-		
-	} else if( k > e )
-	{
-		return( 1 );
-	}
-	
-	return( 0 );
-}
-int gentyped_gencomp( const void *key1_, const void *key2_ )
-{
-	uintptr_t
-		k1 = ( (generictyped*)key1_ ) ? ( (generictyped*)key1_ )->toktype : TOKTYPE_INVALID,
-		k2 = ( (generictyped*)key2_ ) ? ( (generictyped*)key2_ )->toktype : TOKTYPE_INVALID;
-	
-	if( k1 < k2 )
-	{
-		return( -1 );
-		
-	} else if( k1 > k2 )
-	{
-		return( 1 );
-	}
-	
-	return( 0 );
-}
-
-
-void gentyped_qsort( gentyped_parr *parr )
-{
-	qsort( (void*)( parr->body ), parr->len, sizeof( generictyped ), &gentyped_gencomp );
-}
-generictyped* gentyped_bsearch( gentyped_parr *parr, token *tok )
-{
-	return( (generictyped*)( bsearch( 
-		(const void*)tok, (const void*)( parr->body ),
-		parr->len, sizeof( generictyped ),
-		&gentyped_tokencomp
-			/* Note that this expects a token, and thus is NOT capable of working with qsort! */
-	) ) );
-}
-
-
 	/* This is the actual basal lookup table. Searching is based on */
 	/*  token_head's toktype value. If an entry's reftype is *_RETFRAMEFUNC */
 	/*  then it'll get used directly as the return value of the search */

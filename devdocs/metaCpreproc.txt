@@ -1,13 +1,4 @@
 basics.h:
-	
-		These functions:
-			void gentyped_qsort( gentyped_parr *parr );
-			generictyped* gentyped_bsearch( gentyped_parr *parr, token *tok );
-	... are wrappers for the C library's qsort() and bsearch() standard
-	functions. They're really intended for use inside basics.c, but it's fine
-	to use them for other stuff.
-	
-	
 		This function:
 			retframe preproc_search2( stackpair *stkp, void *table_ );
 	... is used to search a genname_parr* provided via table_, apparently based
@@ -17,7 +8,7 @@ basics.h:
 	is found then accumulate_token will be returned, with this function
 	(preproc_search2()) will be enqueued as the return route, with a
 	genmname_parr* referenced in the entry as it's void* argument.
-		Note that a ointer to a token instance is required on the top of
+		Note that a pointer to a token instance is required on the top of
 	stkp->data, and this will NOT be popped, but instead peeked. Something else
 	will need to be done to compensate for that.
 	
@@ -35,10 +26,13 @@ basics.h:
 	unchanged.
 	
 	
-	Honestly, I'm not convinced that anything from this file other than
+		Honestly, I'm not convinced that anything from this file other than
 	*_qsort() and *_bsearch() should actually be used. The other two (and a
 	half...) functions are probably a decent basis point for "real" functions,
 	but I think their warts are too much to justify actually executing them.
+	
+		Note: Several "gentyped" functions have been moved from here to
+	tokenmatching.h/.c, which renders at least some of these comments obsolete.
 
 components.h:
 	

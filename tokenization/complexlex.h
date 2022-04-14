@@ -73,6 +73,19 @@
 	/*  include te whitespace AFTER the token, which we now have the function */
 	/*  for. */
 	
+		/* Old comment, check against the next comment, AND the source file, */
+		/*  AND the the relevant devdocs file. */
+	/*
+		The top of the stack must be a pointer to a _SPACE, _NEWLINE, or _OTHER.
+		The next elemet must be either a null pointer, or a pointer to NOT a
+		_SPACE, _NEWLINE, _OTHER, or TOKTYPE_TOKENGROUP_WHITESPACE. Upon returning,
+		it'll have a pointer to a TOKTYPE_TOKENGROUP_WHITESPACE on the top of the
+		stack. Not actually sure if it'll work right.
+	retframe accumulate_whitespace( stackpair *stkp, void *v );
+	
+	retframe accumulate_token( stackpair *stkp, void *v );
+	
+	*/
 		/* You must enter with a pointer to a token_head (and, honestly, */
 		/*  probably something more complex) on the top of the data stack. When */
 		/*  this returns, it'll have a pointer to a non-whitespace token on the */

@@ -48,26 +48,14 @@ source.h:
 basics.c:
 	Line 249 has a bit of error reporting that's probably worthy of it's own
 		custom error reporter.
-	bsearch1_gennamearr() and it's related functions should probably be moved
-		here from... whereever they are.
 	I think that the two/three search functions (preproc_search2(),
 		preproc_search1(), and gentyped_search()) should be replaced with
 		similar functions that have more thought applied to them. They seem
 		like decent references, but not directly suitable for use.
-	See the "genericnamed_retframe" note for components.h
-basics.h:
-	Probably the gentyped_*() functions should be moved to the tokenmatching
-		functions in the parent directory. That also applies to the definitions
-		in the .c file.
 
 components.h:
-	genericnamed_retframe isn't usefully compatible with genname_parr, and
-		various functions in at least basics.c require genname_parr; look at
-		doing something to compensate for that, so that genericnamed_retframe
-		can make itself useful. See also generictyped_retframe.
-	All the stuff except the searchstack_* stuff should be moved to the
-		tokenmatching files in the parent directory. That includes the
-		definitions in the .c file.
+	At least components_stdsearchinit() is using old refid error reporting in
+		some calls to other functions.
 components.c:
 	Starting at line 80, "default" isn't really defined.
 	Line 128, searchstack_deinit() isn't filled out at all.
@@ -86,14 +74,12 @@ components.c:
 	Line 1382- Some note that might need to be deleted, moved, or rewritten.
 	components_skipendersearchdeinit() tests variable "b" before it gets
 		initialized. Probably meant to be "a".
+
 macroargs.c:
 	This has been freshly split off of components.c- need to go through to
 		double check things.
 	Pulled the shufflequeue stuff out for an exec.c file.
-	There's a comment near the end that mentions accumulate_whitespace()- I
-		think this belongs elsewhere, and may well be there. Need to look to
-		see if the comment needs to be there, and one way or another remove it
-		from macroargs.c
+
 exec.c:
 	Freshly split- needs review.
 	shufflequeue_step_macro_calltool() has a usage of "a" before it gets
@@ -170,6 +156,11 @@ stack.c:
 tokenmatching.c:
 	Line 406: Should this REALLY be fixed instead of deleted? I think I may
 		have moved past this.
+tokenmatching.h:
+	genericnamed_retframe isn't usefully compatible with genname_parr, and
+		various functions require genname_parr; look at doing something to
+		compensate for that, so that genericnamed_retframe can make itself
+		useful. See also generictyped_retframe.
 
 
 Finally: Finish the whole preprocessor!

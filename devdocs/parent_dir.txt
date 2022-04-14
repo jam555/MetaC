@@ -178,6 +178,16 @@ tokenmatching.h:
 	you, then you wouldn't be reading about them here.
 	
 	
+	
+		These functions:
+			void gentyped_qsort( gentyped_parr *parr );
+			generictyped* gentyped_bsearch( gentyped_parr *parr, token *tok );
+	... are wrappers for the C library's qsort() and bsearch() standard
+	functions. They're really intended for use inside basics.c, but it's fine
+	to use them for other stuff.
+	
+	
+	
 		I have no real idea why these are here:
 			genname_parr* build_gennamearr( size_t count );
 			genname_parr* resize_gennamearr( genname_parr *parr, size_t newlen );
