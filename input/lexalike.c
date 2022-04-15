@@ -5,7 +5,10 @@
 
 
 
-#if defined( __cplusplus ) && __cplusplus >= 199711L
+	/* This file actually shoves something inside "errs", so for the sake of */
+	/*  reducing the code in language ifs, we require C++2020 support at the */
+	/*  minimum. */
+#if defined( __cplusplus ) && __cplusplus >= 202002L
 	namespace
 	{
 		static msg_styleset errs;
@@ -856,6 +859,10 @@ int tokenize_char( stackpair *stkp, void *v )
 	/* A helper function to handle most of the conversion between normal */
 	/*  character operations & stackpair operations. Unlike some stuff in */
 	/*  this file, this should pretty much be complete. */
+msg_style stack_testchar_multicharforbidden =
+	{
+		"ERROR: stack_testchar( %p, ignored, %p ) encountered a multichar when not enabled."
+	};
 lib4_result stack_testchar( stackpair *stkp, void *v,  int (*testfunc)( int ),  int fail_on_multichar )
 {
 	if( stkp && testfunc )
@@ -878,9 +885,7 @@ lib4_result stack_testchar( stackpair *stkp, void *v,  int (*testfunc)( int ),  
 		}
 		if( th.length > 1 && fail_on_multichar )
 		{
-			/* TODO: this is probably worthy of a custom message. */
-			
-			I_OVERFLOW( stack_testchar, &( th.length ), 1 );
+			msg_interface( &errs, 1, (void*)stkp, (uintmax_t)&( funcname ) );
 			LIB4_RESULT_RETURNFAILURE( LIB4_RESULT_FAILURE_ABOVEBOUNDS );
 		}
 		
@@ -992,11 +997,28 @@ retframe stack_isxdigit( stackpair *stkp, void *v )
 
 
 
-#if defined( __cplusplus ) && __cplusplus >= 199711L
+	/* For "native" compatibility in both C and C++, DO NOT use compound */
+	/*  literals. Designated initializers with this specific syntax are C as */
+	/*  of C99, and C++ as of C++20; thus, it's the best syntax for this. */
+static msg_piece msgs[] =
+	{
+		{ .style = &stack_testchar_multicharforbidden }, 0
+	};
+
+#if defined( __cplusplus ) && __cplusplus >= 202002L
 	namespace
 	{
-		msg_styleset errs = { 0 };
+		msg_styleset errs =
+			{
+				msgs,
+				sizeof( msgs ) / sizeof( msgs[ 0 ] )
+			};
 	};
 #elif defined( __STDC__ ) && __STDC_VERSION__ >= 199901L
-	static msg_styleset errs = (msg_styleset){ 0, 0 };
+	static msg_styleset errs =
+		(msg_styleset)
+		{
+			msgs,
+			sizeof( msgs ) / sizeof( msgs[ 0 ] )
+		};
 #endif
