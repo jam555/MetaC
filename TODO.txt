@@ -13,9 +13,11 @@ err.c:
 demo_errs.c:
 
 lexalike.c:
+	This is the FIRST file that I can remember adding a custom error style to-
+		go back and derive an example file from this to show how such a thing
+		is meant to actually be done in an easier to find form.
 	any functions left that belong elsewhere?
 	has at least one TODO about an old comment- update that comment.
-	Line 974 in stack_testchar has a TODO about a custom error message.
 	Needs trigraph support added in.
 	tokenize_char() needs to be modified to provide file/line info to allow the
 		origin of text to be tracked for error-reporting and macro programming
