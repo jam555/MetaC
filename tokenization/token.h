@@ -24,6 +24,14 @@
 		char text[];
 	};
 	
+		/* ->header.toktype should equal TOKTYPE_NUMBER_UINT */
+	typedef struct token_uint
+	{
+		token_head header;
+		uintptr_t val;
+		
+	} token_uint;
+	
 	LIB4_DEFINE_PASCALARRAY_STDDEFINE( tokenheadptr_, token_head* );
 	typedef tokenheadptr_pascalarray tokhdptr_parr;
 	
@@ -35,6 +43,7 @@
 	
 	#define TOKTYPE_NAME ( 3 )
 	#define TOKTYPE_NUMBER ( 4 )
+		#define TOKTYPE_NUMBER_UINT ( 0x400 )
 	
 	/* Bracket openers: "5" block. */
 		#define TOKTYPE_OPCRL ( 0x500 ) /* { */

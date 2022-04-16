@@ -7,15 +7,18 @@ Aaaand the file is already out of date. Have been using already-defined stuff fo
 freshline_directives.c looks likely to just be an older version of exec.c and macroargs.c, so figure out if it should be deleted.
 
 
+tokenization.txt:
+	Needs better documentation of invoke_dealloctoken().
+
 err.c:
 	might need some sort of debug/release mode?
+inner_err.h:
+	Verify the format specifiers of STDMSG_BADINT and STDMSG_BADUINT- the same
+		specifier is used for both, WHICH IS PROBABLY WRONG.
 
 demo_errs.c:
 
 lexalike.c:
-	This is the FIRST file that I can remember adding a custom error style to-
-		go back and derive an example file from this to show how such a thing
-		is meant to actually be done in an easier to find form.
 	any functions left that belong elsewhere?
 	has at least one TODO about an old comment- update that comment.
 	Needs trigraph support added in.
@@ -118,6 +121,9 @@ complexlex.c:
 		possibly detect stack corruptions.
 	accumulate_whitespace() PROBABLY doesn't accumulate comments as whitespace-
 		that should probably be changed.
+	invoke_dealloctoken() appears to have an inverted test (the handler SHOULD
+		BE non-null!), and matching wrong error report.
+	smart_dealloc_token() needs to be extended to support TOKTYPE_NUMBER_UINT.
 complexlex.h:
 	Line 95: Same note as 613 in .c
 
@@ -152,6 +158,9 @@ stack.c:
 		This will throw off line numbers. Again.
 	Check to see if the new stackpair->run member should be initialized
 		anywhere.
+stack.h:
+	RET_FRAMEFUNC( stkpair,  stylesetptr, caller, scratch, endfunc ) has a
+		misattribution in an error report.
 
 tokenmatching.c:
 	Line 406: Should this REALLY be fixed instead of deleted? I think I may
