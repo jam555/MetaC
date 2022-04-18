@@ -95,9 +95,6 @@
 	int stdcompare_token( const void *key_, const void *elem_ );
 	int stdcompare_genericnamed( const void *a_, const void *b_ );
 	
-	int gentyped_tokencomp( const void *key_, const void *elem_ );
-	int gentyped_gencomp( const void *key1_, const void *key2_ );
-	
 	
 	
 	genname_parr* build_gennamearr( size_t count );

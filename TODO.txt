@@ -162,14 +162,6 @@ tokenmatching.h:
 		various functions require genname_parr; look at doing something to
 		compensate for that, so that genericnamed_retframe can make itself
 		useful. See also generictyped_retframe.
-	Remove gentyped_tokencomp() and gentyped_gencomp() ONLY from the header.
-		There's no compeling reason for those to be exposed, since the
-		related *_qsort() and *_bsearch() functions actually use them while
-		also ensuring that the correct types are provided. If you need the
-		comparisons, then put the signatures in a inner_source.h file.
-		NOTE: This note had mistakenly been left allocated to source.h when a
-		lot of code got moved to tokenmatching.h/.c. I'm moving it here just
-		for proper attribution of changes.
 
 
 Finally: Finish the whole preprocessor!

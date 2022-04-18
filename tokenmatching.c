@@ -38,6 +38,10 @@
 	STDMSG_TRESPASSPATH_WRAPPER( &errs, funcname, ( msgstr ) )
 
 
+int gentyped_tokencomp( const void *key_, const void *elem_ );
+int gentyped_gencomp( const void *key1_, const void *key2_ );
+
+
 int match_token( token *tok,  unsigned char *str, size_t len )
 {
 	if( len && !str )
