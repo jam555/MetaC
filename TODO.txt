@@ -131,7 +131,6 @@ simplelex.h:
 
 token.h:
 	Need some notes on *_INVALID vs *_OTHER
-	Line 163 & 165: Finish these defines.
 
 headers.h:
 	Need to verify that all the relevant headers are included. Maybe make
