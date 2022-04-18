@@ -134,7 +134,7 @@
 			retframe RET_FRAMEFUNC_ret; \
 			( scratch ) = pop_retframe( ( stkpair )->ret, &RET_FRAMEFUNC_ret ); \
 			if( !( scratch ) ) { \
-				STDMSG_FAILEDINTFUNC_WRAPPER( ( stylesetptr ), "push_retframe", ( caller ), ( scratch ) ); \
+				STDMSG_FAILEDINTFUNC_WRAPPER( ( stylesetptr ), "pop_retframe", ( caller ), ( scratch ) ); \
 				( endfunc )(); } \
 			return( RET_FRAMEFUNC_ret ); }
 	

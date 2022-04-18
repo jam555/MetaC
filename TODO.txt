@@ -151,8 +151,7 @@ stack.c:
 	Check to see if the new stackpair->run member should be initialized
 		anywhere.
 stack.h:
-	RET_FRAMEFUNC( stkpair,  stylesetptr, caller, scratch, endfunc ) has a
-		misattribution in an error report.
+	Check for misattributions in error reports.
 
 tokenmatching.c:
 	Line 406: Should this REALLY be fixed instead of deleted? I think I may
