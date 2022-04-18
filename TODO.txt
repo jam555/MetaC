@@ -6,6 +6,8 @@ Aaaand the file is already out of date. Have been using already-defined stuff fo
 
 freshline_directives.c looks likely to just be an older version of exec.c and macroargs.c, so figure out if it should be deleted.
 
+There may be a whole load of stuff that uses MONADICFAILURE() by unknowingly passing it a lib4_failure_result under the mistaken impression that it's an int.
+
 
 tokenization.txt:
 	Needs better documentation of invoke_dealloctoken().
@@ -35,7 +37,6 @@ extrachar.c:
 		to lexalike.c
 
 source.c:
-	I think that inbuf isn't getting initialized: that needs to be fixed.
 	When setting ptrres in build_source2(), shouldn't it be sized off of struct
 		source instead of stackframe?
 source.h:

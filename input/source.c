@@ -32,6 +32,14 @@
 
 
 
+struct
+{
+	char_pascalarray *pushedback;
+	size_t used;
+	
+} inbuf = { (char_pascalarray*)0, 0 };
+
+
 struct source
 {
 	source *prev;
@@ -52,6 +60,8 @@ static root_name =
 static source root_src = (source){ (source*)0,  0, &root_name,  0, 0 };
 int init()
 {
+	int ret = -1;
+	
 	if( !sources )
 	{
 		root_src.file = fopen( root_src.name->body, "rb" );
@@ -63,15 +73,45 @@ int init()
 		
 		sources = &root_src;
 		
-		return( 1 );
+		ret = 1;
 	}
 	
-	TRESPASSPATH( init, "ERROR: init() in source.c failed to exit before reaching it's end." );
-	BADNONULL( init, &sources );
-	return( -1 );
+	if( !( inbuf.pushedback ) )
+	{
+		char_pascalarray_result res =
+			char_pascalarray_build( size_t len );
+		int res2;
+#define init_SUCCESS( arr ) inbuf.pushedback = ( arr );
+#define init_FAILURE( err ) \
+	MONADICFAILURE( init, "char_pascalarray_build()", ( err ) ); \
+	sources = (source*)0; \
+	res2 = fclose( root_src.file ); \
+	if( res2 != 0 ) { \
+		FAILEDINTFUNC( "fclose", init, res2 ); } \
+	root_src = (source){ (source*)0,  0, &root_name,  0, 0 }; \
+	return( err );
+		LIB4_DEFINE_PASCALARRAY_RESULT_BODYMATCH( res, init_SUCCESS, init_FAILURE )
+	}
+	
+	if( !ret )
+	{
+		TRESPASSPATH( init, "ERROR: init() in source.c failed to exit before reaching it's end." );
+		BADNONULL( init, &sources );
+	}
+	return( ret );
 }
 void deinit()
 {
+	if( inbuf.pushedback )
+	{
+		lib4_result res = char_pascalarray_destroy( inbuf.pushedback );
+#define deinit_SUCCESS( succ ) \
+	inbuf = { (char_pascalarray*)0, 0 };
+#define deinit_FAILURE( err ) \
+	MONADICFAILURE( deinit, "char_pascalarray_destroy()", ( err ).val ); \
+		LIB4_DEFINE_PASCALARRAY_RESULT_BODYMATCH( res, deinit_SUCCESS, deinit_FAILURE )
+	}
+	
 	if( sources == &root_src )
 	{
 		sources = (source*)0;
@@ -193,14 +233,6 @@ int discard_source( source *src )
 	return( -1 );
 }
 
-
-
-struct
-{
-	char_pascalarray *pushedback;
-	size_t used;
-	
-} inbuf;
 
 
 char_result charin()
