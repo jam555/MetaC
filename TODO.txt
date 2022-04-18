@@ -12,9 +12,6 @@ tokenization.txt:
 
 err.c:
 	might need some sort of debug/release mode?
-inner_err.h:
-	Verify the format specifiers of STDMSG_BADINT and STDMSG_BADUINT- the same
-		specifier is used for both, WHICH IS PROBABLY WRONG.
 
 demo_errs.c:
 

@@ -265,7 +265,7 @@
 	
 	#define STDMSG_BADCHAR -18, "\nError in %s:%jx(), file line %x : *%p == %c, expected %c.", dummyarg
 	#define STDMSG_BADINT -19, "\nError in %s:%jx(), file line %x : *%p == %jd, expected %jd.", dummyarg
-	#define STDMSG_BADUINT -20, "\nError in %s:%jx(), file line %x : *%p == %jd, expected %jd.", dummyarg
+	#define STDMSG_BADUINT -20, "\nError in %s:%jx(), file line %x : *%p == %ju, expected %ju.", dummyarg
 	
 	#define STDMSG_I_UNDERFLOW -21, "\nUnderflow in %s:%jx(), file line %x : *%p == %jd, expected above %jd.", dummyarg
 	#define STDMSG_I_OVERFLOW -22, "\nOverflow in %s:%jx(), file line %x : *%p == %jd, expected below %jd.", dummyarg
