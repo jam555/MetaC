@@ -22,6 +22,10 @@
 
 #define NOTELINE() \
 	STDMSG_NOTELINE_WRAPPER( &errs )
+#define NOTESPACE() \
+	STDMSG_NOTESPACE_WRAPPER( &errs )
+#define SIGNEDARG( val ) \
+	STDMSG_SIGNEDARG_WRAPPER( &errs, ( val ) )
 #define DECARG( uint ) \
 	STDMSG_DECARG_WRAPPER( &errs, ( uint ) )
 #define DATAPTR( ptr ) \
@@ -55,6 +59,24 @@
 	RET_FRAMEFUNC( ( stkpair ),  &errs, ( caller ), res, stack_ENDRETFRAME )
 
 
+#define PUTCHAR_CALL( caller, scratch, onerr, errval,  letter ) \
+	if( putchar( letter ) == EOF ) { \
+		( scratch ) = ferror( stdout ); \
+		FAILEDINTFUNC( "putchar", ( caller ), ( scratch ) ); \
+			NOTESPACE(); \
+			lib4_errno_popresult( &( scratch ) ); SIGNEDARG( ( scratch ) ); \
+		onerr( errval ); }
+#define PRINTF_CALL( caller, scratch, onerr, errval,  ... ) \
+	( scratch ) = printf( __VA_ARGS__ ); /
+	if( ( scratch ) < 0 ) { \
+		FAILEDINTFUNC( "printf", ( caller ), ( scratch ) ); \
+			NOTESPACE(); \
+			( scratch ) = ferror( stdout ); SIGNEDARG( ( scratch ) ); \
+			NOTESPACE(); \
+			lib4_errno_popresult( &( scratch ) ); SIGNEDARG( ( scratch ) ); \
+		onerr( errval ); }
+
+
 
 /* Argument checking should be added to some of this stuff. */
 
@@ -75,11 +97,12 @@ int echo_tokenhead( stackpair *stkp, void *v,  token_head **th )
 	}
 	*th = (token_head*)a;
 	
-	putc( SOH );
-	printf( "%x", (unsigned int)( ( *th )->toktype ) );
-	putc( USEP );
-	printf( "%x", (unsigned int)( ( *th )->length ) );
-	putc( STXT );
+	lib4_errno_popresult( &res );
+	PUTCHAR_CALL( echo_tokenhead, res, return, -3,  SOH );
+	PRINTF_CALL( echo_tokenhead, res, return, -4,  "%x", (unsigned int)( ( *th )->toktype ) );
+	PUTCHAR_CALL( echo_tokenhead, res, return, -5,  USEP );
+	PRINTF_CALL( echo_tokenhead, res, return, -6,  "%x", (unsigned int)( ( *th )->length ) );
+	PUTCHAR_CALL( echo_tokenhead, res, return, -7,  STXT );
 	
 	return( 1 );
 }
@@ -260,7 +283,7 @@ retframe echo_token( stackpair *stkp, void *v )
 {
 	token_head *th;
 	token *t;
-	int len;
+	int len, scratch;
 	
 	STACKCHECK( stkp,  echo_token, macroargs_ENDRETFRAME );
 	
@@ -280,12 +303,15 @@ retframe echo_token( stackpair *stkp, void *v )
 		/* Initially had this expecting the token string to be on the stack, */
 		/*  THAT was certainly out of data (and inconvenient)... */
 		
-		putc( t->text[ th->length - len ] );
+			/* TODO: set onerr and errval to something appropriate. */
+		PUTCHAR_CALL( echo_token, scratch, onerr, errval,  ( t->text[ th->length - len ] ) );
 		
 		--len;
 	}
 	
-	putc( ETXT );
+	lib4_errno_popresult( &scratch );
+		/* TODO: set onerr and errval to something appropriate. */
+	PUTCHAR_CALL( echo_token, scratch, onerr, errval,  ETXT );
 	
 	
 	/* Success. */
@@ -318,6 +344,9 @@ retframe echo_tokengroup_extension( stackpair *stkp, void *v )
 		return( (retframe){ &end_run, (void*)0 } );
 	}
 	
+		/* Just to clear errno. */
+	lib4_errno_popresult( &res );
+	
 	if( ( (tokengroup*)th )->used > iter )
 	{
 		if( !( ( (tokengroup*)th )->arr ) )
@@ -338,11 +367,8 @@ retframe echo_tokengroup_extension( stackpair *stkp, void *v )
 			echo_tokengroup_extension_END1
 		);
 		
-		res = putc( ',' );
-		if( res != ',' )
-		{
-			???
-		}
+			/* TODO: set onerr and errval to something appropriate. */
+		PUTCHAR_CALL( echo_tokengroup_extension, res, onerr, errval,  ',' );
 		
 		CALLFRAMEFUNC(
 			&echo_tokengroup_extension, (void*)( iter + 1 ),
@@ -356,11 +382,8 @@ retframe echo_tokengroup_extension( stackpair *stkp, void *v )
 		/* Empty group, so short-circuit. We should pop "th" here, to keep */
 		/*  the stack clean. */
 		
-		res = putc( ETXT );
-		if( res != ETXT )
-		{
-			???
-		}
+			/* TODO: set onerr and errval to something appropriate. */
+		PUTCHAR_CALL( echo_tokengroup_extension, res, onerr, errval,  ETXT );
 		
 			/* "th" got repushed onto the stack before this function was */
 			/*  even called, so we need to repop it here, because we've now */
@@ -400,21 +423,12 @@ retframe echo_tokengroup( stackpair *stkp, void *v )
 		return( (retframe){ &end_run, (void*)0 } );
 	}
 	
-	res = printf( "%x", (unsigned int)( ( (tokengroup*)th )->subtype ) );
-	if( !res )
-	{
-		???
-	}
-	res = putc( ',' );
-	if( res != ',' )
-	{
-		???
-	}
-	res = printf( "%x", (unsigned int)( ( (tokengroup*)th )->used ) );
-	if( !res )
-	{
-		???
-	}
+		/* Clear errno. */
+	lib4_errno_popresult( &res );
+		/* TODO: set onerr and errval to something appropriate. */
+	PRINTF_CALL( echo_tokengroup, res, onerr, errval,  "%x", (unsigned int)( ( (tokengroup*)th )->subtype ) );
+	PUTCHAR_CALL( echo_tokengroup, res, onerr, errval,  ',' );
+	PRINTF_CALL( echo_tokengroup, res, onerr, errval,  "%x", (unsigned int)( ( (tokengroup*)th )->used ) );
 	
 	if( ( (tokengroup*)th )->used )
 	{
@@ -448,11 +462,8 @@ retframe echo_tokengroup( stackpair *stkp, void *v )
 			echo_tokengroup_END1
 		);
 		
-		res = putc( ',' );
-		if( res != ',' )
-		{
-			???
-		}
+			/* TODO: set onerr and errval to something appropriate. */
+		PUTCHAR_CALL( echo_tokengroup, res, onerr, errval,  ',' );
 		
 			/* Note that echo_tokengroup_extension() needs to dynamically */
 			/*  dispatch according to the type of token pointed to by the */
@@ -471,11 +482,8 @@ retframe echo_tokengroup( stackpair *stkp, void *v )
 		/* Empty group, so short-circuit. We should pop "th" here, to keep */
 		/*  the stack clean. */
 		
-		res = putc( ETXT );
-		if( res != ETXT )
-		{
-			???
-		}
+			/* TODO: set onerr and errval to something appropriate. */
+		PUTCHAR_CALL( echo_tokengroup, res, onerr, errval,  ETXT );
 		
 		RETFRAMEFUNC( stkp,  echo_tokengroup );
 	}
@@ -486,11 +494,10 @@ retframe echo_tokenbranch_conclude( stackpair *stkp, void *v )
 	uintptr_t a;
 	int res;
 	
-	res = putc( ETXT );
-	if( res != ETXT )
-	{
-		???
-	}
+		/* Clear errno. */
+	lib4_errno_popresult( &res );
+		/* TODO: set onerr and errval to something appropriate. */
+	PUTCHAR_CALL( echo_tokenbranch_conclude, res, onerr, errval,  ETXT );
 	
 		/* "th" got repushed onto the stack before this function was */
 		/*  even called, so we need to repop it here, because we've now */
@@ -529,11 +536,10 @@ retframe echo_tokenbranch_tail( stackpair *stkp, void *v )
 		return( (retframe){ &end_run, (void*)0 } );
 	}
 	
-	res = putc( ',' );
-	if( res != ',' )
-	{
-		???
-	}
+		/* Clear errno. */
+	lib4_errno_popresult( &res );
+		/* TODO: set onerr and errval to something appropriate. */
+	PUTCHAR_CALL( echo_tokenbranch_tail, res, onerr, errval,  ',' );
 	
 	if( ( (tokenbranch*)th )->tail )
 	{
@@ -580,11 +586,10 @@ retframe echo_tokenbranch_body( stackpair *stkp, void *v )
 		return( (retframe){ &end_run, (void*)0 } );
 	}
 	
-	res = putc( ',' );
-	if( res != ',' )
-	{
-		???
-	}
+		/* Clear errno. */
+	lib4_errno_popresult( &errno );
+		/* TODO: set onerr and errval to something appropriate. */
+	PUTCHAR_CALL( echo_tokenbranch_body, res, onerr, errval,  ',' );
 	
 	if( ( (tokenbranch*)th )->body )
 	{
@@ -629,16 +634,11 @@ retframe echo_tokenbranch( stackpair *stkp, void *v )
 		return( (retframe){ &end_run, (void*)0 } );
 	}
 	
-	res = printf( "%x", (unsigned int)( ( (tokenbranch*)th )->subtype ) );
-	if( !res )
-	{
-		???
-	}
-	res = putc( ',' );
-	if( res != ',' )
-	{
-		???
-	}
+		/* Clear errno. */
+	lib4_errno_popresult( &errno );
+		/* TODO: set onerr and errval to something appropriate. */
+	PRINTF_CALL( echo_tokenbranch, res, onerr, errval,  "%x", (unsigned int)( ( (tokenbranch*)th )->subtype ) );
+	PUTCHAR_CALL( echo_tokenbranch, res, onerr, errval,  ',' );
 	
 		/* We'll need to refer to "th" in later calls, so repush it. */
 	STACKPUSH_UINT(
