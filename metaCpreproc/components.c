@@ -91,7 +91,6 @@ genname_parr default =
 
 genname_parrparr *std_entry_keys;
 size_t std_entry_keys_used;
-uintptr_t std_entry_refid;
 
 
 int searchstack_init()
@@ -167,7 +166,7 @@ retframe components_stdsearchinit( stackpair *stkp, void *v_ )
 	
 		/* Build the tokenbranch that'll be used to package the context of */
 		/*  the searchtable. */
-	tokenbranch *tb = build_tokenbranch( &searchstack_refid,  0 );
+	tokenbranch *tb = build_tokenbranch( 0 );
 	if( !tb )
 	{
 		BADNULL( components_stdsearchinit, &tb );
@@ -186,13 +185,7 @@ retframe components_stdsearchinit( stackpair *stkp, void *v_ )
 	
 		/* We'll build a new tokengroup to receive the tokens that we */
 		/*  encounter inside of the searchtable context. */
-	tok =
-		(token_head*)build_tokengroup
-		(
-			&searchstack_refid,
-			
-			size_t elems
-		);
+	tok = (token_head*)build_tokengroup( size_t elems );
 	if( !tok )
 	{
 		FAILEDPTRFUNC( "build_tokengroup", components_stdsearchinit, tok );
@@ -212,12 +205,8 @@ retframe components_stdsearchinit( stackpair *stkp, void *v_ )
 	int res =
 		lexparse1_pushsearchtable
 		(
-			&searchstack_refid,
-			
 			&searchstack,
 			&searchstack_used,
-			
-			REFID_SUBIDS_searchstack__components_stdsearchinit__pushfunc,
 			
 			v->table
 		);
@@ -246,12 +235,8 @@ retframe components_sequencedsearchproceed( stackpair *stkp, void *v_ )
 	int res =
 		lexparse1_popsearchtable
 		(
-			&searchstack_refid,
-			
 			&searchstack,
-			&searchstack_used,
-			
-			REFID_SUBIDS_searchstack__components_sequencedsearchproceed__popfunc
+			&searchstack_used
 		);
 	if( !res )
 	{
@@ -280,12 +265,8 @@ retframe components_sequencedsearchproceed( stackpair *stkp, void *v_ )
 	res =
 		lexparse1_pushsearchtable
 		(
-			&searchstack_refid,
-			
 			&searchstack,
 			&searchstack_used,
-			
-			REFID_SUBIDS_searchstack__components_sequencedsearchproceed__pushfunc,
 			
 			v->table
 		);
@@ -382,9 +363,6 @@ retframe components_stdsearchdeinit( stackpair *stkp, void *v_ )
 	int res =
 		pushto_tokengroup
 		(
-			&searchstack_refid,
-			REFID_SUBIDS_searchstack__components_stdsearchdeinit__pushfunc,
-			
 			(tokengroup*)tok_b,
 			tok_a
 		);
@@ -399,12 +377,8 @@ retframe components_stdsearchdeinit( stackpair *stkp, void *v_ )
 	res =
 		lexparse1_popsearchtable
 		(
-			&searchstack_refid,
-			
 			&searchstack,
-			&searchstack_used,
-			
-			REFID_SUBIDS_searchstack__components_stdsearchdeinit__popfunc
+			&searchstack_used
 		);
 	if( !res )
 	{
@@ -488,9 +462,6 @@ retframe components_skipendersearchdeinit( stackpair *stkp, void *v_ )
 	int res =
 		pushto_tokengroup
 		(
-			&searchstack_refid,
-			REFID_SUBIDS_searchstack__components_skipendersearchdeinit__pushfunc,
-			
 			(tokengroup*)( (token_head*)a ),
 			tok
 		);
@@ -505,12 +476,8 @@ retframe components_skipendersearchdeinit( stackpair *stkp, void *v_ )
 	res =
 		lexparse1_popsearchtable
 		(
-			&searchstack_refid,
-			
 			&searchstack,
-			&searchstack_used,
-			
-			REFID_SUBIDS_searchstack__components_skipendersearchdeinit__popfunc
+			&searchstack_used
 		);
 	if( !res )
 	{

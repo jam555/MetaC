@@ -49,8 +49,8 @@ basics.c:
 		like decent references, but not directly suitable for use.
 
 components.h:
-	At least components_stdsearchinit() is using old refid error reporting in
-		some calls to other functions.
+	Is the stuff at the bottom of the file supposed to be there?
+
 components.c:
 	Starting at line 80, "default" isn't really defined.
 	Line 128, searchstack_deinit() isn't filled out at all.
@@ -69,6 +69,9 @@ components.c:
 	Line 1382- Some note that might need to be deleted, moved, or rewritten.
 	components_skipendersearchdeinit() tests variable "b" before it gets
 		initialized. Probably meant to be "a".
+	components_stdsearchinit() has a call to build_tokengroup() that needs it's
+		actual arguments.
+	Is pushto_tokengroup() even a real function???
 
 macroargs.c:
 	This has been freshly split off of components.c- need to go through to
