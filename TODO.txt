@@ -97,15 +97,6 @@ freshline_directives.c:
 		for e.g. macroargs.c, because it basically NEEDS some stuff like that
 		in order to know how the directives need to work.
 
-echo_tokens.c:
-	echo_token() has a TODO note: get that done.
-		Also echo_tokengroup_extension().
-		Also echo_tokengroup().
-		Also echo_tokenbranch_conclude().
-		Also echo_tokenbranch_tail().
-		Also echo_tokenbranch_body().
-		Also echo_tokenbranch().
-
 complexlex.c:
 	Line 159: Apparently I was uncertain about something here. Best to check.
 	Line 613: A note about a function set/function that should be built. Might

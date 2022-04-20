@@ -77,6 +77,9 @@
 		onerr( errval ); }
 
 
+#define ENDRETFRAME( ... ) return( (retframe){ &end_run, (void*)0 } )
+
+
 
 /* Argument checking should be added to some of this stuff. */
 
@@ -304,14 +307,14 @@ retframe echo_token( stackpair *stkp, void *v )
 		/*  THAT was certainly out of data (and inconvenient)... */
 		
 			/* TODO: set onerr and errval to something appropriate. */
-		PUTCHAR_CALL( echo_token, scratch, onerr, errval,  ( t->text[ th->length - len ] ) );
+		PUTCHAR_CALL( echo_token, scratch, ENDRETFRAME, ignore,  ( t->text[ th->length - len ] ) );
 		
 		--len;
 	}
 	
 	lib4_errno_popresult( &scratch );
 		/* TODO: set onerr and errval to something appropriate. */
-	PUTCHAR_CALL( echo_token, scratch, onerr, errval,  ETXT );
+	PUTCHAR_CALL( echo_token, scratch, ENDRETFRAME, ignore,  ETXT );
 	
 	
 	/* Success. */
@@ -368,7 +371,7 @@ retframe echo_tokengroup_extension( stackpair *stkp, void *v )
 		);
 		
 			/* TODO: set onerr and errval to something appropriate. */
-		PUTCHAR_CALL( echo_tokengroup_extension, res, onerr, errval,  ',' );
+		PUTCHAR_CALL( echo_tokengroup_extension, res, ENDRETFRAME, ignore,  ',' );
 		
 		CALLFRAMEFUNC(
 			&echo_tokengroup_extension, (void*)( iter + 1 ),
@@ -383,7 +386,7 @@ retframe echo_tokengroup_extension( stackpair *stkp, void *v )
 		/*  the stack clean. */
 		
 			/* TODO: set onerr and errval to something appropriate. */
-		PUTCHAR_CALL( echo_tokengroup_extension, res, onerr, errval,  ETXT );
+		PUTCHAR_CALL( echo_tokengroup_extension, res, ENDRETFRAME, ignore,  ETXT );
 		
 			/* "th" got repushed onto the stack before this function was */
 			/*  even called, so we need to repop it here, because we've now */
@@ -426,9 +429,9 @@ retframe echo_tokengroup( stackpair *stkp, void *v )
 		/* Clear errno. */
 	lib4_errno_popresult( &res );
 		/* TODO: set onerr and errval to something appropriate. */
-	PRINTF_CALL( echo_tokengroup, res, onerr, errval,  "%x", (unsigned int)( ( (tokengroup*)th )->subtype ) );
-	PUTCHAR_CALL( echo_tokengroup, res, onerr, errval,  ',' );
-	PRINTF_CALL( echo_tokengroup, res, onerr, errval,  "%x", (unsigned int)( ( (tokengroup*)th )->used ) );
+	PRINTF_CALL( echo_tokengroup, res, ENDRETFRAME, ignore,  "%x", (unsigned int)( ( (tokengroup*)th )->subtype ) );
+	PUTCHAR_CALL( echo_tokengroup, res, ENDRETFRAME, ignore,  ',' );
+	PRINTF_CALL( echo_tokengroup, res, ENDRETFRAME, ignore,  "%x", (unsigned int)( ( (tokengroup*)th )->used ) );
 	
 	if( ( (tokengroup*)th )->used )
 	{
@@ -463,7 +466,7 @@ retframe echo_tokengroup( stackpair *stkp, void *v )
 		);
 		
 			/* TODO: set onerr and errval to something appropriate. */
-		PUTCHAR_CALL( echo_tokengroup, res, onerr, errval,  ',' );
+		PUTCHAR_CALL( echo_tokengroup, res, ENDRETFRAME, ignore,  ',' );
 		
 			/* Note that echo_tokengroup_extension() needs to dynamically */
 			/*  dispatch according to the type of token pointed to by the */
@@ -483,7 +486,7 @@ retframe echo_tokengroup( stackpair *stkp, void *v )
 		/*  the stack clean. */
 		
 			/* TODO: set onerr and errval to something appropriate. */
-		PUTCHAR_CALL( echo_tokengroup, res, onerr, errval,  ETXT );
+		PUTCHAR_CALL( echo_tokengroup, res, ENDRETFRAME, ignore,  ETXT );
 		
 		RETFRAMEFUNC( stkp,  echo_tokengroup );
 	}
@@ -497,7 +500,7 @@ retframe echo_tokenbranch_conclude( stackpair *stkp, void *v )
 		/* Clear errno. */
 	lib4_errno_popresult( &res );
 		/* TODO: set onerr and errval to something appropriate. */
-	PUTCHAR_CALL( echo_tokenbranch_conclude, res, onerr, errval,  ETXT );
+	PUTCHAR_CALL( echo_tokenbranch_conclude, res, ENDRETFRAME, ignore,  ETXT );
 	
 		/* "th" got repushed onto the stack before this function was */
 		/*  even called, so we need to repop it here, because we've now */
@@ -539,7 +542,7 @@ retframe echo_tokenbranch_tail( stackpair *stkp, void *v )
 		/* Clear errno. */
 	lib4_errno_popresult( &res );
 		/* TODO: set onerr and errval to something appropriate. */
-	PUTCHAR_CALL( echo_tokenbranch_tail, res, onerr, errval,  ',' );
+	PUTCHAR_CALL( echo_tokenbranch_tail, res, ENDRETFRAME, ignore,  ',' );
 	
 	if( ( (tokenbranch*)th )->tail )
 	{
@@ -589,7 +592,7 @@ retframe echo_tokenbranch_body( stackpair *stkp, void *v )
 		/* Clear errno. */
 	lib4_errno_popresult( &errno );
 		/* TODO: set onerr and errval to something appropriate. */
-	PUTCHAR_CALL( echo_tokenbranch_body, res, onerr, errval,  ',' );
+	PUTCHAR_CALL( echo_tokenbranch_body, res, ENDRETFRAME, ignore,  ',' );
 	
 	if( ( (tokenbranch*)th )->body )
 	{
@@ -637,8 +640,8 @@ retframe echo_tokenbranch( stackpair *stkp, void *v )
 		/* Clear errno. */
 	lib4_errno_popresult( &errno );
 		/* TODO: set onerr and errval to something appropriate. */
-	PRINTF_CALL( echo_tokenbranch, res, onerr, errval,  "%x", (unsigned int)( ( (tokenbranch*)th )->subtype ) );
-	PUTCHAR_CALL( echo_tokenbranch, res, onerr, errval,  ',' );
+	PRINTF_CALL( echo_tokenbranch, res, ENDRETFRAME, ignore,  "%x", (unsigned int)( ( (tokenbranch*)th )->subtype ) );
+	PUTCHAR_CALL( echo_tokenbranch, res, ENDRETFRAME, ignore,  ',' );
 	
 		/* We'll need to refer to "th" in later calls, so repush it. */
 	STACKPUSH_UINT(
