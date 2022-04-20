@@ -460,7 +460,7 @@ retframe shufflequeue_step_macro_calltool( stackpair *stkp, void *v,  retframe l
 		/* "0" is actually valid, so we can't use the usual macro. */
 	STACKPOP_UINT( &( stkp->data ), &prog,  shufflequeue_step_macro_calltool, res, macroargs_ENDRETFRAME );
 	
-	STACKPEEK_UINT( &( stkp->data ), 0, a,  shufflequeue_step_macro_calltool, res, macroargs_ENDRETFRAME );
+	STACKPEEK_UINT( &( stkp->data ), 0, ops_,  shufflequeue_step_macro_calltool, res, macroargs_ENDRETFRAME );
 	tokhdptr_parr *ops = (tokhdptr_parr*)ops_;
 	
 	++prog;

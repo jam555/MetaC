@@ -77,8 +77,6 @@ macroargs.c:
 
 exec.c:
 	Freshly split- needs review.
-	shufflequeue_step_macro_calltool() has a usage of "a" before it gets
-		declared. Probably supposed to be "ops_".
 	Should shufflequeue_macro_run() REALLY pop the list of arguments from
 		macro_args? Where does that value even get pushed?
 	Does TOKTYPE_TOKENGROUP_MACROCALL execute macros AND directives, or
