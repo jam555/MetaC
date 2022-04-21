@@ -67,8 +67,6 @@ components.c:
 	Line 1259- Again "???", but also a not about free()s. Check into that.
 	Line 1292- "???", with a note to do deallocation.
 	Line 1382- Some note that might need to be deleted, moved, or rewritten.
-	components_skipendersearchdeinit() tests variable "b" before it gets
-		initialized. Probably meant to be "a".
 	components_stdsearchinit() has a call to build_tokengroup() that needs it's
 		actual arguments.
 	Is pushto_tokengroup() even a real function???

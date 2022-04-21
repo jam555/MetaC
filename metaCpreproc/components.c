@@ -407,7 +407,7 @@ retframe components_skipendersearchdeinit( stackpair *stkp, void *v_ )
 	v = (gennameparr_stdpushentry_entry*)v_;
 	
 		/* The ending token. */
-	STACKPOP_UINT( &( stkp->data ), a,  components_skipendersearchdeinit, res, macroargs_ENDRETFRAME );
+	STACKPOP_UINT( &( stkp->data ), b,  components_skipendersearchdeinit, res, macroargs_ENDRETFRAME );
 		/* Just error detection. */
 	if
 	(
