@@ -15,24 +15,13 @@
 #endif
 
 
-#define CALLFRAMEFUNC( stkpair, rethand, retval, callhand, callval,  caller, scratch ) \
-	CALL_FRAMEFUNC( stkpair, rethand, retval, callhand, callval,  &err, caller, scratch, macroargs_ENDRETFRAME )
-#define RETFRAMEFUNC( stkpair,  caller, scratch ) \
-	RET_FRAMEFUNC( stkpair,  &err, caller, scratch, macroargs_ENDRETFRAME )
-
 #define BADNULL( funcname, ptr ) \
 	STDMSG_BADNULL_WRAPPER( &errs, funcname, ( ptr ) )
 #define BADNONULL( funcname, ptr ) \
 	STDMSG_BADNONNULL_WRAPPER( &errs, funcname, ( ptr ) )
-#define BADNULL2( funcname, ptr1, ptr2 ) \
-	STDMSG_BADNULL2_WRAPPER( &errs, funcname, ( ptr1 ), ( ptr2 ) )
 
 #define MONADICFAILURE( funcname, calltext, err ) \
-		STDMSG_MONADICFAILURE_WRAPPER( &errs, funcname, ( calltext ), ( err ) )
-	#define NOTELINE() STDMSG_NOTELINE_WRAPPER( &errs )
-	
-	#define DECARG( val ) STDMSG_DECARG_WRAPPER( &errs, ( val ) )
-	#define STRARG( str ) STDMSG_STRARG_WRAPPER( &errs, ( str ) )
+	STDMSG_MONADICFAILURE_WRAPPER( &errs, funcname, ( calltext ), ( err ) )
 
 #define FAILEDINTFUNC( calleestr, callername, val ) \
 	STDMSG_FAILEDINTFUNC_WRAPPER( &errs, ( calleestr ), callername, ( val ) )
@@ -42,16 +31,7 @@
 #define TRESPASSPATH( funcname, msgstr ) \
 	STDMSG_TRESPASSPATH_WRAPPER( &errs, funcname, ( msgstr ) )
 
-#define PEEKMACROARGS( offset, dest,  caller, scratch, endfunc ) \
-	PEEK_MACROARGS( offset, dest,  &err, caller, scratch, endfunc );
-#define POPMACROARGS( destptr,  caller, scratch, endfunc ) \
-	POP_MACROARGS( destptr,  &err, caller, scratch, endfunc )
-#define PUSHMACROARGS( val,  caller, scratch, endfunc ) \
-	PUSH_MACROARGS( val,  &err, caller, scratch, endfunc )
 
-
-#define STACKCHECK( stack,  caller, endfunc ) \
-	STACK_CHECK( ( stack ),  &err, ( caller ), ( endfunc ) )
 #define STACKCHECK2( stack, v,  caller, endfunc ) \
 	STACK_CHECK2( ( stack ), ( v ),  &err, ( caller ), ( endfunc ) )
 
@@ -63,12 +43,8 @@
 	STACK_PUSH_UINT( ( stk ), ( val ),  &err, ( caller ), ( scratch ), ( endfunc ) )
 
 
-#define PUSHSHUFFLE( tokptr,  caller, scratch, endfunc ) \
-	PUSH_SHUFFLE( tokptr,  &err, caller, scratch, endfunc )
-
-
-#define RETFRAMEFUNC( stkp,  caller, scratch ) \
-	RET_FRAMEFUNC( ( stkp ),  &errs, ( caller ), ( scratch ), stack_ENDRETFRAME )
+#define CALLFRAMEFUNC( stkpair, rethand, retval, callhand, callval,  caller, scratch ) \
+	CALL_FRAMEFUNC( stkpair, rethand, retval, callhand, callval,  &err, caller, scratch, macroargs_ENDRETFRAME )
 
 
 

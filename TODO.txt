@@ -56,8 +56,6 @@ components.c:
 	Line 128, searchstack_deinit() isn't filled out at all.
 	components_sequencedsearchproceed() has a note saying it needs to be
 		reviewed.
-	Just split off the macroargs.c stuff- are all of those error reporting
-		macros still needed?
 
 macroargs.c:
 	This has been freshly split off of components.c- need to go through to
