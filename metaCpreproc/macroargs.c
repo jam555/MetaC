@@ -26,7 +26,6 @@
 		STDMSG_MONADICFAILURE_WRAPPER( &errs, funcname, ( calltext ), ( err ) )
 	#define NOTELINE() STDMSG_NOTELINE_WRAPPER( &errs )
 	
-	#define DECARG( val ) STDMSG_DECARG_WRAPPER( &errs, ( val ) )
 	#define STRARG( str ) STDMSG_STRARG_WRAPPER( &errs, ( str ) )
 
 #define FAILEDINTFUNC( calleestr, callername, val ) \
@@ -35,27 +34,12 @@
 #define TRESPASSPATH( funcname, msgstr ) \
 	STDMSG_TRESPASSPATH_WRAPPER( &errs, funcname, ( msgstr ) )
 
-#define PEEKMACROARGS( offset, dest,  caller, scratch, endfunc ) \
-	PEEK_MACROARGS( offset, dest,  &err, caller, scratch, endfunc )
 #define POPMACROARGS( destptr,  caller, scratch, endfunc ) \
 	POP_MACROARGS( destptr,  &err, caller, scratch, endfunc )
-#define PUSHMACROARGS( val,  caller, scratch, endfunc ) \
-	PUSH_MACROARGS( val,  &err, caller, scratch, endfunc )
 
 
 #define STACKCHECK( stack,  caller, endfunc ) \
 	STACK_CHECK( ( stack ),  &err, ( caller ), ( endfunc ) )
-
-#define STACKPEEK_UINT( stk, offset, dest,  caller, scratch, endfunc ) \
-	STACK_PEEK_UINT( ( stk ), ( offset ), ( dest ),  &err, ( caller ), ( scratch ), ( endfunc ) )
-#define STACKPOP_UINT( stk, dest,  caller, scratch, endfunc ) \
-	STACK_POP_UINT( ( stk ), ( dest ),  &err, ( caller ), ( scratch ), ( endfunc ) )
-#define STACKPUSH_UINT( stk, val,  caller, scratch, endfunc ) \
-	STACK_PUSH_UINT( ( stk ), ( val ),  &err, ( caller ), ( scratch ), ( endfunc ) )
-
-
-#define PUSHSHUFFLE( tokptr,  caller, scratch, endfunc ) \
-	PUSH_SHUFFLE( tokptr,  &err, caller, scratch, endfunc )
 
 
 #define RETFRAMEFUNC( stkp,  caller, scratch ) \
