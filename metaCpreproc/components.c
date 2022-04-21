@@ -169,7 +169,7 @@ retframe components_stdsearchinit( stackpair *stkp, void *v_ )
 	tokenbranch *tb = build_tokenbranch( 0 );
 	if( !tb )
 	{
-		BADNULL( components_stdsearchinit, &tb );
+		FAILEDPTRFUNC( "build_tokenbranch", components_stdsearchinit, tb );
 		return( (retframe){ &end_run, (void*)0 } );
 	}
 	tb->lead = tok;
@@ -184,8 +184,9 @@ retframe components_stdsearchinit( stackpair *stkp, void *v_ )
 	}
 	
 		/* We'll build a new tokengroup to receive the tokens that we */
-		/*  encounter inside of the searchtable context. */
-	tok = (token_head*)build_tokengroup( size_t elems );
+		/*  encounter inside of the searchtable context. "2" is a nice, */
+		/*  bland number of token pointers to start with. */
+	tok = (token_head*)build_tokengroup( 2 );
 	if( !tok )
 	{
 		FAILEDPTRFUNC( "build_tokengroup", components_stdsearchinit, tok );
