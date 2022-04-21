@@ -58,8 +58,6 @@ components.c:
 		reviewed.
 	Just split off the macroargs.c stuff- are all of those error reporting
 		macros still needed?
-	Also, since so much stuff got split off, every note below here is probably
-		obsolete.
 
 macroargs.c:
 	This has been freshly split off of components.c- need to go through to
