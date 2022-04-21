@@ -60,13 +60,6 @@ components.c:
 		macros still needed?
 	Also, since so much stuff got split off, every note below here is probably
 		obsolete.
-	Line 549 has a note about the macroargs stuff needing to be in it's own
-		file.
-	Line 800- verify if something else needs to go at the "???".
-	Line 834- see "Line 800".
-	Line 1259- Again "???", but also a not about free()s. Check into that.
-	Line 1292- "???", with a note to do deallocation.
-	Line 1382- Some note that might need to be deleted, moved, or rewritten.
 
 macroargs.c:
 	This has been freshly split off of components.c- need to go through to
