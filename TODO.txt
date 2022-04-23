@@ -10,6 +10,16 @@ There may be a whole load of stuff that uses MONADICFAILURE() by unknowingly pas
 
 Make an example for how to use peek()'s offset correctly.
 
+!!!VITAL NOTE!!! : For the sake of regularity, the execution of macros
+	realistically probably needs to be handled sorta like "freshlines"- in
+	particular, the "get token" functionality needs to track "the last
+	macro-izable token" that passed through (which means that I need to decide
+	what those EVEN ARE), so that if a macro invocation is detected, it can
+	look at that value (or probably "adopt" or "subsume" that value when the
+	start of the invocation is detected) to figure out what exactly should
+	REALLY be done.
+	Gonna need rewind capabilities to make this reliably work...
+
 
 tokenization.txt:
 	Needs better documentation of invoke_dealloctoken().
@@ -95,13 +105,22 @@ complexlex.c:
 		confirm that instead the "white" token is of *_EQUIVMERGE first, to
 		possibly detect stack corruptions.
 	accumulate_whitespace() PROBABLY doesn't accumulate comments as whitespace-
-		that should probably be changed.
+		that should probably be changed. Note: the stuff I developed in
+		commentalex.c has now been moved into complexlex.c/.h, and should be
+		correctly called by accumulate_whitespace(), BUT accumulate_whitespace
+		is probably NEVER called with any comment openers- and THAT will be
+		enough to prevent the comment work from... working. So, need to find
+		everywhere that accumulate_whitespace() is called (I THINK it's only
+		two places? Maybe?), and refit them to ALSO pass comment openers as
+		whitespace.
 	invoke_dealloctoken() appears to have an inverted test (the handler SHOULD
 		BE non-null!), and matching wrong error report.
 	smart_dealloc_token() needs to be extended to support TOKTYPE_NUMBER_UINT.
 	build_tokenbranch() takes an element count, but never uses it... and has no
 		reason to take it anyways. Remove it, and fix the use of the function
 		wherever it's invoked.
+	The comment accumulator needs to "heed" a "invocation builder", so that
+		macro calls can properly be handled inside comments.
 complexlex.h:
 	Line 95: Same note as 613 in .c
 
