@@ -82,6 +82,10 @@ freshline_directives.c:
 		for e.g. macroargs.c, because it basically NEEDS some stuff like that
 		in order to know how the directives need to work.
 
+commentalex.c:
+	comment_cstyle() has a pop followed by a peek, which is sub-optimal: delay
+		the pop by using a non-0 offset in the peek.
+
 complexlex.c:
 	Line 159: Apparently I was uncertain about something here. Best to check.
 	Line 613: A note about a function set/function that should be built. Might
@@ -97,6 +101,9 @@ complexlex.c:
 	invoke_dealloctoken() appears to have an inverted test (the handler SHOULD
 		BE non-null!), and matching wrong error report.
 	smart_dealloc_token() needs to be extended to support TOKTYPE_NUMBER_UINT.
+	build_tokenbranch() takes an element count, but never uses it... and has no
+		reason to take it anyways. Remove it, and fix the use of the function
+		wherever it's invoked.
 complexlex.h:
 	Line 95: Same note as 613 in .c
 
