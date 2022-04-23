@@ -8,6 +8,8 @@ freshline_directives.c looks likely to just be an older version of exec.c and ma
 
 There may be a whole load of stuff that uses MONADICFAILURE() by unknowingly passing it a lib4_failure_result under the mistaken impression that it's an int.
 
+Make an example for how to use peek()'s offset correctly.
+
 
 tokenization.txt:
 	Needs better documentation of invoke_dealloctoken().

@@ -69,9 +69,17 @@
 	);
 	
 	
-	/* Note: build some functions to properly accumulate a token. That should */
-	/*  include te whitespace AFTER the token, which we now have the function */
-	/*  for. */
+		/* Expects a token of type TOKTYPE_SYM_COMMENTOP or */
+		/*  TOKTYPE_SYM_COMMENTLINE to be pointed to by the top of the */
+		/*  stack, and will consume tokens from the token source until */
+		/*  either TOKTYPE_NEWLINE (for "commentline") or */
+		/*  TOKTYPE_SYM_COMMENTCL (for "commentop") are encountered. Will */
+		/*  leave a pointer to a tokenbranch on top of the stack, of subtype */
+		/*  TOKTYPE_TOKENGROUP_COMNTMERGE, with all of the tokens (including */
+		/*  whitespace and newlines) encountered between the openning and */
+		/*  closing newlines contained within the body element. */
+	retframe comment_entry( stackpair *stkp, void *v );
+	
 	
 		/* Old comment, check against the next comment, AND the source file, */
 		/*  AND the the relevant devdocs file. */
@@ -94,6 +102,7 @@
 		/*  lower object is the point of the function, but not necessarily */
 		/*  possible, depending on what tokens are actually available. */
 		/* Note that the top token should NOT be a tokengroup or tokenbranch. */
+		/* Addendum: tokenbranches are now allowed for comments. */
 	retframe accumulate_whitespace( stackpair *stkp, void *v );
 		/* This function expects an already ASSEMBLED token to be pointed to by */
 		/*  a pointer on the top of the data stack. It will then either directly */
