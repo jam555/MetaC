@@ -49,11 +49,9 @@ retframe comment_cstyle( stackpair *stkp, void *v )
 	
 	STACKCHECK( stkp,  comment_cstyle, stack_ENDRETFRAME );
 	
-	STACKPOP_UINT( stkp->data, tok,  comment_cstyle, scratch, stack_ENDRETFRAME );
-	STACKPEEK_UINT( stkp->data, 0, tb,  comment_cstyle, scratch, stack_ENDRETFRAME );
+	STACKPEEK_UINT( stkp->data, sizeof( uintptr_t ), tb,  comment_cstyle, scratch, stack_ENDRETFRAME );
 	if( ( (token_head*)tb )->toktype != TOKTYPE_TOKENGROUP_EQUIVMERGE )
 	{
-		STACKPUSH_UINT( stkp->data, tok,  comment_cstyle, scratch, stack_ENDRETFRAME );
 		TRESPASSPATH(
 			comment_cstyle,
 			"ERROR: comment_cstyle() encountered a non-tokenbranch pointer beneath the top of the stack."
@@ -61,7 +59,8 @@ retframe comment_cstyle( stackpair *stkp, void *v )
 		stack_ENDRETFRAME();
 	}
 	
-	if( ( (token_head*)tmp )->toktype != TOKTYPE_SYM_COMMENTCL )
+	STACKPOP_UINT( stkp->data, tok,  comment_cstyle, scratch, stack_ENDRETFRAME );
+	if( ( (token_head*)tok )->toktype != TOKTYPE_SYM_COMMENTCL )
 	{
 		/* Not the end of the comment, so just store and proceed. */
 		
@@ -100,11 +99,9 @@ retframe comment_cppstyle( stackpair *stkp, void *v )
 	
 	STACKCHECK( stkp,  comment_cppstyle, stack_ENDRETFRAME );
 	
-	STACKPOP_UINT( stkp->data, tok,  comment_cppstyle, scratch, stack_ENDRETFRAME );
-	STACKPEEK_UINT( stkp->data, 0, tb,  comment_cppstyle, scratch, stack_ENDRETFRAME );
+	STACKPEEK_UINT( stkp->data, sizeof( uintptr_t ), tb,  comment_cppstyle, scratch, stack_ENDRETFRAME );
 	if( ( (token_head*)tb )->toktype != TOKTYPE_TOKENGROUP_EQUIVMERGE )
 	{
-		STACKPUSH_UINT( stkp->data, tok,  comment_cppstyle, scratch, stack_ENDRETFRAME );
 		TRESPASSPATH(
 			comment_cppstyle,
 			"ERROR: comment_cppstyle() encountered a non-tokenbranch pointer beneath the top of the stack."
@@ -112,7 +109,8 @@ retframe comment_cppstyle( stackpair *stkp, void *v )
 		stack_ENDRETFRAME();
 	}
 	
-	if( ( (token_head*)tmp )->toktype != TOKTYPE_NEWLINE )
+	STACKPOP_UINT( stkp->data, tok,  comment_cppstyle, scratch, stack_ENDRETFRAME );
+	if( ( (token_head*)tok )->toktype != TOKTYPE_NEWLINE )
 	{
 		/* Not the end of the comment, so just store and proceed. */
 		

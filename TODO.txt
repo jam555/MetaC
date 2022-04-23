@@ -82,10 +82,6 @@ freshline_directives.c:
 		for e.g. macroargs.c, because it basically NEEDS some stuff like that
 		in order to know how the directives need to work.
 
-commentalex.c:
-	comment_cstyle() has a pop followed by a peek, which is sub-optimal: delay
-		the pop by using a non-0 offset in the peek.
-
 complexlex.c:
 	Line 159: Apparently I was uncertain about something here. Best to check.
 	Line 613: A note about a function set/function that should be built. Might
