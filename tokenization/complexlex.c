@@ -851,7 +851,9 @@ retframe accumulate_token( stackpair *stkp, void *v )
 	(
 		( (token_head*)top )->toktype == TOKTYPE_SPACE ||
 		( (token_head*)top )->toktype == TOKTYPE_NEWLINE ||
-		( (token_head*)top )->toktype == TOKTYPE_OTHER
+		( (token_head*)top )->toktype == TOKTYPE_OTHER ||
+		( (token_head*)top )->toktype == TOKTYPE_SYM_COMMENTOP ||
+		( (token_head*)top )->toktype == TOKTYPE_SYM_COMMENTLINE
 	)
 	{
 		return( (retframe){ &accumulate_whitespace, (void*)0 } );
@@ -903,7 +905,9 @@ retframe conclude_accumulate_token( stackpair *stkp, void *v )
 	(
 		( (token_head*)white )->toktype != TOKTYPE_SPACE &&
 		( (token_head*)white )->toktype != TOKTYPE_NEWLINE &&
-		( (token_head*)white )->toktype != TOKTYPE_OTHER
+		( (token_head*)white )->toktype != TOKTYPE_OTHER &&
+		( (token_head*)white )->toktype != TOKTYPE_SYM_COMMENTOP &&
+		( (token_head*)white )->toktype != TOKTYPE_SYM_COMMENTLINE
 	)
 	{
 		return( (retframe){ &accumulate_whitespace, (void*)0 } );

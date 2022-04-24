@@ -104,15 +104,6 @@ complexlex.c:
 		just pushes a uintptr_t back onto the stack- it would be better to
 		confirm that instead the "white" token is of *_EQUIVMERGE first, to
 		possibly detect stack corruptions.
-	accumulate_whitespace() PROBABLY doesn't accumulate comments as whitespace-
-		that should probably be changed. Note: the stuff I developed in
-		commentalex.c has now been moved into complexlex.c/.h, and should be
-		correctly called by accumulate_whitespace(), BUT accumulate_whitespace
-		is probably NEVER called with any comment openers- and THAT will be
-		enough to prevent the comment work from... working. So, need to find
-		everywhere that accumulate_whitespace() is called (I THINK it's only
-		two places? Maybe?), and refit them to ALSO pass comment openers as
-		whitespace.
 	invoke_dealloctoken() appears to have an inverted test (the handler SHOULD
 		BE non-null!), and matching wrong error report.
 	smart_dealloc_token() needs to be extended to support TOKTYPE_NUMBER_UINT.
@@ -121,6 +112,10 @@ complexlex.c:
 		wherever it's invoked.
 	The comment accumulator needs to "heed" a "invocation builder", so that
 		macro calls can properly be handled inside comments.
+	conclude_accumulate_token() delegates to accumulate_whitespace() if a
+		certain token IS NOT a whitespace-like token... is that right or
+		wrong? Regardless, the relevant code needs a comment documenting the
+		reason for the code choice.
 complexlex.h:
 	Line 95: Same note as 613 in .c
 

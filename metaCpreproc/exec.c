@@ -653,25 +653,6 @@ retframe shufflequeue_entry_macro_wrapper( stackpair *stkp, void *v )
 
 
 
-
-
-
-
-
-/*
-	The top of the stack must be a pointer to a _SPACE, _NEWLINE, or _OTHER.
-	The next elemet must be either a null pointer, or a pointer to NOT a
-	_SPACE, _NEWLINE, _OTHER, or TOKTYPE_TOKENGROUP_WHITESPACE. Upon returning,
-	it'll have a pointer to a TOKTYPE_TOKENGROUP_WHITESPACE on the top of the
-	stack. Not actually sure if it'll work right.
-retframe accumulate_whitespace( stackpair *stkp, void *v );
-
-retframe accumulate_token( stackpair *stkp, void *v );
-
-*/
-
-
-
 #if defined( __cplusplus ) && __cplusplus >= 199711L
 	namespace
 	{
