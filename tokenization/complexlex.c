@@ -841,7 +841,7 @@ retframe accumulate_whitespace( stackpair *stkp, void *v )
 	/*  return stack. */
 retframe accumulate_token( stackpair *stkp, void *v )
 {
-	uintptr_t a;
+	uintptr_t top;
 	retframe ret = (retframe){ (framefunc)&end_run, (void*)0 };
 	int res;
 	

@@ -116,6 +116,9 @@ complexlex.c:
 		certain token IS NOT a whitespace-like token... is that right or
 		wrong? Regardless, the relevant code needs a comment documenting the
 		reason for the code choice.
+	accumulate_whitespace() currently will just throw errors if a
+		non-whitespace token is pointed to by the top of the stack- that needs
+		to change for the sake of making it more convenient to use.
 complexlex.h:
 	Line 95: Same note as 613 in .c
 
