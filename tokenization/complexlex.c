@@ -26,7 +26,12 @@
 #define MONADICFAILURE( funcname, calltext, err ) \
 		STDMSG_MONADICFAILURE_WRAPPER( &errs, funcname, ( calltext ), ( err ) )
 		
+		#define NOTELINE() STDMSG_NOTELINE_WRAPPER( &errs )
+		#define NOTESPACE() STDMSG_NOTESPACE_WRAPPER( &errs )
+		
 		#define DECARG( uint ) STDMSG_DECARG_WRAPPER( &errs, ( uint ) )
+		#define STRARG( strptr ) STDMSG_STRARG_WRAPPER( &errs, ( strptr ) )
+		#define DATAPTR( ptr ) STDMSG_DATAPTRARG_WRAPPER( &errs, ( ptr ) )
 
 #define FAILEDINTFUNC( calleestr, callername, val ) \
 	STDMSG_FAILEDINTFUNC_WRAPPER( &errs, ( calleestr ), callername, ( val ) )
@@ -895,10 +900,18 @@ retframe accumulate_token( stackpair *stkp, void *v )
 }
 retframe conclude_accumulate_token( stackpair *stkp, void *v )
 {
-	uintptr_t top, white, bottom;
+	uintptr_t breaking_token, white, bottom;
 	int res;
 	
-	STACKPOP_UINT( &( stkp->data ), &top,  conclude_accumulate_token, res, macroargs_ENDRETFRAME );
+	/* Upon entry, the top element should be a pointer to a non-whitespace */
+	/*  token that caused accumulate_whitespace() to exit(), there may or */
+	/*  may not be a pointer to a whitespace token or tokengroup under that, */
+	/*  and finally there SHOULD be a pointer to a non-whitespace */
+	/*  tokenbranch. The job of this function is ultimately to take any */
+	/*  POSSIBLE whitespace pointer, and shove it into the ->tail element of */
+	/*  the tokenbranch. */
+	
+	STACKPOP_UINT( &( stkp->data ), &breaking_token,  conclude_accumulate_token, res, macroargs_ENDRETFRAME );
 	
 	STACKPOP_UINT( &( stkp->data ), &white,  conclude_accumulate_token, res, macroargs_ENDRETFRAME );
 	if
@@ -906,47 +919,91 @@ retframe conclude_accumulate_token( stackpair *stkp, void *v )
 		( (token_head*)white )->toktype != TOKTYPE_SPACE &&
 		( (token_head*)white )->toktype != TOKTYPE_NEWLINE &&
 		( (token_head*)white )->toktype != TOKTYPE_OTHER &&
-		( (token_head*)white )->toktype != TOKTYPE_SYM_COMMENTOP &&
-		( (token_head*)white )->toktype != TOKTYPE_SYM_COMMENTLINE
+		(
+			( (token_head*)white )->toktype != TOKTYPE_TOKENGROUP_EQUIVMERGE ||
+				/* This is a tokenbranch, so won't get treated as a */
+				/*  merge recipient. */
+			( (tokenbranch*)white )->subtype != TOKTYPE_TOKENGROUP_COMNTMERGE
+			
+		) &&
+		(
+			( (token_head*)white )->toktype != TOKTYPE_TOKENGROUP_SAMEMERGE ||
+			( (tokengroup*)white )->subtype != TOKTYPE_TOKENGROUP_WHITESPACE
+		)
 	)
 	{
-		return( (retframe){ &accumulate_whitespace, (void*)0 } );
-	}
-	
-	STACKPEEK_UINT( &( stkp->data ), 0, &bottom,  conclude_accumulate_token, res, macroargs_ENDRETFRAME );
-	
-	if( ( (token_head*)bottom )->toktype == TOKTYPE_TOKENGROUP_EQUIVMERGE )
-	{
-		if( ( (tokenbranch*)bottom )->tail == (token_head*)0 )
-		{
-			res = set_tail_tokenbranch( (tokenbranch*)bottom, (token_head*)white );
-			if( !res )
-			{
-				FAILEDINTFUNC( "set_tail_tokenbranch", conclude_accumulate_token, res );
-				return( ret );
-			}
-			
-		} else {
-			
-			BADNONULL( conclude_accumulate_token, &( ( (tokenbranch*)bottom )->tail ) );
-			return( ret );
-		}
+		/* Since there's no whitespace, "white" must instead be the token */
+		/*  that ideally would be waiting to get peeked into "bottom": */
+		/*  compensate. */
+		
+		bottom = white;
+		white = 0;
+		
+			/* "bottom" is supposed to stay on the stack, so put it there. */
+		STACKPUSH_UINT(
+			&( stkp->data ), bottom,
+			conclude_accumulate_token, res, macroargs_ENDRETFRAME
+		);
 		
 	} else {
 		
-		/* This SHOULD only happen if there was no trailing whitespace */
-		/*  before the next token, but it's not impossible for this to be */
-		/*  caused by an error instead- it would be best to check "white"'s */
-		/*  toktype here. */
+		STACKPEEK_UINT( &( stkp->data ), 0, &bottom,  conclude_accumulate_token, res, macroargs_ENDRETFRAME );
+	}
+	
+	if
+	(
+		( (token_head*)bottom )->toktype != TOKTYPE_TOKENGROUP_EQUIVMERGE ||
+		(
+			( (tokenbranch*)bottom )->subtype == TOKTYPE_TOKENGROUP_COMNTMERGE ||
+				/* This whitespace token type should only be used with */
+				/*  tokengroup, but just in case... */
+			( (tokenbranch*)bottom )->subtype == TOKTYPE_TOKENGROUP_WHITESPACE
+		)
+	)
+	{
+		TRESPASSPATH( accumulate_whitespace, "ERROR: conclude_accumulate_token() encountered an improper \"bottom\" token." );
+		NOTELINE();
+			STRARG( "bottom: " );
+				DATAPTR( bottom );
+			STRARG( " whitespace: " );
+				DATAPTR( white );
+			STRARG( " breaking token: " );
+				DATAPTR( breaking_token );
 		
-		STACKPUSH_UINT(
-			&( stkp->data ), white,
-			conclude_accumulate_token, res, macroargs_ENDRETFRAME
-		);
+		return( (retframe){ (framefunc)&end_run, (void*)0 } );
+	}
+	
+		/* Just an assert, made more sense to always test. */
+	if( ( (tokenbranch*)bottom )->tail != (token_head*)0 )
+	{
+		
+		BADNONULL( conclude_accumulate_token, &( ( (tokenbranch*)bottom )->tail ) );
+		NOTELINE();
+			STRARG( "whitespace: " );
+				DATAPTR( white );
+			STRARG( " breaking token: " );
+				DATAPTR( breaking_token );
+		
+		return( ret );
+	}
+	if( white )
+	{
+		res = set_tail_tokenbranch( (tokenbranch*)bottom, (token_head*)white );
+		if( !res )
+		{
+			FAILEDINTFUNC( "set_tail_tokenbranch", conclude_accumulate_token, res );
+			NOTELINE();
+				STRARG( "whitespace: " );
+					DATAPTR( white );
+				STRARG( " breaking token: " );
+					DATAPTR( breaking_token );
+			
+			return( ret );
+		}
 	}
 	
 	STACKPUSH_UINT(
-		&( stkp->data ), top,
+		&( stkp->data ), breaking_token,
 		conclude_accumulate_token, res, macroargs_ENDRETFRAME
 	);
 	

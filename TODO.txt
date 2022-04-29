@@ -98,12 +98,6 @@ complexlex.c:
 	Line 159: Apparently I was uncertain about something here. Best to check.
 	Line 613: A note about a function set/function that should be built. Might
 		be further down in same file already...
-	In conclude_accumulate_token(), the else case of
-			"if( ( (token_head*)bottom )->toktype ==
-			TOKTYPE_TOKENGROUP_EQUIVMERGE )"
-		just pushes a uintptr_t back onto the stack- it would be better to
-		confirm that instead the "white" token is of *_EQUIVMERGE first, to
-		possibly detect stack corruptions.
 	invoke_dealloctoken() appears to have an inverted test (the handler SHOULD
 		BE non-null!), and matching wrong error report.
 	smart_dealloc_token() needs to be extended to support TOKTYPE_NUMBER_UINT.
@@ -112,10 +106,8 @@ complexlex.c:
 		wherever it's invoked.
 	The comment accumulator needs to "heed" a "invocation builder", so that
 		macro calls can properly be handled inside comments.
-	conclude_accumulate_token() delegates to accumulate_whitespace() if a
-		certain token IS NOT a whitespace-like token... is that right or
-		wrong? Regardless, the relevant code needs a comment documenting the
-		reason for the code choice.
+		Added: or maybe I'll just move that into the token source? Though
+		I'm currently favoring leaving comments unmolested...
 	accumulate_whitespace() currently will just throw errors if a
 		non-whitespace token is pointed to by the top of the stack- that needs
 		to change for the sake of making it more convenient to use.
