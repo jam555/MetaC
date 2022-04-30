@@ -100,7 +100,8 @@ complexlex.c:
 		be further down in same file already...
 	invoke_dealloctoken() appears to have an inverted test (the handler SHOULD
 		BE non-null!), and matching wrong error report.
-	smart_dealloc_token() needs to be extended to support TOKTYPE_NUMBER_UINT.
+	On review, TOKTYPE_NUMBER_UINT shouldn't need special deallocation, but I
+		don't think it gets built yet.
 	build_tokenbranch() takes an element count, but never uses it... and has no
 		reason to take it anyways. Remove it, and fix the use of the function
 		wherever it's invoked.
