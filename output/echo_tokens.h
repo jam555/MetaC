@@ -15,6 +15,7 @@
 	/*  does echo_tokens_entrypoint() ). They eventually terminate with the */
 	/*  effect of an ordinary system return. */
 	retframe echo_token( stackpair *stkp, void *v );
+	retframe echo_tokennum( stackpair *stkp, void *v );
 	retframe echo_tokengroup( stackpair *stkp, void *v );
 	retframe echo_tokenbranch( stackpair *stkp, void *v );
 	

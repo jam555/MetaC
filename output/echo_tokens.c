@@ -267,6 +267,13 @@ retframe echo_tokens_entrypoint( stackpair *stkp, void *v )
 				/* That big list of cases, and all of them come down to this. */
 			return( (retframe){ (framefunc)&echo_token, (void*)0 } );
 			
+			
+			/* Slightly new stuff: because there's no fun in constantly */
+			/*  parsing numbers, we want to support "archived" number */
+			/*  parses. */
+		case TOKTYPE_NUMBER_UINT:
+			return( (retframe){ (framefunc)&echo_tokennum, (void*)0 } );
+			
 		default:
 			TRESPASSPATH( echo_tokens_entrypoint, "Alert: unexpected token type in echo_tokens_entrypoint() : " );
 				DECARG( th->toktype );
@@ -306,20 +313,65 @@ retframe echo_token( stackpair *stkp, void *v )
 		/* Initially had this expecting the token string to be on the stack, */
 		/*  THAT was certainly out of data (and inconvenient)... */
 		
-			/* TODO: set onerr and errval to something appropriate. */
 		PUTCHAR_CALL( echo_token, scratch, ENDRETFRAME, ignore,  ( t->text[ th->length - len ] ) );
 		
 		--len;
 	}
 	
 	lib4_errno_popresult( &scratch );
-		/* TODO: set onerr and errval to something appropriate. */
 	PUTCHAR_CALL( echo_token, scratch, ENDRETFRAME, ignore,  ETXT );
 	
 	
 	/* Success. */
 	
 	RETFRAMEFUNC( stkp,  echo_token );
+}
+
+retframe echo_tokennum( stackpair *stkp, void *v )
+{
+	token_head *th;
+	int len, scratch;
+	
+	STACKCHECK( stkp,  echo_tokennum, macroargs_ENDRETFRAME );
+	
+	len = echo_tokenhead( stkp, v,  &th );
+	if( !len )
+	{
+		FAILEDINTFUNC( "echo_tokenhead", echo_tokennum, len );
+			NOTELINE();
+			DATAPTR( &th );
+		return( (retframe){ &end_run, (void*)0 } );
+	}
+	
+	if( th->toktype == TOKTYPE_NUMBER_UINT )
+	{
+		token_uint *t = (token_uint*)th;
+		len = th->length;
+		while( len )
+		{
+			PUTCHAR_CALL( echo_tokennum, scratch, ENDRETFRAME, ignore,  ( t->text[ th->length - len ] ) );
+			
+			--len;
+		}
+		
+	} else {
+		
+		TRESPASSPATH( echo_tokennum, "Error: echo_tokennum() encountered bad toktype: " );
+			DECARG( th->toktype );
+			NOTELINE();
+			DATAPTR( th );
+		return( (retframe){ &end_run, (void*)0 } );
+	}
+	
+		/* One or both of these might need to be moved into an if body in */
+		/*  the future. */
+	lib4_errno_popresult( &scratch );
+	PUTCHAR_CALL( echo_tokennum, scratch, ENDRETFRAME, ignore,  ETXT );
+	
+	
+	/* Success. */
+	
+	RETFRAMEFUNC( stkp,  echo_tokennum );
 }
 
 retframe echo_tokengroup_extension( stackpair *stkp, void *v )
