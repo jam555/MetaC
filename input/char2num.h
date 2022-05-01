@@ -1,5 +1,5 @@
-#ifndef METAC_INPUT_LEXALIKE_H
- #define METAC_INPUT_LEXALIKE_H
+#ifndef METAC_INPUT_CHAR2NUM_H
+ #define METAC_INPUT_CHAR2NUM_H
 	
 	#include "stdmonads.h"
 	
