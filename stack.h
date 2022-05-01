@@ -75,7 +75,7 @@
 	
 	
 	
-	#define stack_ENDRETFRAME() return( (retframe){ &end_run, (void*)0 } )
+	#define stack_ENDRETFRAME( ... ) return( (retframe){ &end_run, (void*)0 } )
 	
 		/* Old version: STACK_CHECK( stack,  errfunc, errnum,  ... ) */
 	#define STACK_CHECK( stack,  stylesetptr, caller, endfunc ) \

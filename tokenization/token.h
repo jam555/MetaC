@@ -29,11 +29,15 @@
 	{
 		token_head header;
 		uintptr_t val;
+		char text[];
 		
 	} token_uint;
 	
 	LIB4_DEFINE_PASCALARRAY_STDDEFINE( tokenheadptr_, token_head* );
 	typedef tokenheadptr_pascalarray tokhdptr_parr;
+	
+	
+	#define token_ENDRETFRAME( ... ) return( (retframe){ &end_run, (void*)0 } )
 	
 	
 	#define TOKTYPE_INVALID ( 0 )

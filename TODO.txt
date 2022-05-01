@@ -118,6 +118,7 @@ complexlex.h:
 simplelex.c:
 	Line 410: This default in numberentry_lex() can technically use a character
 		verifier.
+	numberentry_lex() drops characters for some number formats- change that.
 	Line 621: A note in brackop_lex() that it would be good to verify the value
 		of th.toktype.
 	Make certain that the inclusive or stuff is properly implemented, instead
