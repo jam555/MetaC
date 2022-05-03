@@ -1017,7 +1017,7 @@ retframe stack_isxdigit( stackpair *stkp, void *v )
 
 retframe token_touint_binary( stackpair *stkp, void *v )
 {
-	static const uintptr_t maxv_lastdec = ( ( UINTPTR_MAX ) / 10 ) + 1;
+	static const uintptr_t maxv_lastbin = ( ( UINTPTR_MAX ) / 2 ) + 1;
 	
 	uintptr_t a;
 	token_uint *tu;
@@ -1028,7 +1028,7 @@ retframe token_touint_binary( stackpair *stkp, void *v )
 	tu = (*)a;
 	if( tu->header.toktype != TOKTYPE_INVALID )
 	{
-		BADUINT( token_touint, &( tu->header.toktype ), TOKTYPE_INVALID );
+		BADUINT( token_touint_binary, &( tu->header.toktype ), TOKTYPE_INVALID );
 		
 		return( (retframe){ &end_run, (void*)0 } );
 	}
@@ -1037,7 +1037,7 @@ retframe token_touint_binary( stackpair *stkp, void *v )
 	src = (token*)a;
 	if( src->header.toktype != TOKTYPE_NUMBER )
 	{
-		BADUINT( token_touint, &( src->header.toktype ), TOKTYPE_NUMBER );
+		BADUINT( token_touint_binary, &( src->header.toktype ), TOKTYPE_NUMBER );
 		
 		return( (retframe){ &end_run, (void*)0 } );
 	}
@@ -1048,23 +1048,23 @@ retframe token_touint_binary( stackpair *stkp, void *v )
 	while( scratch )
 	{
 #define token_touint_binary_FAIL( err ) \
-	MONADICFAILURE( bin2num, "bin2um", err ); \
+	MONADICFAILURE( token_touint_binary, "bin2um", err ); \
 	return( (retframe){ &end_run, (void*)0 } );
 		res = bin2num( src->text[ tu->length - scratch ] );
 		LIB4_INTRESULT_BODYMATCH( res, LIB4_OP_SETb, token_touint_binary_FAIL );
-		if( b < 0 || b > 9 )
+		if( b < 0 || b > 1 )
 		{
 			/* Range error! */
 			
-			TRESPASSPATH( token_touint, "Error: expected a number from ... , instead received: " );
+			TRESPASSPATH( token_touint_binary, "Error: expected a number from 0 to 1, instead received: " );
 				SIGNEDARG( b );
 			
 			return( (retframe){ &end_run, (void*)0 } );
 		}
 		
-		if( tu->val >= maxv_lastdec )
+		if( tu->val >= maxv_lastbin )
 		{
-			OVERFLOW( token_touint_, &( tu->val ), ( tu->val ), UINTPTR_MAX );
+			OVERFLOW( token_touint_binary, &( tu->val ), ( tu->val ), UINTPTR_MAX );
 			
 			return( (retframe){ &end_run, (void*)0 } );
 		}
@@ -1086,27 +1086,27 @@ retframe token_touint_binary( stackpair *stkp, void *v )
 }
 retframe token_touint_octal( stackpair *stkp, void *v )
 {
-	static const uintptr_t maxv_lastdec = ( ( UINTPTR_MAX ) / 10 ) + 1;
+	static const uintptr_t maxv_lastoct = ( ( UINTPTR_MAX ) / 8 ) + 1;
 	
 	uintptr_t a;
 	token_uint *tu;
 	token *src;
 	int scratch, b;
 	
-	STACKPEEK_UINT( &( stkp->data ), 0, &a,  token_touint, scratch );
+	STACKPEEK_UINT( &( stkp->data ), 0, &a,  token_touint_octal, scratch );
 	tu = (*)a;
 	if( tu->header.toktype != TOKTYPE_INVALID )
 	{
-		BADUINT( token_touint, &( tu->header.toktype ), TOKTYPE_INVALID );
+		BADUINT( token_touint_octal, &( tu->header.toktype ), TOKTYPE_INVALID );
 		
 		return( (retframe){ &end_run, (void*)0 } );
 	}
 	
-	STACKPEEK_UINT( &( stkp->data ), sizeof( uintptr_t ), &a,  token_touint, scratch );
+	STACKPEEK_UINT( &( stkp->data ), sizeof( uintptr_t ), &a,  token_touint_octal, scratch );
 	src = (token*)a;
 	if( src->header.toktype != TOKTYPE_NUMBER )
 	{
-		BADUINT( token_touint, &( src->header.toktype ), TOKTYPE_NUMBER );
+		BADUINT( token_touint_octal, &( src->header.toktype ), TOKTYPE_NUMBER );
 		
 		return( (retframe){ &end_run, (void*)0 } );
 	}
@@ -1116,25 +1116,24 @@ retframe token_touint_octal( stackpair *stkp, void *v )
 	scratch = tu->length;
 	while( scratch )
 	{
-#define token_touint_decimal_FAIL( val ) \
-	MONADICFAILURE( bin2num, "bin2um", err ); \
-	???(); \
+#define token_touint_octal_FAIL( val ) \
+	MONADICFAILURE( token_touint_octal, "oct2um", err ); \
 	return( (retframe){ &end_run, (void*)0 } );
 		res = oct2num( src->text[ tu->length - scratch ] );
-		LIB4_INTRESULT_BODYMATCH( res, LIB4_OP_SETb, token_touint_decimal_FAIL );
-		if( b < 0 || b > 9 )
+		LIB4_INTRESULT_BODYMATCH( res, LIB4_OP_SETb, token_touint_octal_FAIL );
+		if( b < 0 || b > 7 )
 		{
 			/* Range error! */
 			
-			TRESPASSPATH( token_touint, "Error: expected a number from ... , instead received: " );
+			TRESPASSPATH( token_touint_octal, "Error: expected a number from 0 to 8, instead received: " );
 				SIGNEDARG( b );
 			
 			return( (retframe){ &end_run, (void*)0 } );
 		}
 		
-		if( tu->val >= maxv_lastdec )
+		if( tu->val >= maxv_lastoct )
 		{
-			OVERFLOW( token_touint_, &( tu->val ), ( tu->val ), UINTPTR_MAX );
+			OVERFLOW( token_touint_octal, &( tu->val ), ( tu->val ), UINTPTR_MAX );
 			
 			return( (retframe){ &end_run, (void*)0 } );
 		}
@@ -1150,7 +1149,7 @@ retframe token_touint_octal( stackpair *stkp, void *v )
 		/* Remember, it's been marked as invalid. */
 	tu->header.toktype = TOKTYPE_NUMBER_UINT;
 		/* Move the new token under the old one... */
-	STACKSWAP_UINT( stk, tmp1, tmp2,  token_touint_binary, scratch );
+	STACKSWAP_UINT( stk, tmp1, tmp2,  token_touint_octal, scratch );
 		/* ... and delete the old one. */
 	return( (retframe){ &invoke_dealloctoken, (void*)0 } );
 }
@@ -1163,20 +1162,20 @@ retframe token_touint_decimal( stackpair *stkp, void *v )
 	token *src;
 	int scratch, b;
 	
-	STACKPEEK_UINT( &( stkp->data ), 0, &a,  token_touint, scratch );
+	STACKPEEK_UINT( &( stkp->data ), 0, &a,  token_touint_decimal, scratch );
 	tu = (*)a;
 	if( tu->header.toktype != TOKTYPE_INVALID )
 	{
-		BADUINT( token_touint, &( tu->header.toktype ), TOKTYPE_INVALID );
+		BADUINT( token_touint_decimal, &( tu->header.toktype ), TOKTYPE_INVALID );
 		
 		return( (retframe){ &end_run, (void*)0 } );
 	}
 	
-	STACKPEEK_UINT( &( stkp->data ), sizeof( uintptr_t ), &a,  token_touint, scratch );
+	STACKPEEK_UINT( &( stkp->data ), sizeof( uintptr_t ), &a,  token_touint_decimal, scratch );
 	src = (token*)a;
 	if( src->header.toktype != TOKTYPE_NUMBER )
 	{
-		BADUINT( token_touint, &( src->header.toktype ), TOKTYPE_NUMBER );
+		BADUINT( token_touint_decimal, &( src->header.toktype ), TOKTYPE_NUMBER );
 		
 		return( (retframe){ &end_run, (void*)0 } );
 	}
@@ -1187,8 +1186,7 @@ retframe token_touint_decimal( stackpair *stkp, void *v )
 	while( scratch )
 	{
 #define token_touint_decimal_FAIL( val ) \
-	MONADICFAILURE( bin2num, "bin2um", err ); \
-	???(); \
+	MONADICFAILURE( token_touint_decimal, "dec2um", err ); \
 	return( (retframe){ &end_run, (void*)0 } );
 		res = dec2num( src->text[ tu->length - scratch ] );
 		LIB4_INTRESULT_BODYMATCH( res, LIB4_OP_SETb, token_touint_decimal_FAIL );
@@ -1196,7 +1194,7 @@ retframe token_touint_decimal( stackpair *stkp, void *v )
 		{
 			/* Range error! */
 			
-			TRESPASSPATH( token_touint, "Error: expected a number from ... , instead received: " );
+			TRESPASSPATH( token_touint_decimal, "Error: expected a number from 0 to 9, instead received: " );
 				SIGNEDARG( b );
 			
 			return( (retframe){ &end_run, (void*)0 } );
@@ -1204,7 +1202,7 @@ retframe token_touint_decimal( stackpair *stkp, void *v )
 		
 		if( tu->val >= maxv_lastdec )
 		{
-			OVERFLOW( token_touint_, &( tu->val ), ( tu->val ), UINTPTR_MAX );
+			OVERFLOW( token_touint_decimal, &( tu->val ), ( tu->val ), UINTPTR_MAX );
 			
 			return( (retframe){ &end_run, (void*)0 } );
 		}
@@ -1220,33 +1218,33 @@ retframe token_touint_decimal( stackpair *stkp, void *v )
 		/* Remember, it's been marked as invalid. */
 	tu->header.toktype = TOKTYPE_NUMBER_UINT;
 		/* Move the new token under the old one... */
-	STACKSWAP_UINT( stk, tmp1, tmp2,  caller, scratch );
+	STACKSWAP_UINT( stk, tmp1, tmp2,  token_touint_decimal, scratch );
 		/* ... and delete the old one. */
 	return( (retframe){ &invoke_dealloctoken, (void*)0 } );
 }
 retframe token_touint_hexadecimal( stackpair *stkp, void *v )
 {
-	static const uintptr_t maxv_lastdec = ( ( UINTPTR_MAX ) / 10 ) + 1;
+	static const uintptr_t maxv_lasthex = ( ( UINTPTR_MAX ) / 16 ) + 1;
 	
 	uintptr_t a;
 	token_uint *tu;
 	token *src;
 	int scratch, b;
 	
-	STACKPEEK_UINT( &( stkp->data ), 0, &a,  token_touint, scratch );
+	STACKPEEK_UINT( &( stkp->data ), 0, &a,  token_touint_hexadecimal, scratch );
 	tu = (*)a;
 	if( tu->header.toktype != TOKTYPE_INVALID )
 	{
-		BADUINT( token_touint, &( tu->header.toktype ), TOKTYPE_INVALID );
+		BADUINT( token_touint_hexadecimal, &( tu->header.toktype ), TOKTYPE_INVALID );
 		
 		return( (retframe){ &end_run, (void*)0 } );
 	}
 	
-	STACKPEEK_UINT( &( stkp->data ), sizeof( uintptr_t ), &a,  token_touint, scratch );
+	STACKPEEK_UINT( &( stkp->data ), sizeof( uintptr_t ), &a,  token_touint_hexadecimal, scratch );
 	src = (token*)a;
 	if( src->header.toktype != TOKTYPE_NUMBER )
 	{
-		BADUINT( token_touint, &( src->header.toktype ), TOKTYPE_NUMBER );
+		BADUINT( token_touint_hexadecimal, &( src->header.toktype ), TOKTYPE_NUMBER );
 		
 		return( (retframe){ &end_run, (void*)0 } );
 	}
@@ -1256,25 +1254,24 @@ retframe token_touint_hexadecimal( stackpair *stkp, void *v )
 	scratch = tu->length;
 	while( scratch )
 	{
-#define token_touint_decimal_FAIL( val ) \
-	MONADICFAILURE( bin2num, "bin2um", err ); \
-	???(); \
+#define token_touint_hexadecimal_FAIL( val ) \
+	MONADICFAILURE( token_touint_hexadecimal, "hexa2um", err ); \
 	return( (retframe){ &end_run, (void*)0 } );
 		res = hexa2num( src->text[ tu->length - scratch ] );
-		LIB4_INTRESULT_BODYMATCH( res, LIB4_OP_SETb, token_touint_decimal_FAIL );
-		if( b < 0 || b > 9 )
+		LIB4_INTRESULT_BODYMATCH( res, LIB4_OP_SETb, token_touint_hexadecimal_FAIL );
+		if( b < 0 || b > 15 )
 		{
 			/* Range error! */
 			
-			TRESPASSPATH( token_touint, "Error: expected a number from ... , instead received: " );
+			TRESPASSPATH( token_touint_hexadecimal, "Error: expected a number from 0 to F, instead received: " );
 				SIGNEDARG( b );
 			
 			return( (retframe){ &end_run, (void*)0 } );
 		}
 		
-		if( tu->val >= maxv_lastdec )
+		if( tu->val >= maxv_lasthex )
 		{
-			OVERFLOW( token_touint_, &( tu->val ), ( tu->val ), UINTPTR_MAX );
+			OVERFLOW( token_touint_hexadecimal, &( tu->val ), ( tu->val ), UINTPTR_MAX );
 			
 			return( (retframe){ &end_run, (void*)0 } );
 		}
@@ -1290,7 +1287,7 @@ retframe token_touint_hexadecimal( stackpair *stkp, void *v )
 		/* Remember, it's been marked as invalid. */
 	tu->header.toktype = TOKTYPE_NUMBER_UINT;
 		/* Move the new token under the old one... */
-	STACKSWAP_UINT( stk, tmp1, tmp2,  token_touint_binary, scratch );
+	STACKSWAP_UINT( stk, tmp1, tmp2,  token_touint_hexadecimal, scratch );
 		/* ... and delete the old one. */
 	return( (retframe){ &invoke_dealloctoken, (void*)0 } );
 }

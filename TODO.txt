@@ -41,8 +41,6 @@ lexalike.c:
 		cyclic macro invocations.
 	The token_touint_*() functions deserve a STANDARD "out of range" error.
 	token_touint_DISCARD() should NOT be a discard, it should be an error exit.
-	The token_touint_*() functions have their name attribution wrong, and
-		haven't been fully localized to their intended function.
 lexalike.h:
 	Will need to be synced with some lexalike.c changes.
 	is_freshline() should be declared elsewhere- move it.
