@@ -30,12 +30,18 @@
 	STACK_CHECK( ( stack ),  &err, ( caller ), ( endfunc ) )
 
 #define STACKPEEK_UINT( stk, offset, dest,  caller, scratch, endfunc ) \
-	STACK_PEEK_UINT( ( stk ), ( offset ), ( dest ),  &err, ( caller ), ( scratch ), ( endfunc ) )
+	STACK_PEEK_UINT( ( stk ), ( offset ), ( dest ),  &errs, ( caller ), ( scratch ), ( endfunc ) )
 #define STACKPOP_UINT( stk, dest,  caller, scratch, endfunc ) \
-	STACK_POP_UINT( ( stk ), ( dest ),  &err, ( caller ), ( scratch ), ( endfunc ) )
+	STACK_POP_UINT( ( stk ), ( dest ),  &errs, ( caller ), ( scratch ), ( endfunc ) )
 #define STACKPUSH_UINT( stk, val,  caller, scratch, endfunc ) \
-	STACK_PUSH_UINT( ( stk ), ( val ),  &err, ( caller ), ( scratch ), ( endfunc ) )
+	STACK_PUSH_UINT( ( stk ), ( val ),  &errs, ( caller ), ( scratch ), ( endfunc ) )
 
+#define STACKSWAP_UINT( stk, tmp1, tmp2,  caller, scratch, endfunc ) \
+	STACK_SWAP_UINT( ( stk ), ( tmp1 ), ( tmp2 ),  &errs, ( caller ), ( scratch ), ( endfunc ) )
+
+
+#define OVERFLOW2( funcname, addr, val, limit ) \
+	STDMSG_I_OVERFLOW_WRAPPER2( &errs, ( funcname ), ( addr ), ( val ), ( limit ) )
 
 
 #define RETFRAMEFUNC( stkpair,  caller ) \
@@ -46,9 +52,271 @@
 
 
 
+retframe token_touint_binary( stackpair *stkp, void *v )
+{
+	static const uintptr_t maxv_lastdec = ( ( UINTPTR_MAX ) / 10 ) + 1;
+	
+	uintptr_t a;
+	token_uint *tu;
+	token *src;
+	int scratch, b;
+	
+	STACKPEEK_UINT( &( stkp->data ), 0, &a,  token_touint, scratch, char2num_ENDRETFRAME );
+	tu = (*)a;
+	if( tu->header.toktype != TOKTYPE_INVALID )
+	{
+		??? /* Error! */
+		
+		return( (retframe){ &end_run, (void*)0 } );
+	}
+	
+	STACKPEEK_UINT( &( stkp->data ), sizeof( uintptr_t ), &a,  token_touint, scratch, char2num_ENDRETFRAME );
+	src = (token*)a;
+	if( src->header.toktype != TOKTYPE_NUMBER )
+	{
+		??? /* Error! */
+		
+		return( (retframe){ &end_run, (void*)0 } );
+	}
+	
+	
+	lib4_intresult res;
+	scratch = tu->length;
+	while( scratch )
+	{
+#define token_touint_decimal_FAIL( val ) \
+	???(); \
+	return( (retframe){ &end_run, (void*)0 } );
+		res = bin2num( src->text[ tu->length - scratch ] );
+		LIB4_INTRESULT_BODYMATCH( res, LIB4_OP_SETb, token_touint_decimal_FAIL );
+		if( b < 0 || b > 9 )
+		{
+			??? /* Error! */
+			return( (retframe){ &end_run, (void*)0 } );
+		}
+		
+		if( tu->val >= maxv_lastdec )
+		{
+			OVERFLOW( token_touint_, &( tu->val ), ( tu->val ), UINTPTR_MAX );
+			
+			return( (retframe){ &end_run, (void*)0 } );
+		}
+		tu->val *= 10;
+		tu->val += b;
+		
+		tu->text[ tu->length - scratch ] = src->text[ tu->length - scratch ];
+		
+		--scratch;
+	}
+	
+	
+		/* Remember, it's been marked as invalid. */
+	tu->header.toktype = TOKTYPE_NUMBER_UINT;
+		/* Move the new token under the old one... */
+	STACKSWAP_UINT( stk, tmp1, tmp2,  token_touint_binary, scratch, char2num_ENDRETFRAME );
+		/* ... and delete the old one. */
+	return( (retframe){ &invoke_dealloctoken, (void*)0 } );
+}
+retframe token_touint_octal( stackpair *stkp, void *v )
+{
+	static const uintptr_t maxv_lastdec = ( ( UINTPTR_MAX ) / 10 ) + 1;
+	
+	uintptr_t a;
+	token_uint *tu;
+	token *src;
+	int scratch, b;
+	
+	STACKPEEK_UINT( &( stkp->data ), 0, &a,  token_touint, scratch, char2num_ENDRETFRAME );
+	tu = (*)a;
+	if( tu->header.toktype != TOKTYPE_INVALID )
+	{
+		??? /* Error! */
+		
+		return( (retframe){ &end_run, (void*)0 } );
+	}
+	
+	STACKPEEK_UINT( &( stkp->data ), sizeof( uintptr_t ), &a,  token_touint, scratch, char2num_ENDRETFRAME );
+	src = (token*)a;
+	if( src->header.toktype != TOKTYPE_NUMBER )
+	{
+		??? /* Error! */
+		
+		return( (retframe){ &end_run, (void*)0 } );
+	}
+	
+	
+	lib4_intresult res;
+	scratch = tu->length;
+	while( scratch )
+	{
+#define token_touint_decimal_FAIL( val ) \
+	???(); \
+	return( (retframe){ &end_run, (void*)0 } );
+		res = oct2num( src->text[ tu->length - scratch ] );
+		LIB4_INTRESULT_BODYMATCH( res, LIB4_OP_SETb, token_touint_decimal_FAIL );
+		if( b < 0 || b > 9 )
+		{
+			??? /* Error! */
+			return( (retframe){ &end_run, (void*)0 } );
+		}
+		
+		if( tu->val >= maxv_lastdec )
+		{
+			OVERFLOW( token_touint_, &( tu->val ), ( tu->val ), UINTPTR_MAX );
+			
+			return( (retframe){ &end_run, (void*)0 } );
+		}
+		tu->val *= 10;
+		tu->val += b;
+		
+		tu->text[ tu->length - scratch ] = src->text[ tu->length - scratch ];
+		
+		--scratch;
+	}
+	
+	
+		/* Remember, it's been marked as invalid. */
+	tu->header.toktype = TOKTYPE_NUMBER_UINT;
+		/* Move the new token under the old one... */
+	STACKSWAP_UINT( stk, tmp1, tmp2,  token_touint_binary, scratch, char2num_ENDRETFRAME );
+		/* ... and delete the old one. */
+	return( (retframe){ &invoke_dealloctoken, (void*)0 } );
+}
+retframe token_touint_decimal( stackpair *stkp, void *v )
+{
+	static const uintptr_t maxv_lastdec = ( ( UINTPTR_MAX ) / 10 ) + 1;
+	
+	uintptr_t a;
+	token_uint *tu;
+	token *src;
+	int scratch, b;
+	
+	STACKPEEK_UINT( &( stkp->data ), 0, &a,  token_touint, scratch, char2num_ENDRETFRAME );
+	tu = (*)a;
+	if( tu->header.toktype != TOKTYPE_INVALID )
+	{
+		??? /* Error! */
+		
+		return( (retframe){ &end_run, (void*)0 } );
+	}
+	
+	STACKPEEK_UINT( &( stkp->data ), sizeof( uintptr_t ), &a,  token_touint, scratch, char2num_ENDRETFRAME );
+	src = (token*)a;
+	if( src->header.toktype != TOKTYPE_NUMBER )
+	{
+		??? /* Error! */
+		
+		return( (retframe){ &end_run, (void*)0 } );
+	}
+	
+	
+	lib4_intresult res;
+	scratch = tu->length;
+	while( scratch )
+	{
+#define token_touint_decimal_FAIL( val ) \
+	???(); \
+	return( (retframe){ &end_run, (void*)0 } );
+		res = dec2num( src->text[ tu->length - scratch ] );
+		LIB4_INTRESULT_BODYMATCH( res, LIB4_OP_SETb, token_touint_decimal_FAIL );
+		if( b < 0 || b > 9 )
+		{
+			??? /* Error! */
+			return( (retframe){ &end_run, (void*)0 } );
+		}
+		
+		if( tu->val >= maxv_lastdec )
+		{
+			OVERFLOW( token_touint_, &( tu->val ), ( tu->val ), UINTPTR_MAX );
+			
+			return( (retframe){ &end_run, (void*)0 } );
+		}
+		tu->val *= 10;
+		tu->val += b;
+		
+		tu->text[ tu->length - scratch ] = src->text[ tu->length - scratch ];
+		
+		--scratch;
+	}
+	
+	
+		/* Remember, it's been marked as invalid. */
+	tu->header.toktype = TOKTYPE_NUMBER_UINT;
+		/* Move the new token under the old one... */
+	STACKSWAP_UINT( stk, tmp1, tmp2,  caller, scratch, char2num_ENDRETFRAME );
+		/* ... and delete the old one. */
+	return( (retframe){ &invoke_dealloctoken, (void*)0 } );
+}
+retframe token_touint_hexadecimal( stackpair *stkp, void *v )
+{
+	static const uintptr_t maxv_lastdec = ( ( UINTPTR_MAX ) / 10 ) + 1;
+	
+	uintptr_t a;
+	token_uint *tu;
+	token *src;
+	int scratch, b;
+	
+	STACKPEEK_UINT( &( stkp->data ), 0, &a,  token_touint, scratch, char2num_ENDRETFRAME );
+	tu = (*)a;
+	if( tu->header.toktype != TOKTYPE_INVALID )
+	{
+		??? /* Error! */
+		
+		return( (retframe){ &end_run, (void*)0 } );
+	}
+	
+	STACKPEEK_UINT( &( stkp->data ), sizeof( uintptr_t ), &a,  token_touint, scratch, char2num_ENDRETFRAME );
+	src = (token*)a;
+	if( src->header.toktype != TOKTYPE_NUMBER )
+	{
+		??? /* Error! */
+		
+		return( (retframe){ &end_run, (void*)0 } );
+	}
+	
+	
+	lib4_intresult res;
+	scratch = tu->length;
+	while( scratch )
+	{
+#define token_touint_decimal_FAIL( val ) \
+	???(); \
+	return( (retframe){ &end_run, (void*)0 } );
+		res = hexa2num( src->text[ tu->length - scratch ] );
+		LIB4_INTRESULT_BODYMATCH( res, LIB4_OP_SETb, token_touint_decimal_FAIL );
+		if( b < 0 || b > 9 )
+		{
+			??? /* Error! */
+			return( (retframe){ &end_run, (void*)0 } );
+		}
+		
+		if( tu->val >= maxv_lastdec )
+		{
+			OVERFLOW( token_touint_, &( tu->val ), ( tu->val ), UINTPTR_MAX );
+			
+			return( (retframe){ &end_run, (void*)0 } );
+		}
+		tu->val *= 10;
+		tu->val += b;
+		
+		tu->text[ tu->length - scratch ] = src->text[ tu->length - scratch ];
+		
+		--scratch;
+	}
+	
+	
+		/* Remember, it's been marked as invalid. */
+	tu->header.toktype = TOKTYPE_NUMBER_UINT;
+		/* Move the new token under the old one... */
+	STACKSWAP_UINT( stk, tmp1, tmp2,  token_touint_binary, scratch, char2num_ENDRETFRAME );
+		/* ... and delete the old one. */
+	return( (retframe){ &invoke_dealloctoken, (void*)0 } );
+}
+
+
 retframe token_touint( stackpair *stkp, void *v )
 {
-	STACKCHECK( stack,  caller, endfunc );
+	STACKCHECK( stkp,  token_touint, char2num_ENDRETFRAME );
 	
 	uintptr_t a;
 	int scratch;
@@ -103,9 +371,10 @@ retframe token_touint( stackpair *stkp, void *v )
 		STACKPUSH_UINT( &( stkp->data ), (uintptr_t)b,  token_touint, scratch, char2num_ENDRETFRAME );
 		STACKPUSH_UINT( &( stkp->data ), (uintptr_t)src,  token_touint, scratch, char2num_ENDRETFRAME );
 			/* ... and delete the old one. */
-		return( (retframe){ &invoke_dealloctoken, (void*)0 } );
+		return( (retframe){ &invoke_dealloctoken, (void*)0 } ); ???
 	}
 	
+	STACKPUSH_UINT( &( stkp->data ), (uintptr_t)b,  token_touint, scratch, char2num_ENDRETFRAME );
 	if( src->text[ 0 ] == '0' )
 	{
 			/* We already know there's AT LEAST two characters. */
@@ -114,12 +383,12 @@ retframe token_touint( stackpair *stkp, void *v )
 			case 'x':
 			case 'X':
 					/* Hexadecimal. */
-				return( (retframe){ &, (void*)0 } );
+				return( (retframe){ &token_touint_hexadecimal, (void*)0 } );
 				
 			case 'b':
 			case 'B':
 					/* Binary. */
-				return( (retframe){ &, (void*)0 } );
+				return( (retframe){ &token_touint_binary, (void*)0 } );
 				
 			case '0':
 			case '1':
@@ -130,7 +399,7 @@ retframe token_touint( stackpair *stkp, void *v )
 			case '6':
 			case '7':
 					/* Octal. */
-				return( (retframe){ &, (void*)0 } );
+				return( (retframe){ &token_touint_octal, (void*)0 } );
 				
 			default:
 				??? /* What??? Error! */
@@ -141,46 +410,13 @@ retframe token_touint( stackpair *stkp, void *v )
 	} else {
 		
 			/* Go to the decimal parser. */
-		return( (retframe){ &, (void*)0 } );
+		return( (retframe){ &token_touint_decimal, (void*)0 } );
 	}
 	
 	??? /* Trespass path. */
 	
 	return( (retframe){ &end_run, (void*)0 } );
 }
-
-{
-	static const uintptr_t maxv_lastdec = ( ( UINTPTR_MAX ) / 10 ) + 1;
-	
-	???
-	
-	lib4_intresult res;
-	scratch = b->length;
-	while( scratch )
-	{
-		res = dec2num( src->text[ b->length - scratch ] );
-		
-		???
-		
-		b->text[ b->length - scratch ] = src->text[ b->length - scratch ];
-		
-		--scratch;
-	}
-	
-	
-	/* maxv_lastdec */
-	
-		/* Mark properly. */
-	b->header.toktype = TOKTYPE_NUMBER_UINT;
-	
-	???
-}
-	/*
-	lib4_intresult bin2num( char c );
-	lib4_intresult oct2num( char c );
-	lib4_intresult dec2num( char c );
-	lib4_intresult hexa2num( char c );
-	*/
 
 
 

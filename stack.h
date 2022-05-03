@@ -117,6 +117,12 @@
 				STDMSG_FAILEDINTFUNC_WRAPPER( ( stylesetptr ), "push_uintptr", ( caller ), ( scratch ) ); \
 				( endfunc )(); } }
 	
+	#define STACK_SWAP_UINT( stk, tmp1, tmp2,  stylesetptr, caller, scratch, endfunc ) \
+		STACK_POP_UINT( ( stk ), ( tmp1 ),  ( stylesetptr ), ( caller ), ( scratch ), ( endfunc ) ) \
+		STACK_POP_UINT( ( stk ), ( tmp2 ),  ( stylesetptr ), ( caller ), ( scratch ), ( endfunc)  ) \
+		STACK_PUSH_UINT( ( stk ), ( tmp1 ),  ( stylesetptr ), ( caller ), ( scratch ), ( endfunc ) ) \
+		STACK_PUSH_UINT( ( stk ), ( tmp2 ),  ( stylesetptr ), ( caller ), ( scratch ), ( endfunc ) )
+	
 	
 		/* Old version: CALL_FRAMEFUNC( rethand, retval, fhand, fval ) */
 	#define CALL_FRAMEFUNC( stkpair, rethand, retval, callhand, callval,  stylesetptr, caller, scratch, endfunc ) \

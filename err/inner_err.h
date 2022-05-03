@@ -227,11 +227,23 @@
 			(char*)( __FILE__ ), (uintmax_t)&( funcname ), (unsigned)( __LINE__ ), \
 			(void*)( objaddr ), (uintmax_t)*( objaddr ), (uintmax_t)( limit ) \
 		)
+	#define STDMSG_I_UNDERFLOW_WRAPPER2( stylesetptr, funcname, objaddr, objval, limit ) \
+		msg_interface( \
+			( stylesetptr ), LIB4_RETURN_1ST( STDMSG_I_UNDERFLOW ), \
+			(char*)( __FILE__ ), (uintmax_t)&( funcname ), (unsigned)( __LINE__ ), \
+			(void*)( objaddr ), (uintmax_t)( objval ), (uintmax_t)( limit ) \
+		)
 	#define STDMSG_I_OVERFLOW_WRAPPER( stylesetptr, funcname, objaddr, limit ) \
 		msg_interface( \
 			( stylesetptr ), LIB4_RETURN_1ST( STDMSG_I_OVERFLOW ), \
 			(char*)( __FILE__ ), (uintmax_t)&( funcname ), (unsigned)( __LINE__ ), \
 			(void*)( objaddr ), (uintmax_t)*( objaddr ), (uintmax_t)( limit ) \
+		)
+	#define STDMSG_I_OVERFLOW_WRAPPER2( stylesetptr, funcname, objaddr, objval, limit ) \
+		msg_interface( \
+			( stylesetptr ), LIB4_RETURN_1ST( STDMSG_I_OVERFLOW ), \
+			(char*)( __FILE__ ), (uintmax_t)&( funcname ), (unsigned)( __LINE__ ), \
+			(void*)( objaddr ), (uintmax_t)( objval ), (uintmax_t)( limit ) \
 		)
 	
 	

@@ -51,6 +51,10 @@
 	
 	retframe getANDassemble_token( stackpair *stkp, void *v );
 	
+		/* Converts a ->toktype == NUMBER token into a token_uint, with the */
+		/*  token text on the back. */
+	retframe numbertoken_touint( stackpair *stkp, void *v );
+	
 	
 	
 	#define lexalike_ENDRETFRAME() return( (retframe){ &end_run, (void*)0 } )
