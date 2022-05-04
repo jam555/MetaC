@@ -1318,11 +1318,15 @@ retframe token_touint( stackpair *stkp, void *v )
 	token *src = (token*)a;
 	
 	token_uint *b;
-#define token_touint_DISCARD( val )
+	size_t size = sizeof( token_uint ) + ( sizeof( char ) * src->length );
+#define token_touint_ALLOCFAIL( err ) \
+		MONADICFAILURE( token_touint, "lib4_stdmemfuncs.alloc", ( err ) ); \
+			NOTELINE(); DATAPTR( lib4_stdmemfuncs.data ); \
+			NOTESPACE(); DECARG( size ); \
+		return( (retframe){ &end_run, (void*)0 } );
 	lib4_ptrresult ptrres =
-		lib4_stdmemfuncs.alloc
-			( lib4_stdmemfuncs.data, sizeof( token_uint ) + ( sizeof( char ) * src->length ) );
-	LIB4_PTRRESULT_BODYMATCH( ptrres, LIB4_OP_SETb, token_touint_DISCARD )
+		lib4_stdmemfuncs.alloc( lib4_stdmemfuncs.data, size );
+	LIB4_PTRRESULT_BODYMATCH( ptrres, LIB4_OP_SETb, token_touint_ALLOCFAIL )
 	if( !b )
 	{
 		BADNULL( token_touint, &b );
