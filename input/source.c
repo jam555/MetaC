@@ -1,5 +1,6 @@
-#include "headers.h"
+#include "../headers.h"
 
+#include "source.h"
 #include "../err/inner_err.h"
 
 
@@ -24,11 +25,84 @@
 #define MONADICFAILURE( funcname, calltext, err ) \
 	STDMSG_MONADICFAILURE_WRAPPER( &errs, ( funcname ), ( calltext ), ( err ) )
 
+	#define NOTESPACE() \
+		STDMSG_NOTESPACE_WRAPPER( &errs )
+	#define DECARG( val ) \
+		STDMSG_DECARG_WRAPPER( &errs, ( val ) )
+	$define CHARARG( val ) \
+		STDMSG_CHARARG_WRAPPER( &errs, ( val ) )
+	#define DATAPTRARG( val ) \
+		STDMSG_DATAPTRARG_WRAPPER( &errs, ( val ) )
+
 #define FAILEDINTFUNC( calleestr, callername, val ) \
 	STDMSG_FAILEDINTFUNC_WRAPPER( &errs, ( calleestr ), ( callername ), ( val ) )
 
 #define TRESPASSPATH( funcname, msgstr ) \
 	STDMSG_TRESPASSPATH_WRAPPER( &errs, ( funcname ), ( msgstr ) )
+
+
+
+int refed_pstr_incrrefs( refed_pstr *pstr )
+{
+	if( pstr )
+	{
+		if( pstr->refs )
+		{
+			++( pstr->refs );
+			return( 1 );
+			
+		} else {
+			
+			TRESPASSPATH( refed_pstr_incrrefs, "ERROR: refed_pstr_incrrefs() was given a refed_pstr with a null ref count." );
+			return( -2 );
+		}
+	}
+	
+	TRESPASSPATH( refed_pstr_incrrefs, "ERROR: refed_pstr_incrrefs() was given a null arg." );
+	return( -1 );
+}
+int refed_pstr_decrrefs( refed_pstr *pstr )
+{
+	if( pstr )
+	{
+		if( pstr->refs )
+		{
+			--( pstr->refs );
+			
+			if( pstr->refs )
+			{
+				return( 1 );
+			}
+			
+				/* Default to success. */
+			int ret = 2;
+			
+#define refed_pstr_decrrefs_BADDESTROY( err ) \
+	MONADICFAILURE( init, "char_pascalarray_destroy()", ( err ).val ); \
+	NOTESPACE(); DATAPTRARG( pstr->text ); \
+	ret = -2;
+			lib4_result res = char_pascalarray_destroy( pstr->text );
+			LIB4_RESULT_BODYMATCH( res, LIB4_NULL_MACRO, refed_pstr_decrrefs_BADDESTROY );
+			
+#define refed_pstr_decrrefs_BADDEALLOC( err ) \
+	MONADICFAILURE( init, "lib4_stdmemfuncs.dealloc()", ( err ).val ); \
+	NOTESPACE(); DATAPTRARG( pstr->text ); \
+	ret = -3;
+			res = lib4_stdmemfuncs.dealloc( lib4_stdmemfuncs.data, a );
+			LIB4_RESULT_BODYMATCH( res, LIB4_NULL_MACRO, refed_pstr_decrrefs_BADDEALLOC );
+			
+			return( ret );
+			
+		} else {
+			
+			TRESPASSPATH( refed_pstr_decrrefs, "ERROR: refed_pstr_decrrefs() was given a refed_pstr with a null ref count." );
+			return( -4 );
+		}
+	}
+	
+	TRESPASSPATH( refed_pstr_decrrefs, "ERROR: refed_pstr_decrrefs() was given a null arg." );
+	return( -1 );
+}
 
 
 
@@ -45,7 +119,7 @@ struct source
 	source *prev;
 	
 	FILE *file;
-	char_pascalarray *name;
+	refed_pstr *name;
 	
 		/* Max val is UINTMAX_MAX */
 	uintmax_t base, progress;
@@ -57,14 +131,15 @@ struct source
 
 static root_name =
 	LIB4_DEFINE_PASCALARRAY_LITERAL2( char_, char, COMMONINCLUDE );
-static source root_src = (source){ (source*)0,  0, &root_name,  0, 0 };
+static refed_pstr root_pname = (refed_pstr){ 1, &root_name };
+static source root_src = (source){ (source*)0,  0, &root_pname,  0, 0 };
 int init()
 {
 	int ret = -1;
 	
 	if( !sources )
 	{
-		root_src.file = fopen( root_src.name->body, "rb" );
+		root_src.file = fopen( root_src.name->text->body, "rb" );
 		if( !root_src.file )
 		{
 			BADNULL( init, &( root_src.file ) );
@@ -88,7 +163,8 @@ int init()
 	res2 = fclose( root_src.file ); \
 	if( res2 != 0 ) { \
 		FAILEDINTFUNC( "fclose", init, res2 ); } \
-	root_src = (source){ (source*)0,  0, &root_name,  0, 0 }; \
+	root_pname = (refed_pstr){ 1, &root_name };
+	root_src = (source){ (source*)0,  0, &root_pname,  0, 0 }; \
 	return( err );
 		LIB4_DEFINE_PASCALARRAY_RESULT_BODYMATCH( res, init_SUCCESS, init_FAILURE )
 	}
@@ -125,7 +201,8 @@ void deinit()
 			}
 		}
 		
-		root_src = (source){ (source*)0,  0, &root_name,  0, 0 };
+		root_pname = (refed_pstr){ 1, &root_name };
+		root_src = (source){ (source*)0,  0, &root_pname,  0, 0 };
 	}
 }
 int reinit()
@@ -165,34 +242,64 @@ source* build_source2( char_pascalarray *name, uintmax_t inclusionpoint, const c
 		LIB4_PTRRESULT_BODYMATCH( ptrres, LIB4_OP_SETa, build_source2_ERR1 )
 		if( a )
 		{
-			*a = (source){ (source*)0,  (FILE*)0, (char_pascalarray*)0,  inclusionpoint, 0 };
+			*a = (source){ (source*)0,  (FILE*)0, (refed_pstr*)0,  inclusionpoint, 0 };
 		}
 		
-		char_pascalarray *b = (char_pascalarray*)0;
-		char_pascalarray_result res =
-			char_pascalarray_build( len );
-		LIB4_DEFINE_PASCALARRAY_RESULT_BODYMATCH( res, LIB4_OP_SETb, build_source2_ERR2 )
-		if( b )
+		refed_pstr *b = (refed_pstr*)0;
+		lib4_ptrresult ptrres =
+			lib4_stdmemfuncs.alloc
+				( lib4_stdmemfuncs.data, sizeof( refed_pstr ) );
+		LIB4_PTRRESULT_BODYMATCH( ptrres, LIB4_OP_SETb, build_source2_ERR1 )
+		if( !b )
 		{
-			--len;
-			b->body[ len ] = '\0';
-			
-			while( len )
-			{
-				--len;
-				b->body[ len ] = name->body[ len ];
-			}
-			
-			a->name = b;
-			a->file = fopen( b->name->body, opentype );
-			
-		} else {
-			
 			if( lib4_stdmemfuncs.dealloc )
 			{
 				lib4_stdmemfuncs.dealloc( lib4_stdmemfuncs.data, a );
 			}
 			a = (source*)0;
+			
+			TRESPASSPATH( build_source2, "ERROR: build_source2() failed to allocate a refed_pstr." );
+			
+		} else {
+			
+			*b = (refed_pstr){ 0, (char_pascalarray*)0 };
+			
+			char_pascalarray *c = (char_pascalarray*)0;
+			char_pascalarray_result res =
+				char_pascalarray_build( len );
+			LIB4_DEFINE_PASCALARRAY_RESULT_BODYMATCH( res, LIB4_OP_SETc, build_source2_ERR2 )
+			if( c )
+			{
+				--len;
+				c->body[ len ] = '\0';
+				
+				while( len )
+				{
+					--len;
+					c->body[ len ] = name->body[ len ];
+				}
+				
+					/* Very important! Both increment & decrement will error */
+					/*  out if this isn't positive! */
+				b->refs = 1;
+				b->text = c;
+				
+				a->name = b;
+				a->file = fopen( a->name->text->body, opentype );
+				
+			} else {
+				
+				if( lib4_stdmemfuncs.dealloc )
+				{
+					lib4_stdmemfuncs.dealloc( lib4_stdmemfuncs.data, b );
+					lib4_stdmemfuncs.dealloc( lib4_stdmemfuncs.data, a );
+				}
+				b = (refed_pstr*)0;
+				a = (source*)0;
+				
+				TRESPASSPATH( build_source2, "ERROR: build_source2() failed to allocate a char_pascalarray of length " );
+					DECARG( len );
+			}
 		}
 	}
 	
@@ -204,21 +311,35 @@ source* build_source( char_pascalarray *name, uintmax_t inclusionpoint )
 }
 int discard_source( source *src )
 {
+	if( src == &root_src )
+	{
+		TRESPASSPATH( discard_source, "ERROR: discard_source() was told to deallocate static source instance \"root_src\"." );
+		return( -2 );
+	}
+	
 	if( src )
 	{
 		src->prev = (source*)0;
 		
-#define pop_frame_SUCCESS( var ) ;
-#define pop_frame_FAILURE( err ) \
-	MONADICFAILURE( discard_source, "char_pascalarray_destroy()", ( err ) ); \
-	return( err );
-		lib4_result res = char_pascalarray_destroy( src->name );
-		LIB4_RESULT_BODYMATCH( res, pop_frame_SUCCESS, pop_frame_FAILURE )
-		
-		int res2 = fclose( src->file );
-		if( res2 != 0 )
+			/* We'll probably have other references floating around, so */
+			/*  don't DIRECTLY delete... */
+		int res = refed_pstr_decrrefs( src->name );
+		if( res < 0 )
 		{
-			FAILEDINTFUNC( "fclose", discard_source, res2 );
+			FAILEDINTFUNC( "refed_pstr_decrrefs", discard_source, res );
+				NOTESPACE();
+				DATAPTRARG( src->name );
+			
+			/* Just continue on. */
+		}
+		src->name = (refed_pstr*)0;
+		
+		res = fclose( src->file );
+		if( res != 0 )
+		{
+			FAILEDINTFUNC( "fclose", discard_source, res );
+				NOTESPACE();
+				DATAPTRARG( src->file );
 			
 			/* Just continue on. */
 		}
@@ -235,9 +356,14 @@ int discard_source( source *src )
 
 
 
-char_result charin()
+char_result charin( refed_pstr **refresh_srcname, uintmax_t *prog )
 {
 	char val;
+	
+	if( refresh_srcname && !prog )
+	{
+		LIB4_CHARRESULT_RETURNFAILURE( LIB4_RESULT_FAILURE_DOMAIN );
+	}
 	
 	if( !inbuf.used )
 	{
@@ -254,15 +380,43 @@ char_result charin()
 			{
 				FAILEDINTFUNC( "discard_source", charin, res );
 				
+				if( refresh_srcname && *refresh_srcname )
+				{
+					res = refed_pstr_incrrefs( *refresh_srcname );
+					if( res < 0 )
+					{
+						FAILEDINTFUNC( "refed_pstr_incrrefs", charin, res );
+							NOTESPACE();
+							DATAPTRARG( *refresh_srcname );
+					}
+				}
+				
 				LIB4_CHARRESULT_RETURNFAILURE( LIB4_RESULT_FAILURE_UNDIFFERENTIATED );
 			}
 			
+			if( refresh_srcname )
+			{
+				*refresh_srcname = sources->name;
+				prog = sources->base + sources->progress;
+			}
 			res = fgetc( sources->file );
 		}
 		if( res == EOF )
 		{
 				/* Failure. */
 			FAILEDINTFUNC( "fgetc", charin, res );
+			
+			if( refresh_srcname && *refresh_srcname )
+			{
+				res = refed_pstr_incrrefs( *refresh_srcname );
+				if( res < 0 )
+				{
+					FAILEDINTFUNC( "refed_pstr_incrrefs", charin, res );
+						NOTESPACE();
+						DATAPTRARG( *refresh_srcname );
+				}
+			}
+			
 			LIB4_CHARRESULT_RETURNFAILURE( LIB4_RESULT_FAILURE_UNDIFFERENTIATED );
 		}
 		
@@ -273,6 +427,54 @@ char_result charin()
 		
 		--( inbuf.used );
 		val = inbuf.pushedback->body[ inbuf.used ];
+	}
+	
+	if( refresh_srcname && *refresh_srcname )
+	{
+		res = refed_pstr_incrrefs( *refresh_srcname );
+		if( res < 0 )
+		{
+			FAILEDINTFUNC( "refed_pstr_incrrefs", charin, res );
+				NOTESPACE();
+				DATAPTRARG( *refresh_srcname );
+			
+			/* We should maybe have an error here, but I can't be bothered */
+			/*  right now. */
+		}
+	}
+	
+		/* Success. */
+	LIB4_CHARRESULT_RETURNSUCCESS( val );
+}
+char_result charpeek()
+{
+	char val;
+	
+	if( !inbuf.used )
+	{
+		int res = fgetc( sources->file );
+		if( res == EOF )
+		{
+				/* Failure. */
+			LIB4_CHARRESULT_RETURNFAILURE( LIB4_RESULT_FAILURE_EOF );
+		}
+		
+		++( sources->progress );
+		val = res;
+		
+		res = charback( val );
+		if( res != 1 )
+		{
+			FAILEDINTFUNC( "charback", charpeek, res );
+				NOTESPACE();
+				CHARARG( val );
+			
+			LIB4_CHARRESULT_RETURNFAILURE( LIB4_RESULT_FAILURE_UNDIFFERENTIATED );
+		}
+		
+	} else {
+		
+		val = inbuf.pushedback->body[ inbuf.used - 1 ];
 	}
 	
 		/* Success. */

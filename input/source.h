@@ -9,6 +9,17 @@
 	
 	typedef struct source source;
 	
+	typedef struct refed_pstr
+	{
+		uintptr_t refs;
+		char_pascalarray *text;
+		
+	} refed_pstr;
+		/* For both, positive is success, negative is failure. Note that the */
+		/*  argument must be non-null, and ->refs must be a POSITIVE number. */
+	int refed_pstr_incrrefs( refed_pstr* );
+	int refed_pstr_decrrefs( refed_pstr* );
+	
 	
 	
 	typedef lib4_charresult char_result;
@@ -28,7 +39,20 @@
 	source* build_source( char_pascalarray *name, uintmax_t inclusionpoint );
 	int discard_source( source *src );
 	
-	char_result charin();
+		/* If refresh_srcname is provided, then the pointer it points to */
+		/*  MUST be NULL, as internal logic makes that assumption itself. */
+		/*  Only sets refresh_srcname if the source{} instance changes, in */
+		/*  which case the provided refed_pstr will ALREADY have a reference */
+		/*  added for the new recipient: remember to take this into */
+		/*  consideration for proper memory management. If refresh_srcname */
+		/*  is provided, then prog MUST be provided; prog specifies the read */
+		/*  progress that has been made through the current file, in case of */
+		/*  returning from an include... */
+	char_result charin( refed_pstr **refresh_srcname, uintmax_t *prog );
+		/* Both proper success and LIB4_RESULT_FAILURE_EOF are actually */
+		/*  successes. Only error out on OTHER returns. Note that this */
+		/*  internally calls charback(), but DOES NOT call charin(). */
+	char_result charpeek();
 	int charback( char val );
 
 #endif
