@@ -49,10 +49,6 @@ extrachar.c:
 	Needs some changes to support/use the file/line info that needs to be added
 		to lexalike.c
 
-source.c:
-	When setting ptrres in build_source2(), shouldn't it be sized off of struct
-		source instead of stackframe?
-
 basics.c:
 	Line 249 has a bit of error reporting that's probably worthy of it's own
 		custom error reporter.

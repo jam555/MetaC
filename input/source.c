@@ -161,7 +161,7 @@ source* build_source2( char_pascalarray *name, uintmax_t inclusionpoint, const c
 		
 		lib4_ptrresult ptrres =
 			lib4_stdmemfuncs.alloc
-				( lib4_stdmemfuncs.data, sizeof( stackframe ) );
+				( lib4_stdmemfuncs.data, sizeof( source ) );
 		LIB4_PTRRESULT_BODYMATCH( ptrres, LIB4_OP_SETa, build_source2_ERR1 )
 		if( a )
 		{

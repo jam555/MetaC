@@ -1292,7 +1292,6 @@ retframe token_touint_hexadecimal( stackpair *stkp, void *v )
 	return( (retframe){ &invoke_dealloctoken, (void*)0 } );
 }
 
-
 retframe token_touint( stackpair *stkp, void *v )
 {
 	STACKCHECK( stkp,  token_touint );
