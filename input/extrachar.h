@@ -11,6 +11,9 @@
 		char c;
 		int was_freshline;
 		int is_delimited;
+		
+		refed_pstr *file;
+		uintptr_t line, column;
 	};
 	
 	LIB4_MONAD_EITHER_BUILDTYPE_DEFINITION(

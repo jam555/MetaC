@@ -240,6 +240,16 @@ struct
 	
 } token_queue;
 
+typedef struct fileprogress
+{
+	refed_pstr *name;
+	uintptr_t line, column;
+	
+} fileprogress;
+LIB4_DEFINE_PASCALARRAY_STDDEFINE( fprog_, fileprogress );
+fprog_pascalarray *files = (fprog_pascalarray*)0;
+size_t files_used = 0;
+
 int token_queue_init()
 {
 	token_queue.used = 0;
@@ -259,6 +269,14 @@ int token_queue_init()
 		token_queue.f = (FILE*)0;
 		return( -2 );
 	}
+	
+#define token_queue_init_SUCC( ptr ) \
+		files = ( ptr ); \
+		files_used = 0;
+#define token_queue_init_FAIL( err ) \
+		???
+	fprog_pascalarray_result res = fprog_pascalarray_build( size_t len );
+	LIB4_DEFINE_PASCALARRAY_RESULT_BODYMATCH( res, matcha, token_queue_init_FAIL )
 	
 	return( 1 );
 }
@@ -477,7 +495,25 @@ int token_queue_shuffle2queue()
 	/*  If you actually care, then empty out the file first. */
 int token_queue_deinit()
 {
-	int res = fclose( token_queue.shuffle );
+	int res;
+	
+	if( !files )
+	{
+		???
+	}
+	while( files_used )
+	{
+		--files_used;
+		res = refed_pstr_decrrefs( files->body[ files_used ] );
+		if( res < 0 )
+		{
+			???
+		}
+	}
+	files = (fprog_pascalarray*)0;
+	files_used = 0;
+	
+	res = fclose( token_queue.shuffle );
 	if( res == EOF )
 	{
 		FAILEDINTFUNC( "fclose", token_queue_deinit, res );
@@ -508,6 +544,24 @@ int is_bslash( int c )
 	return( 0 );
 }
 
+/*
+typedef struct fileprogress
+{
+	refed_pstr *name;
+	uintptr_t line, column;
+	
+} fileprogress;
+LIB4_DEFINE_PASCALARRAY_STDDEFINE( fprog_, fileprogress );
+fprog_pascalarray *files = (fprog_pascalarray*)0;
+size_t files_used = 0;
+*/
+	char_result charin( refed_pstr **refresh_srcname, uintmax_t *prog );
+	char_result charpeek();
+	int charback( char val );
+	/* Task: update the code to properly deref & drop elements of files on */
+	/*  charpeek()==EOF, push on charin():refresh_srcname!=0, and update */
+	/*  fileprogress->line&column as appropriate. Also, need to alter */
+	/*  token_head to support all this info... */
 int tokenize_char__accumulate( stackpair *stkp, void *v,  token_head *th, char *a_, char *b_ )
 {
 	if( stkp &&  th && a_ && b_ )
