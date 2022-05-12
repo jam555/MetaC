@@ -544,24 +544,138 @@ int is_bslash( int c )
 	return( 0 );
 }
 
-/*
-typedef struct fileprogress
+
+char_result tokenize_char__peekchar( int *isEOF )
 {
-	refed_pstr *name;
-	uintptr_t line, column;
+	int isEOF_ = 0, res;
+	refed_pstr *refresh_srcname;
+	uintmax_t prog;
 	
-} fileprogress;
-LIB4_DEFINE_PASCALARRAY_STDDEFINE( fprog_, fileprogress );
-fprog_pascalarray *files = (fprog_pascalarray*)0;
-size_t files_used = 0;
-*/
-	char_result charin( refed_pstr **refresh_srcname, uintmax_t *prog );
-	char_result charpeek();
-	int charback( char val );
-	/* Task: update the code to properly deref & drop elements of files on */
-	/*  charpeek()==EOF, push on charin():refresh_srcname!=0, and update */
-	/*  fileprogress->line&column as appropriate. Also, need to alter */
-	/*  token_head to support all this info... */
+		/* Duplicate from the loop below. */
+	if( files_used <= 0 )
+	{
+		/* We got to the end of the last file, so there's just not */
+		/*  anything left to do. Not exactly a failure, but trying to */
+		/*  PEEK should naturally fail. */
+		
+		if( isEOF )
+		{
+			*isEOF = 1;
+		}
+		LIB4_CHARRESULT_RETURNFAILURE( LIB4_RESULT_FAILURE_EOF );
+	}
+	
+	if( isEOF )
+	{
+		*isEOF = 0;
+	}
+	
+	char_result res2 = charpeek( &isEOF_ );
+	while( isEOF_ )
+	{
+		/* Drop stuff! */
+		
+		res = refed_pstr_decrrefs( files->body[ files_used - 1 ]->name );
+		if( !res )
+		{
+			FAILEDINTFUNC( "refed_pstr_decrrefs", tokenize_char__peekchar, res );
+				NOTESPACE();
+				DATAPTR( files->body[ files_used - 1 ]->name );
+			
+			LIB4_CHARRESULT_RETURNFAILURE( LIB4_RESULT_FAILURE_UNDIFFERENTIATED );
+		}
+		files->body[ files_used - 1 ]->name = (*)0;
+		files->body[ files_used - 1 ]->line = 0;
+		files->body[ files_used - 1 ]->column = 0;
+		files_used -= 1;
+		
+		
+		
+			/* We had to check SOMEWHERE. */
+		if( files_used <= 0 )
+		{
+			/* We got to the end of the last file, so there's just not */
+			/*  anything left to do. Not exactly a failure, but trying to */
+			/*  PEEK has failed. */
+			
+			if( isEOF )
+			{
+				*isEOF = 1;
+			}
+			LIB4_CHARRESULT_RETURNFAILURE( LIB4_RESULT_FAILURE_EOF );
+		}
+		
+		
+		
+		/* Time for the next file! */
+		
+		refresh_srcname = (refed_pstr*)0;
+		prog = 0;
+		
+		res = char_dropeof( &refresh_srcname, &prog );
+		if( ! )
+		{
+			FAILEDINTFUNC( "char_dropeof", tokenize_char__peekchar, res );
+				NOTESPACE();
+				DATAPTR( &refresh_srcname );
+				NOTESPACE();
+				DECARG( &prog );
+			
+			LIB4_CHARRESULT_RETURNFAILURE( LIB4_RESULT_FAILURE_UNDIFFERENTIATED );
+		}
+		if( !refresh_srcname )
+		{
+			BADNULL( tokenize_char__peekchar, &refresh_srcname );
+			
+			LIB4_CHARRESULT_RETURNFAILURE( LIB4_RESULT_FAILURE_UNDIFFERENTIATED );
+		}
+		if( refresh_srcname != files->body[ files_used - 1 ]->name )
+		{
+			TRESPASSPATH( tokenize_char__peekchar, "ERROR: Pointer value mismatch!:" );
+				NOTELINE();
+				DATAPTR( refresh_srcname );
+				NOTESPACE();
+				DATAPTR( files->body[ files_used - 1 ]->name );
+			
+			LIB4_CHARRESULT_RETURNFAILURE( LIB4_RESULT_FAILURE_GENERICMISMATCH );
+		}
+		
+		isEOF_ = 0;
+		res2 = charpeek( &isEOF_ );
+	}
+	
+	return( res2 );
+}
+char_result tokenize_char__charin( int *isEOF )
+{
+	refed_pstr *refrename;
+	uintmax_t prog_;
+	
+	int isEOF_ = 0;
+	char_result res = tokenize_char__peekchar( &isEOF_ );
+	if( isEOF_ )
+	{
+		/* Well, seems there's not much to do... */
+		
+		if( isEOF )
+		{
+			*isEOF = 1;
+		}
+		return( res );
+	}
+	
+		/* Let's properly proceed. */
+	char_result res2 = charin( (refed_pstr**)0, (uintmax_t*)0 );
+	if( res != res2 )
+	{
+		TRESPASSPATH( tokenize_char__charin, "ERROR: char_result value mismatch!" );
+		
+		LIB4_CHARRESULT_RETURNFAILURE( LIB4_RESULT_FAILURE_GENERICMISMATCH );
+	}
+	
+	return( res );
+}
+
 int tokenize_char__accumulate( stackpair *stkp, void *v,  token_head *th, char *a_, char *b_ )
 {
 	if( stkp &&  th && a_ && b_ )

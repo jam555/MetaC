@@ -379,6 +379,8 @@ char_result charin( refed_pstr **refresh_srcname, uintmax_t *prog )
 			if( !res )
 			{
 				FAILEDINTFUNC( "discard_source", charin, res );
+					NOTESPACE();
+					DATAPTRARG( tmp );
 				
 				if( refresh_srcname && *refresh_srcname )
 				{
@@ -405,6 +407,10 @@ char_result charin( refed_pstr **refresh_srcname, uintmax_t *prog )
 		{
 				/* Failure. */
 			FAILEDINTFUNC( "fgetc", charin, res );
+				NOTESPACE();
+					/* This should be accurate REGARDLESS of which fgetc() */
+					/*  call we're dealing with. */
+				DATAPTRARG( sources->file );
 			
 			if( refresh_srcname && *refresh_srcname )
 			{
@@ -446,15 +452,25 @@ char_result charin( refed_pstr **refresh_srcname, uintmax_t *prog )
 		/* Success. */
 	LIB4_CHARRESULT_RETURNSUCCESS( val );
 }
-char_result charpeek()
+char_result charpeek( int *isEOF )
 {
 	char val;
+	
+	if( isEOF )
+	{
+		*isEOF = 0;
+	}
 	
 	if( !inbuf.used )
 	{
 		int res = fgetc( sources->file );
 		if( res == EOF )
 		{
+			if( isEOF )
+			{
+				*isEOF = 1;
+			}
+			
 				/* Failure. */
 			LIB4_CHARRESULT_RETURNFAILURE( LIB4_RESULT_FAILURE_EOF );
 		}
@@ -479,6 +495,66 @@ char_result charpeek()
 	
 		/* Success. */
 	LIB4_CHARRESULT_RETURNSUCCESS( val );
+}
+int char_dropeof( refed_pstr **refresh_srcname, uintmax_t *prog )
+{
+	if( refresh_srcname && !prog )
+	{
+		return( -2 );
+	}
+	if( inbuf.used )
+	{
+		return( -3 );
+	}
+	
+	char_result res = charpeek( (int*)0 );
+	if( res == LIB4_CHARRESULT_BUILDFAILURE( LIB4_RESULT_FAILURE_EOF ) )
+	{
+		/* Eof found! Rembember to only drop 1 level. */
+		
+		source *tmp = sources;
+		sources = sources->prev;
+		
+		tmp->prev = (source*)0;
+		int res2 = discard_source( tmp );
+		if( !res2 )
+		{
+			FAILEDINTFUNC( "discard_source", char_dropeof, res2 );
+				NOTESPACE();
+				DATAPTRARG( tmp );
+			
+			if( refresh_srcname && *refresh_srcname )
+			{
+				res2 = refed_pstr_incrrefs( *refresh_srcname );
+				if( res2 < 0 )
+				{
+					FAILEDINTFUNC( "refed_pstr_incrrefs", char_dropeof, res2 );
+						NOTESPACE();
+						DATAPTRARG( *refresh_srcname );
+				}
+			}
+			
+			return( -4 );
+		}
+	}
+	
+	if( refresh_srcname && *refresh_srcname )
+	{
+			/* Don't forget: we need to track name reference counts! */
+		*refresh_srcname = sources->name;
+		prog = sources->base + sources->progress;
+		res = refed_pstr_incrrefs( *refresh_srcname );
+		if( res < 0 )
+		{
+			FAILEDINTFUNC( "refed_pstr_incrrefs", char_dropeof, res );
+				NOTESPACE();
+				DATAPTRARG( *refresh_srcname );
+			
+			return( -5 );
+		}
+	}
+	
+	return( 1 );
 }
 int charback( char val )
 {

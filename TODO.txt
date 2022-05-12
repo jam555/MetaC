@@ -42,6 +42,11 @@ lexalike.c:
 	The token_touint_*() functions deserve a STANDARD "out of range" error.
 	The "files" initializer in token_queue_init() needs to be improved.
 	The "files" deinitializer in token_queue_deinit() needs to be improved.
+	tokenize_char__peekchar() deserves a new STANDARD error message for it's
+		GENERICMISMATCH case: particularly, a pointer variation of the
+		"int mismatch" stuff that already exists.
+	tokenize_char__charin()'s GENERICMISMATCH case could use some better error
+		reporting.
 lexalike.h:
 	Will need to be synced with some lexalike.c changes.
 	is_freshline() should be declared elsewhere- move it.

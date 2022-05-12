@@ -52,7 +52,11 @@
 		/* Both proper success and LIB4_RESULT_FAILURE_EOF are actually */
 		/*  successes. Only error out on OTHER returns. Note that this */
 		/*  internally calls charback(), but DOES NOT call charin(). */
-	char_result charpeek();
+	char_result charpeek( int *isEOF );
+		/* Only "1" is a good return value. "If" you provide */
+		/*  refresh_srcname, then you must also provide prog: these function */
+		/*  as described for charin(). */
+	int char_dropeof( refed_pstr **refresh_srcname, uintmax_t *prog );
 	int charback( char val );
 
 #endif
