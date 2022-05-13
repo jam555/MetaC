@@ -243,7 +243,7 @@ struct
 typedef struct fileprogress
 {
 	refed_pstr *name;
-	uintptr_t line, column;
+	uintmax_t line, column;
 	
 } fileprogress;
 LIB4_DEFINE_PASCALARRAY_STDDEFINE( fprog_, fileprogress );
@@ -276,7 +276,17 @@ int token_queue_init()
 #define token_queue_init_FAIL( err ) \
 		???
 	fprog_pascalarray_result res = fprog_pascalarray_build( size_t len );
-	LIB4_DEFINE_PASCALARRAY_RESULT_BODYMATCH( res, matcha, token_queue_init_FAIL )
+	LIB4_DEFINE_PASCALARRAY_RESULT_BODYMATCH( res, token_queue_init_SUCC, token_queue_init_FAIL )
+	if( files->len < ??? )
+	{
+		???
+		
+		return( -??? );
+	}
+	files->body[ 0 ]->name = ???; /* This should be the "default" file. */
+	files->body[ 0 ]->line = 0;
+	files->body[ 0 ]->column = 0;
+	
 	
 	return( 1 );
 }
@@ -545,6 +555,47 @@ int is_bslash( int c )
 }
 
 
+int tokenize_char__incrcolumn( unsigned dist )
+{
+	if( !dist )
+	{
+		???;
+		
+		return( -1 );
+	}
+	
+	if( !files || !files_used )
+	{
+		BADNULL2( tokenize_char__incrcolumn, &files, &files_used );
+		
+		return( -2 );
+	}
+	
+	files->body[ files_used - 1 ]->column += dist;
+	
+	return( 1 );
+}
+int tokenize_char__incrline( unsigned dist )
+{
+	if( !dist )
+	{
+		???;
+		
+		return( -1 );
+	}
+	
+	if( !files || !files_used )
+	{
+		BADNULL2( tokenize_char__incrline, &files, &files_used );
+		
+		return( -2 );
+	}
+	
+	files->body[ files_used - 1 ]->line += dist;
+	files->body[ files_used - 1 ]->column = 0;
+	
+	return( 1 );
+}
 char_result tokenize_char__peekchar( int *isEOF )
 {
 	int isEOF_ = 0, res;
@@ -682,13 +733,13 @@ int tokenize_char__accumulate( stackpair *stkp, void *v,  token_head *th, char *
 	{
 		char_result res;
 		int res2;
-		char a = *a_, b = *b_;
+		char b;
 		
 #define tokenize_char__accumulate_FETCHFAIL( err ) \
 	MONADICFAILURE( tokenize_char__accumulate, "charin", err ); \
 	return( (retframe){ &end_run, (void*)0 } );
 	
-		switch( a )
+		switch( *a_ )
 		{
 			case '\\':
 				/* Fall-through. */
@@ -696,9 +747,21 @@ int tokenize_char__accumulate( stackpair *stkp, void *v,  token_head *th, char *
 				res = charin();
 				CHAR_RESULT_BODYMATCH( res, LIB4_OP_SETb, tokenize_char__accumulate_FETCHFAIL )
 				
+				th->length = 1;
+				
 				break;
 				
 			case 'b': /* Binary. */
+					/* We'll be dropping the "b" as unneeded, so we'll have */
+					/*  to track it here instead of later. */
+				res2 = tokenize_char__incrcolumn( 1 );
+				if( !res2 )
+				{
+					???
+					
+					return( -??? );
+				}
+				
 				res = charin();
 				CHAR_RESULT_BODYMATCH( res, LIB4_OP_SETb, tokenize_char__accumulate_FETCHFAIL )
 				while( b == '0' || b == '1' )
@@ -717,6 +780,16 @@ int tokenize_char__accumulate( stackpair *stkp, void *v,  token_head *th, char *
 				
 				break;
 			case 'd': /* Decimal. */
+					/* We'll be dropping the "d" as unneeded, so we'll have */
+					/*  to track it here instead of later. */
+				res2 = tokenize_char__incrcolumn( 1 );
+				if( !res2 )
+				{
+					???
+					
+					return( -??? );
+				}
+				
 				res = charin();
 				CHAR_RESULT_BODYMATCH( res, LIB4_OP_SETb, tokenize_char__accumulate_FETCHFAIL )
 				while( isdigit( b ) )
@@ -735,6 +808,16 @@ int tokenize_char__accumulate( stackpair *stkp, void *v,  token_head *th, char *
 				
 				break;
 			case 'o': /* Octal. */
+					/* We'll be dropping the "o" as unneeded, so we'll have */
+					/*  to track it here instead of later. */
+				res2 = tokenize_char__incrcolumn( 1 );
+				if( !res2 )
+				{
+					???
+					
+					return( -??? );
+				}
+				
 				res = charin();
 				CHAR_RESULT_BODYMATCH( res, LIB4_OP_SETb, tokenize_char__accumulate_FETCHFAIL )
 				while( isdigit( b ) && b != '8' && b != '9' )
@@ -759,6 +842,16 @@ int tokenize_char__accumulate( stackpair *stkp, void *v,  token_head *th, char *
 				
 				/* Fall-through. */
 			case 'x': /* Hexadecimal. */
+					/* We'll be dropping the "u" or "x" as unneeded, so */
+					/*  we'll have to track it here instead of later. */
+				res2 = tokenize_char__incrcolumn( 1 );
+				if( !res2 )
+				{
+					???
+					
+					return( -??? );
+				}
+				
 				res = charin();
 				CHAR_RESULT_BODYMATCH( res, LIB4_OP_SETb, tokenize_char__accumulate_FETCHFAIL )
 				while( isxdigit( b ) )
@@ -778,7 +871,7 @@ int tokenize_char__accumulate( stackpair *stkp, void *v,  token_head *th, char *
 				break;
 				
 			default:
-				b = a;
+				b = *a_;
 				th->length = 1;
 				
 				break;
@@ -789,8 +882,15 @@ int tokenize_char__accumulate( stackpair *stkp, void *v,  token_head *th, char *
 			FAILEDINTFUNC( "isspace", tokenize_char__accumulate, res2 );
 			return( (retframe){ &end_run, (void*)0 } );
 		}
+			/* Track all of those characters we've accumulated. */
+		res2 = tokenize_char__incrcolumn( th->length );
+		if( !res2 )
+		{
+			???
+			
+			return( -??? );
+		}
 		
-		*a_ = a;
 		*b_ = b;
 		return( 1 );
 	}
@@ -804,13 +904,46 @@ int tokenize_char__accumulate( stackpair *stkp, void *v,  token_head *th, char *
 	/*  "naturally" within the source character stream. At the current time */
 	/*  it will be placed as a "char" type, which of course imposes */
 	/*  limitations on the available characters. */
+	/* Note that the "detected" character should NOT be used to increment */
+	/*  line or column numbers- the line & column info is intended to make */
+	/*  it easier for programmers to do debugging, nothing else, so there's */
+	/*  seriously no point to tracking any e.g. newlines that get output. */
+	/*  Also, that could be done elsewhere anyways. */
 int tokenize_char( stackpair *stkp, void *v )
 {
-	token_head th = (token_head){ /* type */TOKTYPE_INVALID, 1, 0, 0 };
+	token_head th =
+		(token_head)
+		{
+			/* type */TOKTYPE_INVALID,
+			1,
+			
+			0,
+			
+			(refed_pstr*)0, 0, 0
+		};
 	char_result res = charin();
 	int res2;
 	char a, b;
 	unsigned char c;
+	
+	if( !files || !files_used )
+	{
+		BADNULL2( tokenize_char, &files, &files_used );
+		
+		return( -??? );
+	}
+	th.src = files->body[ files_used - 1 ]->name;
+	th.line = files->body[ files_used - 1 ]->line;
+	th.column = files->body[ files_used - 1 ]->column;
+	res2 = refed_pstr_incrrefs( th.src );
+	if( !res2 )
+	{
+		FAILEDINTFUNC( "refed_pstr_incrrefs", tokenize_char, res2 );
+			NOTESPACE();
+			DATAPTR( th.src );
+		
+		return( -??? );
+	}
 	
 #define tokenize_char_FETCHFAIL( err ) \
 		MONADICFAILURE( tokenize_char, "charin", err ); \
@@ -822,6 +955,8 @@ int tokenize_char( stackpair *stkp, void *v )
 	{
 		th.is_delimited = 1;
 		
+			/* We don't need the backslash character, so we'll just */
+			/*  overwrite it. */
 		res = charin();
 		CHAR_RESULT_BODYMATCH( res, LIB4_OP_SETa, tokenize_char_FETCHFAIL )
 		
@@ -877,6 +1012,15 @@ int tokenize_char( stackpair *stkp, void *v )
 				/* Restore to newline. */
 			b = 10;
 			
+				/* Tracking time. */
+			res2 = tokenize_char__incrline( 1 );
+			if( !res2 )
+			{
+				???
+				
+				return( -??? );
+			}
+			
 		} else if( b == 13 ) /* Ascii carriage return. */
 		{
 			res = charin();
@@ -892,6 +1036,15 @@ int tokenize_char( stackpair *stkp, void *v )
 				/* Set to newline. */
 			b = 10;
 			
+				/* Tracking time. */
+			res2 = tokenize_char__incrline( 1 );
+			if( !res2 )
+			{
+				???
+				
+				return( -??? );
+			}
+			
 		} else if( !( b == 9 || b == 11 || b == 12 || b == 32 ) )
 		{
 			BADUINT( tokenize_char, &b, 9 );
@@ -899,6 +1052,49 @@ int tokenize_char( stackpair *stkp, void *v )
 				NOTESPACE(); DECARG( 12 );
 				NOTESPACE(); DECARG( 32 );
 			return( (retframe){ &end_run, (void*)0 } );
+			
+		} else {
+			
+				/* ALL of these are just tracking. */
+			switch( b )
+			{
+				case 9: /* Horizontal (normal) tab. */
+					res2 = tokenize_char__incrcolumn( ??? );
+					if( !res2 )
+					{
+						???
+						
+						return( -??? );
+					}
+					break;
+				case 11: /* Vertical tab. */
+					res2 = tokenize_char__incrline( ??? );
+					if( !res2 )
+					{
+						???
+						
+						return( -??? );
+					}
+					break;
+				case 12: /* Form feed. */
+					res2 = tokenize_char__incrline( ??? );
+					if( !res2 )
+					{
+						???
+						
+						return( -??? );
+					}
+					break;
+				case 32: /* Ordinary space. */
+					res2 = tokenize_char__incrcolumn( 1 );
+					if( !res2 )
+					{
+						???
+						
+						return( -??? );
+					}
+					break;
+			}
 		}
 		
 		switch( a )

@@ -37,6 +37,12 @@ lexalike.c:
 	tokenize_char() needs to be modified to provide file/line info to allow the
 		origin of text to be tracked for error-reporting and macro programming
 		purposes.
+	tokenize_char() has some new checks up near the start that need distinct
+		return values... which is NOT that big a deal, since a lot of the
+		returns are the wrong TYPE in the first place, and thus a complete
+		run-through will be needed regardless.
+	tokenize_char() seems to require Microsoft-style newlines instead of just
+		supporting them- that needs to be fixed.
 	The token-queue system has no way to track if or which macro that tokens
 		have come from, so that needs to get changed so that we can avoid
 		cyclic macro invocations.
@@ -142,6 +148,8 @@ simplelex.h:
 
 token.h:
 	Need some notes on *_INVALID vs *_OTHER
+	"was_freshline" has been dropped from token_head, and "src", "line", and
+		"column" have been added. A LOT OF CODE NEEDS TO CHANGE.
 
 headers.h:
 	Need to verify that all the relevant headers are included. Maybe make
@@ -150,9 +158,13 @@ headers.h:
 
 stack.c:
 	Line 183: changed the return values, need to check if this breaks anything.
-		Note: have changed A LOT of return values. This SHOULDN'T break things, but it MIGHT. Best to check.
-		This file shouldn't have problems- fixing it is part of why there's lots of changes...
-	Line 593: There's a note here about verifying the proper use of (token_head*)->length.
+		Note: have changed A LOT of return values. This SHOULDN'T break things,
+		but it MIGHT. Best to check. This file shouldn't have problems- fixing
+		it is part of why there's lots of changes...
+	Line 593: There's a note here about verifying the proper use of
+		(token_head*)->length.
+	Gonna need to modify the push/peek/pop code for token_head, because it's
+		format has changed to support filename/line number info.
 	
 	New:
 	Added an int to stackpair, and several functions to the top of the file.

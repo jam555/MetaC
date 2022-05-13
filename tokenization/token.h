@@ -9,8 +9,15 @@
 	{
 		uintptr_t toktype;
 		int length;
-		int was_freshline;
+		
+		/* "was_freshline" was previously here. Apply "!" to column, and you */
+		/*  get the old "was_freshline". */
 		int is_delimited;
+			/* These three vars (src, line, and column) are semi-late */
+			/*  changes, so there will be a lot of code not expecting them, */
+			/*  while expecting "was_freshline" instead. */
+		refed_pstr *src;
+		uintmax_t line, column;
 		
 		/* For a full token, this would then be followed by "length" - 1 */
 		/*  (because null) characters. */
