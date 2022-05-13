@@ -31,7 +31,8 @@ demo_errs.c:
 
 lexalike.c:
 	any functions left that belong elsewhere?
-	has at least one TODO about an old comment- update that comment.
+	Updated the one in front of tokenize_char(), but there may still be some
+		old comments in the file- do a review to see if any can be found.
 	Needs trigraph support added in.
 	tokenize_char() needs to be modified to provide file/line info to allow the
 		origin of text to be tracked for error-reporting and macro programming

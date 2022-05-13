@@ -798,14 +798,12 @@ int tokenize_char__accumulate( stackpair *stkp, void *v,  token_head *th, char *
 	TRESPASSPATH( tokenize_char__accumulate, "ERROR: tokenize_char__accumulate unexpectedly exited through it's end." );
 	return( -1 );
 }
-	/* TODO: This comment was pulled from headers.h. and reflects the */
-	/*  function before it was modified to be called directly instead of via */
-	/*  the ITC loop. It needs to be updated. */
-	/* Another that's in lexalike.c, and roughly the whole reason for the */
-	/*  file: this handles backslashes, including allowing them to "hide" */
-	/*  newlines, and encode for number-encoded characters. The character */
-	/*  that it "detects" gets put onto the stackpair data stack, currently */
-	/*  as a char. */
+	/* This function handles backslashes, including by allowing them to */
+	/*  "hide" newlines and numerically encode characters. The characters */
+	/*  that it "detects" get put onto the data stack as if they had occured */
+	/*  "naturally" within the source character stream. At the current time */
+	/*  it will be placed as a "char" type, which of course imposes */
+	/*  limitations on the available characters. */
 int tokenize_char( stackpair *stkp, void *v )
 {
 	token_head th = (token_head){ /* type */TOKTYPE_INVALID, 1, 0, 0 };
