@@ -744,7 +744,7 @@ int tokenize_char__accumulate( stackpair *stkp, void *v,  token_head *th, char *
 			case '\\':
 				/* Fall-through. */
 			case 'a': /* Alert. */
-				res = charin();
+				res = tokenize_char__charin( (int*)0 );
 				CHAR_RESULT_BODYMATCH( res, LIB4_OP_SETb, tokenize_char__accumulate_FETCHFAIL )
 				
 				th->length = 1;
@@ -762,7 +762,7 @@ int tokenize_char__accumulate( stackpair *stkp, void *v,  token_head *th, char *
 					return( -??? );
 				}
 				
-				res = charin();
+				res = tokenize_char__charin( (int*)0 );
 				CHAR_RESULT_BODYMATCH( res, LIB4_OP_SETb, tokenize_char__accumulate_FETCHFAIL )
 				while( b == '0' || b == '1' )
 				{
@@ -774,7 +774,7 @@ int tokenize_char__accumulate( stackpair *stkp, void *v,  token_head *th, char *
 					}
 					th->length += 1;
 					
-					res = charin();
+					res = tokenize_char__charin( (int*)0 );
 					CHAR_RESULT_BODYMATCH( res, LIB4_OP_SETb, tokenize_char__accumulate_FETCHFAIL )
 				}
 				
@@ -790,7 +790,7 @@ int tokenize_char__accumulate( stackpair *stkp, void *v,  token_head *th, char *
 					return( -??? );
 				}
 				
-				res = charin();
+				res = tokenize_char__charin( (int*)0 );
 				CHAR_RESULT_BODYMATCH( res, LIB4_OP_SETb, tokenize_char__accumulate_FETCHFAIL )
 				while( isdigit( b ) )
 				{
@@ -802,7 +802,7 @@ int tokenize_char__accumulate( stackpair *stkp, void *v,  token_head *th, char *
 					}
 					th->length += 1;
 					
-					res = charin();
+					res = tokenize_char__charin( (int*)0 );
 					CHAR_RESULT_BODYMATCH( res, LIB4_OP_SETb, tokenize_char__accumulate_FETCHFAIL )
 				}
 				
@@ -818,7 +818,7 @@ int tokenize_char__accumulate( stackpair *stkp, void *v,  token_head *th, char *
 					return( -??? );
 				}
 				
-				res = charin();
+				res = tokenize_char__charin( (int*)0 );
 				CHAR_RESULT_BODYMATCH( res, LIB4_OP_SETb, tokenize_char__accumulate_FETCHFAIL )
 				while( isdigit( b ) && b != '8' && b != '9' )
 				{
@@ -830,7 +830,7 @@ int tokenize_char__accumulate( stackpair *stkp, void *v,  token_head *th, char *
 					}
 					th->length += 1;
 					
-					res = charin();
+					res = tokenize_char__charin( (int*)0 );
 					CHAR_RESULT_BODYMATCH( res, LIB4_OP_SETb, tokenize_char__accumulate_FETCHFAIL )
 				}
 				
@@ -852,7 +852,7 @@ int tokenize_char__accumulate( stackpair *stkp, void *v,  token_head *th, char *
 					return( -??? );
 				}
 				
-				res = charin();
+				res = tokenize_char__charin( (int*)0 );
 				CHAR_RESULT_BODYMATCH( res, LIB4_OP_SETb, tokenize_char__accumulate_FETCHFAIL )
 				while( isxdigit( b ) )
 				{
@@ -864,7 +864,7 @@ int tokenize_char__accumulate( stackpair *stkp, void *v,  token_head *th, char *
 					}
 					th->length += 1;
 					
-					res = charin();
+					res = tokenize_char__charin( (int*)0 );
 					CHAR_RESULT_BODYMATCH( res, LIB4_OP_SETb, tokenize_char__accumulate_FETCHFAIL )
 				}
 				
@@ -921,7 +921,7 @@ int tokenize_char( stackpair *stkp, void *v )
 			
 			(refed_pstr*)0, 0, 0
 		};
-	char_result res = charin();
+	char_result res = tokenize_char__charin( (int*)0 );
 	int res2;
 	char a, b;
 	unsigned char c;
@@ -955,9 +955,9 @@ int tokenize_char( stackpair *stkp, void *v )
 	{
 		th.is_delimited = 1;
 		
-			/* We don't need the backslash character, so we'll just */
-			/*  overwrite it. */
-		res = charin();
+			/* We don't need the backslash character, and we're already */
+			/*  tracking it's source, so we'll just overwrite it. */
+		res = tokenize_char__charin( (int*)0 );
 		CHAR_RESULT_BODYMATCH( res, LIB4_OP_SETa, tokenize_char_FETCHFAIL )
 		
 		th.length = 0;
@@ -995,17 +995,19 @@ int tokenize_char( stackpair *stkp, void *v )
 			/*  line-ending variations. */
 		if( b == 10 ) /* Ascii line feed. */
 		{
-			res = charin();
+			res = tokenize_char__peekchar( (int*)0 );
 			CHAR_RESULT_BODYMATCH( res, LIB4_OP_SETb, tokenize_char_FETCHFAIL )
 			
-			if( b != 13 )
+			if( b == 13 )
 			{
-					/* Not followed by carriage return, so shove it back. */
-				res2 = charback( b );
-				if( !res2 )
+				/* Ok, Microsoft style(?), so let's pop it. */
+				
+				char c;
+				res = tokenize_char__charin( (int*)0 );
+				CHAR_RESULT_BODYMATCH( res, LIB4_OP_SETc, ??? );
+				if( b != c )
 				{
-					FAILEDINTFUNC( "tokenize_char__accumulate", tokenize_char, res2 );
-					return( (retframe){ &end_run, (void*)0 } );
+					???
 				}
 			}
 			
@@ -1023,11 +1025,23 @@ int tokenize_char( stackpair *stkp, void *v )
 			
 		} else if( b == 13 ) /* Ascii carriage return. */
 		{
-			res = charin();
+			res = tokenize_char__peekchar( (int*)0 );
 			CHAR_RESULT_BODYMATCH( res, LIB4_OP_SETb, tokenize_char_FETCHFAIL )
 			
-			if( b != 10 )
+			if( b == 10 )
 			{
+				/* Ok, Microsoft style(?), so let's pop it. */
+				
+				char c;
+				res = tokenize_char__charin( (int*)0 );
+				CHAR_RESULT_BODYMATCH( res, LIB4_OP_SETc, ??? );
+				if( b != c )
+				{
+					???
+				}
+				
+			} else {
+				
 					/* Not followed by newline, so NOT DEFINED! */
 				BADUINT( tokenize_char, &b, 10 );
 				return( (retframe){ &end_run, (void*)0 } );

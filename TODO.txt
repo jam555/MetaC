@@ -34,15 +34,17 @@ lexalike.c:
 	Updated the one in front of tokenize_char(), but there may still be some
 		old comments in the file- do a review to see if any can be found.
 	Needs trigraph support added in.
-	tokenize_char() needs to be modified to provide file/line info to allow the
-		origin of text to be tracked for error-reporting and macro programming
-		purposes.
 	tokenize_char() has some new checks up near the start that need distinct
 		return values... which is NOT that big a deal, since a lot of the
 		returns are the wrong TYPE in the first place, and thus a complete
 		run-through will be needed regardless.
 	tokenize_char() seems to require Microsoft-style newlines instead of just
 		supporting them- that needs to be fixed.
+	tokenize_char() tries to properly track lines & columns for e.g. vertical
+		tab... but the proper values are unknown, so it actually CAN'T do so.
+		Need to provide some temporaries, and then expand those out to
+		something programmable later.
+	tokenize_char() and *__accumulate() should probably specially handle EOF.
 	The token-queue system has no way to track if or which macro that tokens
 		have come from, so that needs to get changed so that we can avoid
 		cyclic macro invocations.
