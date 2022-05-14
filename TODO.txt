@@ -40,11 +40,13 @@ lexalike.c:
 		run-through will be needed regardless.
 	tokenize_char() seems to require Microsoft-style newlines instead of just
 		supporting them- that needs to be fixed.
-	tokenize_char() tries to properly track lines & columns for e.g. vertical
-		tab... but the proper values are unknown, so it actually CAN'T do so.
-		Need to provide some temporaries, and then expand those out to
-		something programmable later.
+	htab_size, vtab_size, and ffeed_size need to be modifiable via a pragma or
+		similar directive. Obviously, supporting this will require that at
+		least that directive actually exist.
 	tokenize_char() and *__accumulate() should probably specially handle EOF.
+	Whenever the support for modifying htab_size, vtab_size, and ffeed_size
+		gets added, then they'll need to get added to the fileprogress{} type,
+		so that what's in one won't be overwritten by a later file inclusion.
 	The token-queue system has no way to track if or which macro that tokens
 		have come from, so that needs to get changed so that we can avoid
 		cyclic macro invocations.

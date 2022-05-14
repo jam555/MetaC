@@ -93,6 +93,15 @@
 
 
 
+	/* The tabs are just whatever arbitrary value: I use 4 for horizontal */
+	/*  tabs, so that's what I'm hard coding- note that this should really */
+	/*  be settable via pragma, but such code doesn't currently exist. */
+	/*  Formfeed is 24 because the VT52 and VT100 were an easy 80-column */
+	/*  standard to look up. */
+unsigned htab_size = 4, vtab_size = 4, ffeed_size = 24;
+
+
+
 uintptr_t still_freshline = 1;
 
 int is_freshline()
@@ -1073,7 +1082,7 @@ int tokenize_char( stackpair *stkp, void *v )
 			switch( b )
 			{
 				case 9: /* Horizontal (normal) tab. */
-					res2 = tokenize_char__incrcolumn( ??? );
+					res2 = tokenize_char__incrcolumn( htab_size );
 					if( !res2 )
 					{
 						???
@@ -1082,7 +1091,7 @@ int tokenize_char( stackpair *stkp, void *v )
 					}
 					break;
 				case 11: /* Vertical tab. */
-					res2 = tokenize_char__incrline( ??? );
+					res2 = tokenize_char__incrline( vtab_size );
 					if( !res2 )
 					{
 						???
@@ -1091,7 +1100,7 @@ int tokenize_char( stackpair *stkp, void *v )
 					}
 					break;
 				case 12: /* Form feed. */
-					res2 = tokenize_char__incrline( ??? );
+					res2 = tokenize_char__incrline( ffeed_size );
 					if( !res2 )
 					{
 						???
