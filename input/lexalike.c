@@ -746,7 +746,7 @@ int tokenize_char__accumulate( stackpair *stkp, void *v,  token_head *th, char *
 		
 #define tokenize_char__accumulate_FETCHFAIL( err ) \
 	MONADICFAILURE( tokenize_char__accumulate, "charin", err ); \
-	return( (retframe){ &end_run, (void*)0 } );
+	return( -2 );
 	
 		switch( *a_ )
 		{
@@ -768,7 +768,7 @@ int tokenize_char__accumulate( stackpair *stkp, void *v,  token_head *th, char *
 				{
 					???
 					
-					return( -??? );
+					return( -3 );
 				}
 				
 				res = tokenize_char__charin( (int*)0 );
@@ -779,7 +779,7 @@ int tokenize_char__accumulate( stackpair *stkp, void *v,  token_head *th, char *
 					if( !res2 )
 					{
 						FAILEDINTFUNC( "push_char", tokenize_char__accumulate, res2 );
-						return( (retframe){ &end_run, (void*)0 } );
+						return( -4 );
 					}
 					th->length += 1;
 					
@@ -796,7 +796,7 @@ int tokenize_char__accumulate( stackpair *stkp, void *v,  token_head *th, char *
 				{
 					???
 					
-					return( -??? );
+					return( -5 );
 				}
 				
 				res = tokenize_char__charin( (int*)0 );
@@ -807,7 +807,7 @@ int tokenize_char__accumulate( stackpair *stkp, void *v,  token_head *th, char *
 					if( !res2 )
 					{
 						FAILEDINTFUNC( "push_char", tokenize_char__accumulate, res2 );
-						return( (retframe){ &end_run, (void*)0 } );
+						return( -6 );
 					}
 					th->length += 1;
 					
@@ -824,7 +824,7 @@ int tokenize_char__accumulate( stackpair *stkp, void *v,  token_head *th, char *
 				{
 					???
 					
-					return( -??? );
+					return( -7 );
 				}
 				
 				res = tokenize_char__charin( (int*)0 );
@@ -835,7 +835,7 @@ int tokenize_char__accumulate( stackpair *stkp, void *v,  token_head *th, char *
 					if( !res2 )
 					{
 						FAILEDINTFUNC( "push_char", tokenize_char__accumulate, res2 );
-						return( (retframe){ &end_run, (void*)0 } );
+						return( -8 );
 					}
 					th->length += 1;
 					
@@ -858,7 +858,7 @@ int tokenize_char__accumulate( stackpair *stkp, void *v,  token_head *th, char *
 				{
 					???
 					
-					return( -??? );
+					return( -9 );
 				}
 				
 				res = tokenize_char__charin( (int*)0 );
@@ -869,7 +869,7 @@ int tokenize_char__accumulate( stackpair *stkp, void *v,  token_head *th, char *
 					if( !res2 )
 					{
 						FAILEDINTFUNC( "push_char", tokenize_char__accumulate, res2 );
-						return( (retframe){ &end_run, (void*)0 } );
+						return( -10 );
 					}
 					th->length += 1;
 					
@@ -889,7 +889,7 @@ int tokenize_char__accumulate( stackpair *stkp, void *v,  token_head *th, char *
 		if( !res2 )
 		{
 			FAILEDINTFUNC( "isspace", tokenize_char__accumulate, res2 );
-			return( (retframe){ &end_run, (void*)0 } );
+			return( -11 );
 		}
 			/* Track all of those characters we've accumulated. */
 		res2 = tokenize_char__incrcolumn( th->length );
@@ -897,7 +897,7 @@ int tokenize_char__accumulate( stackpair *stkp, void *v,  token_head *th, char *
 		{
 			???
 			
-			return( -??? );
+			return( -12 );
 		}
 		
 		*b_ = b;
@@ -939,7 +939,7 @@ int tokenize_char( stackpair *stkp, void *v )
 	{
 		BADNULL2( tokenize_char, &files, &files_used );
 		
-		return( -??? );
+		return( -2 );
 	}
 	th.src = files->body[ files_used - 1 ]->name;
 	th.line = files->body[ files_used - 1 ]->line;
@@ -951,12 +951,12 @@ int tokenize_char( stackpair *stkp, void *v )
 			NOTESPACE();
 			DATAPTR( th.src );
 		
-		return( -??? );
+		return( -3 );
 	}
 	
 #define tokenize_char_FETCHFAIL( err ) \
 		MONADICFAILURE( tokenize_char, "charin", err ); \
-		return( (retframe){ &end_run, (void*)0 } );
+		return( -4 );
 	
 	CHAR_RESULT_BODYMATCH( res, LIB4_OP_SETa, tokenize_char_FETCHFAIL )
 	
@@ -982,21 +982,21 @@ int tokenize_char( stackpair *stkp, void *v )
 					NOTELINE(); DATAPTR( &th );
 					NOTESPACE(); DATAPTR( &a );
 					NOTESPACE(); DATAPTR( &b );
-				return( (retframe){ &end_run, (void*)0 } );
+				return( -5 );
 			case -2:
 					/* Internal error. */
 				FAILEDINTFUNC( "tokenize_char__accumulate", tokenize_char, res2 );
 					NOTELINE(); DATAPTR( &th );
 					NOTESPACE(); DATAPTR( &a );
 					NOTESPACE(); DATAPTR( &b );
-				return( (retframe){ &end_run, (void*)0 } );
+				return( -6 );
 			default:
 					/* Unforeseen error, verify passable returns. */
 				FAILEDINTFUNC( "tokenize_char__accumulate", tokenize_char, res2 );
 					NOTELINE(); DATAPTR( &th );
 					NOTESPACE(); DATAPTR( &a );
 					NOTESPACE(); DATAPTR( &b );
-				return( (retframe){ &end_run, (void*)0 } );
+				return( -7 );
 		}
 		
 			/* Let's address the whitespace in the room... We essentially try to */
@@ -1017,6 +1017,8 @@ int tokenize_char( stackpair *stkp, void *v )
 				if( b != c )
 				{
 					???
+					
+					return( -8 );
 				}
 			}
 			
@@ -1029,7 +1031,7 @@ int tokenize_char( stackpair *stkp, void *v )
 			{
 				???
 				
-				return( -??? );
+				return( -9 );
 			}
 			
 		} else if( b == 13 ) /* Ascii carriage return. */
@@ -1047,13 +1049,15 @@ int tokenize_char( stackpair *stkp, void *v )
 				if( b != c )
 				{
 					???
+					
+					return( -10 );
 				}
 				
 			} else {
 				
 					/* Not followed by newline, so NOT DEFINED! */
 				BADUINT( tokenize_char, &b, 10 );
-				return( (retframe){ &end_run, (void*)0 } );
+				return( -11 );
 			}
 			
 				/* Set to newline. */
@@ -1065,7 +1069,7 @@ int tokenize_char( stackpair *stkp, void *v )
 			{
 				???
 				
-				return( -??? );
+				return( -12 );
 			}
 			
 		} else if( !( b == 9 || b == 11 || b == 12 || b == 32 ) )
@@ -1074,7 +1078,7 @@ int tokenize_char( stackpair *stkp, void *v )
 				NOTESPACE(); DECARG( 11 );
 				NOTESPACE(); DECARG( 12 );
 				NOTESPACE(); DECARG( 32 );
-			return( (retframe){ &end_run, (void*)0 } );
+			return( -13 );
 			
 		} else {
 			
@@ -1087,7 +1091,7 @@ int tokenize_char( stackpair *stkp, void *v )
 					{
 						???
 						
-						return( -??? );
+						return( -14 );
 					}
 					break;
 				case 11: /* Vertical tab. */
@@ -1096,7 +1100,7 @@ int tokenize_char( stackpair *stkp, void *v )
 					{
 						???
 						
-						return( -??? );
+						return( -15 );
 					}
 					break;
 				case 12: /* Form feed. */
@@ -1105,7 +1109,7 @@ int tokenize_char( stackpair *stkp, void *v )
 					{
 						???
 						
-						return( -??? );
+						return( -16 );
 					}
 					break;
 				case 32: /* Ordinary space. */
@@ -1114,7 +1118,7 @@ int tokenize_char( stackpair *stkp, void *v )
 					{
 						???
 						
-						return( -??? );
+						return( -17 );
 					}
 					break;
 			}
@@ -1132,7 +1136,7 @@ int tokenize_char( stackpair *stkp, void *v )
 				if( !res2 )
 				{
 					FAILEDINTFUNC( "push_char", tokenize_char, res2 );
-					return( (retframe){ &end_run, (void*)0 } );
+					return( -18 );
 				}
 				
 				break;
@@ -1173,7 +1177,7 @@ int tokenize_char( stackpair *stkp, void *v )
 							NOTESPACE(); CHARARG( 'd' );
 							NOTESPACE(); CHARARG( 'u' );
 							NOTESPACE(); CHARARG( 'x' );
-						return( (retframe){ &end_run, (void*)0 } );
+						return( -19 );
 				}
 				
 				while( len < th.length )
@@ -1183,7 +1187,7 @@ int tokenize_char( stackpair *stkp, void *v )
 					{
 							/* Throw error. */
 						FAILEDINTFUNC( "pop_char", tokenize_char, res2 );
-						return( (retframe){ &end_run, (void*)0 } );
+						return( -20 );
 					}
 					
 					tmp = conv( b );
@@ -1222,7 +1226,7 @@ int tokenize_char( stackpair *stkp, void *v )
 				if( !res2 )
 				{
 					FAILEDINTFUNC( "push_char", tokenize_char, res2 );
-					return( (retframe){ &end_run, (void*)0 } );
+					return( -21 );
 				}
 				
 				break;
@@ -1232,7 +1236,7 @@ int tokenize_char( stackpair *stkp, void *v )
 				if( !res2 )
 				{
 					FAILEDINTFUNC( "push_char", tokenize_char, res2 );
-					return( (retframe){ &end_run, (void*)0 } );
+					return( -22 );
 				}
 				
 				break;
@@ -1245,7 +1249,7 @@ int tokenize_char( stackpair *stkp, void *v )
 		if( !res2 )
 		{
 			FAILEDINTFUNC( "push_char", tokenize_char, res2 );
-			return( (retframe){ &end_run, (void*)0 } );
+			return( -23 );
 		}
 	}
 	
@@ -1253,7 +1257,7 @@ int tokenize_char( stackpair *stkp, void *v )
 	if( !res2 )
 	{
 		FAILEDINTFUNC( "push_tokenhead", tokenize_char, res2 );
-		return( (retframe){ &end_run, (void*)0 } );
+		return( -24 );
 	}
 	
 	return( 1 );
