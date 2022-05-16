@@ -37,8 +37,8 @@ lexalike.c:
 	tokenize_char() has a spot for "universal encoding", but doesn't actually
 		do anything, assuming that things should just be 1-to-1. So, should
 		probably expand that support to actually do something... eventually.
-	tokenize_char() has a number of error cases with incomplete formation- need
-		to fill that in. Probably true of *__accumulate() as well.
+	tokenize_char() is missing monadoic-error handlers in it's
+		whitespace-handling code- write and use them.
 	tokenize_char() seems to require Microsoft-style newlines instead of just
 		supporting them- that needs to be fixed.
 	htab_size, vtab_size, and ffeed_size need to be modifiable via a pragma or

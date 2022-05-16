@@ -747,6 +747,19 @@ int tokenize_char__accumulate( stackpair *stkp, void *v,  token_head *th, char *
 #define tokenize_char__accumulate_FETCHFAIL( err ) \
 	MONADICFAILURE( tokenize_char__accumulate, "charin", err ); \
 	return( -2 );
+#define tokenize_char__accumulate_INCRCOLTRY( scratch, dist,  onfail, failarg ) \
+	( scratch ) = tokenize_char__incrcolumn( dist ); \
+	if( !( scratch ) ) { \
+		FAILEDINTFUNC( "tokenize_char__incrcolumn", tokenize_char__accumulate, ( scratch ) ); \
+			NOTESPACE(); DECARG( dist ); \
+		onfail( failarg ); }
+#define tokenize_char__accumulate_PUSHCHARTRY( scratch, data,  onfail, failarg ) \
+	( scratch ) = push_char( &( stkp->data ),  ( data ) ); \
+	if( !( scratch ) ) { \
+		FAILEDINTFUNC( "push_char", tokenize_char__accumulate, ( scratch ) ); \
+		onfail( failarg ); } \
+	th->length += 1;
+	
 	
 		switch( *a_ )
 		{
@@ -763,25 +776,13 @@ int tokenize_char__accumulate( stackpair *stkp, void *v,  token_head *th, char *
 			case 'b': /* Binary. */
 					/* We'll be dropping the "b" as unneeded, so we'll have */
 					/*  to track it here instead of later. */
-				res2 = tokenize_char__incrcolumn( 1 );
-				if( !res2 )
-				{
-					???
-					
-					return( -3 );
-				}
+				tokenize_char__accumulate_INCRCOLTRY( res2, 1,  return, -3 );
 				
 				res = tokenize_char__charin( (int*)0 );
 				CHAR_RESULT_BODYMATCH( res, LIB4_OP_SETb, tokenize_char__accumulate_FETCHFAIL )
 				while( b == '0' || b == '1' )
 				{
-					res2 = push_char( &( stkp->data ),  b );
-					if( !res2 )
-					{
-						FAILEDINTFUNC( "push_char", tokenize_char__accumulate, res2 );
-						return( -4 );
-					}
-					th->length += 1;
+					tokenize_char__accumulate_PUSHCHARTRY( res2, b,  return, -4 );
 					
 					res = tokenize_char__charin( (int*)0 );
 					CHAR_RESULT_BODYMATCH( res, LIB4_OP_SETb, tokenize_char__accumulate_FETCHFAIL )
@@ -791,25 +792,13 @@ int tokenize_char__accumulate( stackpair *stkp, void *v,  token_head *th, char *
 			case 'd': /* Decimal. */
 					/* We'll be dropping the "d" as unneeded, so we'll have */
 					/*  to track it here instead of later. */
-				res2 = tokenize_char__incrcolumn( 1 );
-				if( !res2 )
-				{
-					???
-					
-					return( -5 );
-				}
+				tokenize_char__accumulate_INCRCOLTRY( res2, 1,  return, -5 );
 				
 				res = tokenize_char__charin( (int*)0 );
 				CHAR_RESULT_BODYMATCH( res, LIB4_OP_SETb, tokenize_char__accumulate_FETCHFAIL )
 				while( isdigit( b ) )
 				{
-					res2 = push_char( &( stkp->data ),  b );
-					if( !res2 )
-					{
-						FAILEDINTFUNC( "push_char", tokenize_char__accumulate, res2 );
-						return( -6 );
-					}
-					th->length += 1;
+					tokenize_char__accumulate_PUSHCHARTRY( res2, b,  return, -6 );
 					
 					res = tokenize_char__charin( (int*)0 );
 					CHAR_RESULT_BODYMATCH( res, LIB4_OP_SETb, tokenize_char__accumulate_FETCHFAIL )
@@ -819,25 +808,13 @@ int tokenize_char__accumulate( stackpair *stkp, void *v,  token_head *th, char *
 			case 'o': /* Octal. */
 					/* We'll be dropping the "o" as unneeded, so we'll have */
 					/*  to track it here instead of later. */
-				res2 = tokenize_char__incrcolumn( 1 );
-				if( !res2 )
-				{
-					???
-					
-					return( -7 );
-				}
+				tokenize_char__accumulate_INCRCOLTRY( res2, 1,  return, -7 );
 				
 				res = tokenize_char__charin( (int*)0 );
 				CHAR_RESULT_BODYMATCH( res, LIB4_OP_SETb, tokenize_char__accumulate_FETCHFAIL )
 				while( isdigit( b ) && b != '8' && b != '9' )
 				{
-					res2 = push_char( &( stkp->data ),  b );
-					if( !res2 )
-					{
-						FAILEDINTFUNC( "push_char", tokenize_char__accumulate, res2 );
-						return( -8 );
-					}
-					th->length += 1;
+					tokenize_char__accumulate_PUSHCHARTRY( res2, b,  return, -8 );
 					
 					res = tokenize_char__charin( (int*)0 );
 					CHAR_RESULT_BODYMATCH( res, LIB4_OP_SETb, tokenize_char__accumulate_FETCHFAIL )
@@ -853,25 +830,13 @@ int tokenize_char__accumulate( stackpair *stkp, void *v,  token_head *th, char *
 			case 'x': /* Hexadecimal. */
 					/* We'll be dropping the "u" or "x" as unneeded, so */
 					/*  we'll have to track it here instead of later. */
-				res2 = tokenize_char__incrcolumn( 1 );
-				if( !res2 )
-				{
-					???
-					
-					return( -9 );
-				}
+				tokenize_char__accumulate_INCRCOLTRY( res2, 1,  return, -9 );
 				
 				res = tokenize_char__charin( (int*)0 );
 				CHAR_RESULT_BODYMATCH( res, LIB4_OP_SETb, tokenize_char__accumulate_FETCHFAIL )
 				while( isxdigit( b ) )
 				{
-					res2 = push_char( &( stkp->data ),  b );
-					if( !res2 )
-					{
-						FAILEDINTFUNC( "push_char", tokenize_char__accumulate, res2 );
-						return( -10 );
-					}
-					th->length += 1;
+					tokenize_char__accumulate_PUSHCHARTRY( res2, b,  return, -10 );
 					
 					res = tokenize_char__charin( (int*)0 );
 					CHAR_RESULT_BODYMATCH( res, LIB4_OP_SETb, tokenize_char__accumulate_FETCHFAIL )
@@ -892,13 +857,7 @@ int tokenize_char__accumulate( stackpair *stkp, void *v,  token_head *th, char *
 			return( -11 );
 		}
 			/* Track all of those characters we've accumulated. */
-		res2 = tokenize_char__incrcolumn( th->length );
-		if( !res2 )
-		{
-			???
-			
-			return( -12 );
-		}
+		tokenize_char__accumulate_INCRCOLTRY( res2, th->length,  return, -12 );
 		
 		*b_ = b;
 		return( 1 );
@@ -1016,7 +975,9 @@ int tokenize_char( stackpair *stkp, void *v )
 				CHAR_RESULT_BODYMATCH( res, LIB4_OP_SETc, ??? );
 				if( b != c )
 				{
-					???
+					TRESPASSPATH( tokenize_char, "ERROR: *__peekchar() and *__charin() returned different characters! :" );
+						NOTESPACE(); CHARARG( b );
+						NOTESPACE(); CHARARG( c );
 					
 					return( -8 );
 				}
@@ -1029,7 +990,9 @@ int tokenize_char( stackpair *stkp, void *v )
 			res2 = tokenize_char__incrline( 1 );
 			if( !res2 )
 			{
-				???
+				FAILEDINTFUNC( "tokenize_char__incrline", tokenize_char, res2 );
+					NOTESPACE();
+					DECARG( 1 );
 				
 				return( -9 );
 			}
@@ -1048,7 +1011,9 @@ int tokenize_char( stackpair *stkp, void *v )
 				CHAR_RESULT_BODYMATCH( res, LIB4_OP_SETc, ??? );
 				if( b != c )
 				{
-					???
+					TRESPASSPATH( tokenize_char, "ERROR: *__peekchar() and *__charin() returned different characters! :" );
+						NOTESPACE(); CHARARG( b );
+						NOTESPACE(); CHARARG( c );
 					
 					return( -10 );
 				}
@@ -1057,6 +1022,7 @@ int tokenize_char( stackpair *stkp, void *v )
 				
 					/* Not followed by newline, so NOT DEFINED! */
 				BADUINT( tokenize_char, &b, 10 );
+				
 				return( -11 );
 			}
 			
@@ -1067,7 +1033,9 @@ int tokenize_char( stackpair *stkp, void *v )
 			res2 = tokenize_char__incrline( 1 );
 			if( !res2 )
 			{
-				???
+				FAILEDINTFUNC( "tokenize_char__incrline", tokenize_char, res2 );
+					NOTESPACE();
+					DECARG( 1 );
 				
 				return( -12 );
 			}
@@ -1078,6 +1046,7 @@ int tokenize_char( stackpair *stkp, void *v )
 				NOTESPACE(); DECARG( 11 );
 				NOTESPACE(); DECARG( 12 );
 				NOTESPACE(); DECARG( 32 );
+			
 			return( -13 );
 			
 		} else {
@@ -1089,7 +1058,9 @@ int tokenize_char( stackpair *stkp, void *v )
 					res2 = tokenize_char__incrcolumn( htab_size );
 					if( !res2 )
 					{
-						???
+						FAILEDINTFUNC( "tokenize_char__incrcolumn", tokenize_char, res2 );
+							NOTESPACE();
+							DECARG( htab_size );
 						
 						return( -14 );
 					}
@@ -1098,7 +1069,9 @@ int tokenize_char( stackpair *stkp, void *v )
 					res2 = tokenize_char__incrline( vtab_size );
 					if( !res2 )
 					{
-						???
+						FAILEDINTFUNC( "tokenize_char__incrline", tokenize_char, res2 );
+							NOTESPACE();
+							DECARG( vtab_size );
 						
 						return( -15 );
 					}
@@ -1107,7 +1080,9 @@ int tokenize_char( stackpair *stkp, void *v )
 					res2 = tokenize_char__incrline( ffeed_size );
 					if( !res2 )
 					{
-						???
+						FAILEDINTFUNC( "tokenize_char__incrline", tokenize_char, res2 );
+							NOTESPACE();
+							DECARG( ffeed_size );
 						
 						return( -16 );
 					}
@@ -1116,7 +1091,9 @@ int tokenize_char( stackpair *stkp, void *v )
 					res2 = tokenize_char__incrcolumn( 1 );
 					if( !res2 )
 					{
-						???
+						FAILEDINTFUNC( "tokenize_char__incrcolumn", tokenize_char, res2 );
+							NOTESPACE();
+							DECARG( 1 );
 						
 						return( -17 );
 					}
@@ -1136,6 +1113,9 @@ int tokenize_char( stackpair *stkp, void *v )
 				if( !res2 )
 				{
 					FAILEDINTFUNC( "push_char", tokenize_char, res2 );
+						NOTESPACE();
+						CHARARG( a );
+					
 					return( -18 );
 				}
 				
@@ -1177,6 +1157,7 @@ int tokenize_char( stackpair *stkp, void *v )
 							NOTESPACE(); CHARARG( 'd' );
 							NOTESPACE(); CHARARG( 'u' );
 							NOTESPACE(); CHARARG( 'x' );
+						
 						return( -19 );
 				}
 				
@@ -1187,6 +1168,7 @@ int tokenize_char( stackpair *stkp, void *v )
 					{
 							/* Throw error. */
 						FAILEDINTFUNC( "pop_char", tokenize_char, res2 );
+						
 						return( -20 );
 					}
 					
@@ -1216,7 +1198,7 @@ int tokenize_char( stackpair *stkp, void *v )
 						/* Just report, don't break, we don't really care when */
 						/*  the user does stupid shit so long as the user MIGHT */
 						/*  get informed. */
-						/* "Might" get informed because that's somewhere else's */
+						/* "Might" get informed because that's SOMEWHERE ELSE'S */
 						/*  job. */
 					I_OVERFLOW( tokenize_char, &acc, UCHAR_MAX );
 				}
@@ -1226,6 +1208,7 @@ int tokenize_char( stackpair *stkp, void *v )
 				if( !res2 )
 				{
 					FAILEDINTFUNC( "push_char", tokenize_char, res2 );
+					
 					return( -21 );
 				}
 				
@@ -1236,6 +1219,7 @@ int tokenize_char( stackpair *stkp, void *v )
 				if( !res2 )
 				{
 					FAILEDINTFUNC( "push_char", tokenize_char, res2 );
+					
 					return( -22 );
 				}
 				
@@ -1249,6 +1233,7 @@ int tokenize_char( stackpair *stkp, void *v )
 		if( !res2 )
 		{
 			FAILEDINTFUNC( "push_char", tokenize_char, res2 );
+			
 			return( -23 );
 		}
 	}
@@ -1257,6 +1242,7 @@ int tokenize_char( stackpair *stkp, void *v )
 	if( !res2 )
 	{
 		FAILEDINTFUNC( "push_tokenhead", tokenize_char, res2 );
+		
 		return( -24 );
 	}
 	
