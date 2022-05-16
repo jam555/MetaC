@@ -64,9 +64,8 @@ lexalike.h:
 
 extrachar.c:
 	Needs some changes to support/use the file/line info that needs to be added
-		to lexalike.c. The needed changes have been made in source.h/.c, but
-		they need to be carried over to extrachar now... though looks like
-		lexalike.c comes first.
+		to lexalike.c. The needed changes have been made in source.h/.c and
+		lexalike.h/.c, but they need to be carried over to extrachar now.
 
 source.c:
 	deinit() doesn't clear any non-root_src instances of source{} from
