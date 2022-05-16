@@ -745,7 +745,7 @@ int tokenize_char__accumulate( stackpair *stkp, void *v,  token_head *th, char *
 		char b;
 		
 #define tokenize_char__accumulate_FETCHFAIL( err ) \
-	MONADICFAILURE( tokenize_char__accumulate, "charin", err ); \
+	MONADICFAILURE( tokenize_char__accumulate, "tokenize_char__charin", err ); \
 	return( -2 );
 #define tokenize_char__accumulate_INCRCOLTRY( scratch, dist,  onfail, failarg ) \
 	( scratch ) = tokenize_char__incrcolumn( dist ); \
@@ -913,11 +913,14 @@ int tokenize_char( stackpair *stkp, void *v )
 		return( -3 );
 	}
 	
-#define tokenize_char_FETCHFAIL( err ) \
-		MONADICFAILURE( tokenize_char, "charin", err ); \
+#define tokenize_char_PEEKFAIL( err ) \
+		MONADICFAILURE( tokenize_char, "tokenize_char__charin", ( err ) ); \
 		return( -4 );
+#define tokenize_char_CHARINFAIL( err ) \
+		MONADICFAILURE( tokenize_char, "tokenize_char__charin", ( err ) ); \
+		return( -5 );
 	
-	CHAR_RESULT_BODYMATCH( res, LIB4_OP_SETa, tokenize_char_FETCHFAIL )
+	CHAR_RESULT_BODYMATCH( res, LIB4_OP_SETa, tokenize_char_CHARINFAIL );
 	
 	if( is_bslash( a ) )
 	{
@@ -926,7 +929,7 @@ int tokenize_char( stackpair *stkp, void *v )
 			/* We don't need the backslash character, and we're already */
 			/*  tracking it's source, so we'll just overwrite it. */
 		res = tokenize_char__charin( (int*)0 );
-		CHAR_RESULT_BODYMATCH( res, LIB4_OP_SETa, tokenize_char_FETCHFAIL )
+		CHAR_RESULT_BODYMATCH( res, LIB4_OP_SETa, tokenize_char_CHARINFAIL );
 		
 		th.length = 0;
 		res2 = tokenize_char__accumulate( stkp, v,  &th, &a, &b );
@@ -941,21 +944,21 @@ int tokenize_char( stackpair *stkp, void *v )
 					NOTELINE(); DATAPTR( &th );
 					NOTESPACE(); DATAPTR( &a );
 					NOTESPACE(); DATAPTR( &b );
-				return( -5 );
+				return( -6 );
 			case -2:
 					/* Internal error. */
 				FAILEDINTFUNC( "tokenize_char__accumulate", tokenize_char, res2 );
 					NOTELINE(); DATAPTR( &th );
 					NOTESPACE(); DATAPTR( &a );
 					NOTESPACE(); DATAPTR( &b );
-				return( -6 );
+				return( -7 );
 			default:
 					/* Unforeseen error, verify passable returns. */
 				FAILEDINTFUNC( "tokenize_char__accumulate", tokenize_char, res2 );
 					NOTELINE(); DATAPTR( &th );
 					NOTESPACE(); DATAPTR( &a );
 					NOTESPACE(); DATAPTR( &b );
-				return( -7 );
+				return( -8 );
 		}
 		
 			/* Let's address the whitespace in the room... We essentially try to */
@@ -964,7 +967,7 @@ int tokenize_char( stackpair *stkp, void *v )
 		if( b == 10 ) /* Ascii line feed. */
 		{
 			res = tokenize_char__peekchar( (int*)0 );
-			CHAR_RESULT_BODYMATCH( res, LIB4_OP_SETb, tokenize_char_FETCHFAIL )
+			CHAR_RESULT_BODYMATCH( res, LIB4_OP_SETb, tokenize_char_PEEKFAIL );
 			
 			if( b == 13 )
 			{
@@ -972,14 +975,14 @@ int tokenize_char( stackpair *stkp, void *v )
 				
 				char c;
 				res = tokenize_char__charin( (int*)0 );
-				CHAR_RESULT_BODYMATCH( res, LIB4_OP_SETc, ??? );
+				CHAR_RESULT_BODYMATCH( res, LIB4_OP_SETc, tokenize_char_CHARINFAIL );
 				if( b != c )
 				{
 					TRESPASSPATH( tokenize_char, "ERROR: *__peekchar() and *__charin() returned different characters! :" );
 						NOTESPACE(); CHARARG( b );
 						NOTESPACE(); CHARARG( c );
 					
-					return( -8 );
+					return( -9 );
 				}
 			}
 			
@@ -994,13 +997,13 @@ int tokenize_char( stackpair *stkp, void *v )
 					NOTESPACE();
 					DECARG( 1 );
 				
-				return( -9 );
+				return( -10 );
 			}
 			
 		} else if( b == 13 ) /* Ascii carriage return. */
 		{
 			res = tokenize_char__peekchar( (int*)0 );
-			CHAR_RESULT_BODYMATCH( res, LIB4_OP_SETb, tokenize_char_FETCHFAIL )
+			CHAR_RESULT_BODYMATCH( res, LIB4_OP_SETb, tokenize_char_PEEKFAIL )
 			
 			if( b == 10 )
 			{
@@ -1008,14 +1011,14 @@ int tokenize_char( stackpair *stkp, void *v )
 				
 				char c;
 				res = tokenize_char__charin( (int*)0 );
-				CHAR_RESULT_BODYMATCH( res, LIB4_OP_SETc, ??? );
+				CHAR_RESULT_BODYMATCH( res, LIB4_OP_SETc, tokenize_char_CHARINFAIL );
 				if( b != c )
 				{
 					TRESPASSPATH( tokenize_char, "ERROR: *__peekchar() and *__charin() returned different characters! :" );
 						NOTESPACE(); CHARARG( b );
 						NOTESPACE(); CHARARG( c );
 					
-					return( -10 );
+					return( -11 );
 				}
 				
 			} else {
@@ -1023,7 +1026,7 @@ int tokenize_char( stackpair *stkp, void *v )
 					/* Not followed by newline, so NOT DEFINED! */
 				BADUINT( tokenize_char, &b, 10 );
 				
-				return( -11 );
+				return( -12 );
 			}
 			
 				/* Set to newline. */
@@ -1037,7 +1040,7 @@ int tokenize_char( stackpair *stkp, void *v )
 					NOTESPACE();
 					DECARG( 1 );
 				
-				return( -12 );
+				return( -13 );
 			}
 			
 		} else if( !( b == 9 || b == 11 || b == 12 || b == 32 ) )
@@ -1047,7 +1050,7 @@ int tokenize_char( stackpair *stkp, void *v )
 				NOTESPACE(); DECARG( 12 );
 				NOTESPACE(); DECARG( 32 );
 			
-			return( -13 );
+			return( -14 );
 			
 		} else {
 			
@@ -1062,7 +1065,7 @@ int tokenize_char( stackpair *stkp, void *v )
 							NOTESPACE();
 							DECARG( htab_size );
 						
-						return( -14 );
+						return( -15 );
 					}
 					break;
 				case 11: /* Vertical tab. */
@@ -1073,7 +1076,7 @@ int tokenize_char( stackpair *stkp, void *v )
 							NOTESPACE();
 							DECARG( vtab_size );
 						
-						return( -15 );
+						return( -16 );
 					}
 					break;
 				case 12: /* Form feed. */
@@ -1084,7 +1087,7 @@ int tokenize_char( stackpair *stkp, void *v )
 							NOTESPACE();
 							DECARG( ffeed_size );
 						
-						return( -16 );
+						return( -17 );
 					}
 					break;
 				case 32: /* Ordinary space. */
@@ -1095,7 +1098,7 @@ int tokenize_char( stackpair *stkp, void *v )
 							NOTESPACE();
 							DECARG( 1 );
 						
-						return( -17 );
+						return( -18 );
 					}
 					break;
 			}
@@ -1116,7 +1119,7 @@ int tokenize_char( stackpair *stkp, void *v )
 						NOTESPACE();
 						CHARARG( a );
 					
-					return( -18 );
+					return( -19 );
 				}
 				
 				break;
@@ -1158,7 +1161,7 @@ int tokenize_char( stackpair *stkp, void *v )
 							NOTESPACE(); CHARARG( 'u' );
 							NOTESPACE(); CHARARG( 'x' );
 						
-						return( -19 );
+						return( -20 );
 				}
 				
 				while( len < th.length )
@@ -1169,11 +1172,16 @@ int tokenize_char( stackpair *stkp, void *v )
 							/* Throw error. */
 						FAILEDINTFUNC( "pop_char", tokenize_char, res2 );
 						
-						return( -20 );
+						return( -21 );
 					}
 					
+#define tokenize_char_CONVFAIL( err ) \
+	MONADICFAILURE( tokenize_char, "function pointer", ( err ) ); \
+		NOTESPACE(); CHARARG( a ); /* Report the dispatch-char. */ \
+		NOTELINE(); CHARARG( b ); \
+		return( -22 );
 					tmp = conv( b );
-					LIB4_INTRESULT_BODYMATCH( tmp, LIB4_OP_SETb, tokenize_char_FETCHFAIL );
+					LIB4_INTRESULT_BODYMATCH( tmp, LIB4_OP_SETb, tokenize_char_CONVFAIL );
 					
 						/* Would be desirable to ensure that acc doesn't */
 						/*  overflow, but I'll leave that out for now. */
@@ -1209,7 +1217,7 @@ int tokenize_char( stackpair *stkp, void *v )
 				{
 					FAILEDINTFUNC( "push_char", tokenize_char, res2 );
 					
-					return( -21 );
+					return( -23 );
 				}
 				
 				break;
@@ -1220,7 +1228,7 @@ int tokenize_char( stackpair *stkp, void *v )
 				{
 					FAILEDINTFUNC( "push_char", tokenize_char, res2 );
 					
-					return( -22 );
+					return( -24 );
 				}
 				
 				break;
@@ -1234,7 +1242,7 @@ int tokenize_char( stackpair *stkp, void *v )
 		{
 			FAILEDINTFUNC( "push_char", tokenize_char, res2 );
 			
-			return( -23 );
+			return( -25 );
 		}
 	}
 	
@@ -1243,7 +1251,7 @@ int tokenize_char( stackpair *stkp, void *v )
 	{
 		FAILEDINTFUNC( "push_tokenhead", tokenize_char, res2 );
 		
-		return( -24 );
+		return( -26 );
 	}
 	
 	return( 1 );
