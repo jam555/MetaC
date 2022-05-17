@@ -87,11 +87,12 @@ int popas_extrachar( stackpair *stkp, void *v,  extrachar *ec )
 extrachar_result backstock = EXTRACHAR_BUILDFAILURE( LIB4_RESULT_GENERICFALSE );
 extrachar_result get_extrachar( stackpair *stkp, void *v )
 {
-	extrachar_result a;
+	extrachar_result ret;
+	extrachar ec;
 	int res;
 	
 #define get_extrachar_SUCC( val ) \
-		a = ( val ); \
+		ret = EXTRACHAR_BUILDSUCCESS( val ); \
 		backstock = EXTRACHAR_BUILDFAILURE( LIB4_RESULT_GENERICFALSE );
 #define get_extrachar_FAIL( val ) \
 		res = tokenize_char( stkp, v ); \
@@ -99,18 +100,19 @@ extrachar_result get_extrachar( stackpair *stkp, void *v )
 			FAILEDINTFUNC( "tokenize_char", get_extrachar, res ); \
 				NOTELINE(); DATAPTR( stkp ); \
 				NOTESPACE(); DATAPTR( v ); \
-			a = EXTRACHAR_BUILDFAILURE( LIB4_RESULT_FAILURE_UNDIFFERENTIATED ); } \
+			ret = EXTRACHAR_BUILDFAILURE( LIB4_RESULT_FAILURE_UNDIFFERENTIATED ); } \
 		else { \
-			res = popas_extrachar( stkp, v,  &a ); \
+			res = popas_extrachar( stkp, v,  &ec ); \
 			if( !res ) { \
 				FAILEDINTFUNC( "popas_extrachar", get_extrachar, res ); \
 					NOTELINE(); DATAPTR( stkp ); \
 					NOTESPACE(); DATAPTR( v ); \
-				a = EXTRACHAR_BUILDFAILURE( LIB4_RESULT_FAILURE_UNDIFFERENTIATED ); \
-			} }
+				ret = EXTRACHAR_BUILDFAILURE( LIB4_RESULT_FAILURE_UNDIFFERENTIATED ); } \
+			else { \
+				ret = EXTRACHAR_BUILDSUCCESS( ec ); } }
 	EXTRACHAR_BODYMATCH( backstock, get_extrachar_SUCC, get_extrachar_FAIL );
 	
-	return( a );
+	return( ret );
 }
 extrachar_result peek_extrachar( stackpair *stkp, void *v )
 {
