@@ -61,8 +61,14 @@ int popas_extrachar( stackpair *stkp, void *v,  extrachar *ec )
 				NOTELINE(); DATAPTR( &( stkp->data ) );
 			return( -4 );
 		}
-		ec->was_freshline = th.was_freshline;
+		
 		ec->is_delimited = th.is_delimited;
+		
+			/* We're discarding th, but ec needs the same pointer, so we */
+			/*  just pass the responsibility along. */
+		ec->file = th.src;
+		ec->line = th.line;
+		ec->column = th.column;
 		
 		return( 1 );
 	}

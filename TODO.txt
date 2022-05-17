@@ -63,9 +63,9 @@ lexalike.h:
 		Actually, is that true?
 
 extrachar.c:
-	Needs some changes to support/use the file/line info that needs to be added
-		to lexalike.c. The needed changes have been made in source.h/.c and
-		lexalike.h/.c, but they need to be carried over to extrachar now.
+	extrachar{} now gets initialized with source info, but the initialization
+		is the only thing that gets done- check that the rest of the file is
+		fine.
 
 source.c:
 	deinit() doesn't clear any non-root_src instances of source{} from

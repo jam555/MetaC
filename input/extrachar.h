@@ -9,11 +9,12 @@
 	typedef struct extrachar
 	{
 		char c;
-		int was_freshline;
+		/* "int was_freshline" was previously here, replace it's usage with */
+		/*  "(column==0)". */
 		int is_delimited;
 		
 		refed_pstr *file;
-		uintptr_t line, column;
+		uintmax_t line, column;
 	};
 	
 	LIB4_MONAD_EITHER_BUILDTYPE_DEFINITION(
