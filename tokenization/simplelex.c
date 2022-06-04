@@ -23,9 +23,11 @@
 		STDMSG_MONADICFAILURE_WRAPPER( &errs, funcname, ( calltext ), ( err ) )
 		
 		#define NOTELINE() STDMSG_NOTELINE_WRAPPER( &errs )
+		#define NOTESPACE() STDMSG_NOTESPACE_WRAPPER( &errs )
 		
-		#define SIGNEDARG( integer ) STDMSG_SIGNEDARG_WRAPPER( &errs, integer )
-		#define HEXARG( hex ) STDMSG_HEXARG_WRAPPER( &errs, hex )
+		#define SIGNEDARG( integer ) STDMSG_SIGNEDARG_WRAPPER( &errs, ( integer ) )
+		#define HEXARG( hex ) STDMSG_HEXARG_WRAPPER( &errs, ( hex ) )
+		#define DATAPTRARG( val ) STDMSG_DATAPTRARG_WRAPPER( &errs, ( val ) )
 
 #define FAILEDINTFUNC( calleestr, callername, val ) \
 	STDMSG_FAILEDINTFUNC_WRAPPER( &errs, ( calleestr ), callername, ( val ) )
@@ -82,7 +84,15 @@ retframe head_lex( stackpair *stkp, void *v )
 	retframe ret = (retframe){ (framefunc)&end_run, (void*)0 };
 		/* The first char read obviously has to go into the token, so we */
 		/*  start with a default length of 1. */
-	token_head th = (token_head){ /* type */TOKTYPE_INVALID, 1, 0, 0 };
+	token_head th =
+		(token_head)
+		{
+			TOKTYPE_INVALID, 1,
+			
+			0,
+			
+			(refed_pstr*)0, 0, 0
+		};
 	extrachar a;
 	int res2;
 	
@@ -94,6 +104,12 @@ retframe head_lex( stackpair *stkp, void *v )
 	
 		EXTRACHAR_BODYMATCH( ecr, LIB4_OP_SETa, head_lex_GETFAIL )
 	}
+	
+		/* We'll use this first character as the reference point for the */
+		/*  entirety of the token. */
+	th.src = a.file;
+	th.line = a.line;
+	th.column = a.column;
 	
 	if( isspace( a.c ) )
 	{
@@ -245,6 +261,17 @@ retframe space_lex( stackpair *stkp, void *v )
 	PUSHCHAR( &( stkp->data ), a.c,  space_lex, res );
 	PUSHTOKENHEAD( &( stkp->data ), th,  space_lex, res );
 	
+		/* We won't be needing this reference anymore. */
+	res = refed_pstr_decrrefs( a.file );
+	if( !res )
+	{
+		FAILEDINTFUNC( "refed_pstr_decrrefs", space_lex, res );
+			NOTESPACE();
+			DATAPTRARG( a.file );
+		
+		return( (retframe){ &end_run, (void*)0 } );
+	}
+	
 	return( (retframe){ hand, (void*)0 } );
 }
 
@@ -284,6 +311,17 @@ retframe newline_lex( stackpair *stkp, void *v )
 	
 	PUSHCHAR( &( stkp->data ),  a.c,  newline_lex, res );
 	PUSHTOKENHEAD( &( stkp->data ),  th,  newline_lex, res );
+	
+		/* We won't be needing this reference anymore. */
+	res = refed_pstr_decrrefs( a.file );
+	if( !res )
+	{
+		FAILEDINTFUNC( "refed_pstr_decrrefs", space_lex, res );
+			NOTESPACE();
+			DATAPTRARG( a.file );
+		
+		return( (retframe){ &end_run, (void*)0 } );
+	}
 	
 	return( (retframe){ hand, (void*)0 } );
 }
