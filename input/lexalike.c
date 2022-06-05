@@ -82,10 +82,17 @@
 
 
 
+#define ALERT_CHARAVAL ( 7 )
+	
+
+
 /* The purpose of lexalike.c is to provide wrappers for charin(), isspace(), */
 /*  etc., but which convert stuff to tokens so that there's an easier way to */
 /*  support character delimiting, by moving it before token lexing and */
-/*  assembly. */
+/*  assembly. Note that C's "delimit newlines" preprocessor trait has been */
+/*  extended to the letter 'a' (which produces an Ascii 'bell' character), */
+/*  and various formats of numbers (which are used for numeric */
+/*  representation of characters). */
 /* Note that support for trigraphs belongs in this file. */
 /* There's no deep reason for the still_freshline, lexentry, and */
 /*  assemble_token stuff to be here, but it makes about as much sense as */
@@ -234,9 +241,10 @@ retframe getANDassemble_token( stackpair *stkp, void *v )
 		/*  that material itself. */
 	CALL_FRAMEFUNC(
 		stkp,
-			&assemble_token, (void*)0, &head_lex, (void*)0,
 		
-		getANDassemble_token, tmp, lexalike_ENDRETFRAME
+        &assemble_token, (void*)0, &head_lex, (void*)0,
+		
+        getANDassemble_token, tmp, lexalike_ENDRETFRAME
 	);
 }
 
@@ -876,7 +884,8 @@ int tokenize_char__accumulate( stackpair *stkp, void *v,  token_head *th, char *
 	/*  line or column numbers- the line & column info is intended to make */
 	/*  it easier for programmers to do debugging, nothing else, so there's */
 	/*  seriously no point to tracking any e.g. newlines that get output. */
-	/*  Also, that could be done elsewhere anyways. */
+	/*  Also, that could be done elsewhere anyways, whereas tracking the */
+	/*  origin within a particular file HAS TO happen here. */
 int tokenize_char( stackpair *stkp, void *v )
 {
 	token_head th =
@@ -1107,9 +1116,7 @@ int tokenize_char( stackpair *stkp, void *v )
 		switch( a )
 		{
 			case 'a':
-					/* "Alert". We're changing to the ASCII "bell" character */
-					/*  for this. */
-				a = 7;
+				a = ALERT_CHARAVAL;
 				
 				th.length = 1;
 				res2 = push_char( &( stkp->data ),  a );
@@ -1169,7 +1176,6 @@ int tokenize_char( stackpair *stkp, void *v )
 					res2 = pop_char( &( stkp->data ),  &b );
 					if( !res2 )
 					{
-							/* Throw error. */
 						FAILEDINTFUNC( "pop_char", tokenize_char, res2 );
 						
 						return( -21 );
@@ -1508,7 +1514,7 @@ retframe token_touint_octal( stackpair *stkp, void *v )
 		{
 			/* Range error! */
 			
-			TRESPASSPATH( token_touint_octal, "Error: expected a number from 0 to 8, instead received: " );
+			TRESPASSPATH( token_touint_octal, "Error: expected a number from 0 to 7, instead received: " );
 				SIGNEDARG( b );
 			
 			return( (retframe){ &end_run, (void*)0 } );

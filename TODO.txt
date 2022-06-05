@@ -31,9 +31,10 @@ demo_errs.c:
 
 lexalike.c:
 	any functions left that belong elsewhere?
-	Updated the one in front of tokenize_char(), but there may still be some
-		old comments in the file- do a review to see if any can be found.
 	Needs trigraph support added in.
+    token_queue_push() needs to have some "max file size" testing added to
+        one of it' conditionals. Same for token_queue_shufflepush() and
+        token_queue_shuffle2queue().
 	tokenize_char() has a spot for "universal encoding", but doesn't actually
 		do anything, assuming that things should just be 1-to-1. So, should
 		probably expand that support to actually do something... eventually.
@@ -57,6 +58,7 @@ lexalike.c:
 		"int mismatch" stuff that already exists.
 	tokenize_char__charin()'s GENERICMISMATCH case could use some better error
 		reporting.
+    Random functions aren't complete: check for '???'.
 lexalike.h:
 	Will need to be synced with some lexalike.c changes.
 	is_freshline() should be declared elsewhere- move it.
