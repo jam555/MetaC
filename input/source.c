@@ -444,8 +444,7 @@ char_result charin( refed_pstr **refresh_srcname, uintmax_t *prog )
 				NOTESPACE();
 				DATAPTRARG( *refresh_srcname );
 			
-			/* We should maybe have an error here, but I can't be bothered */
-			/*  right now. */
+			LIB4_CHARRESULT_RETURNFAILURE( LIB4_RESULT_FAILURE_??? );
 		}
 	}
 	

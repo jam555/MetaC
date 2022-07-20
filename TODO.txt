@@ -1,12 +1,19 @@
 Special note:
-	The FAILED * FUNC macros should probably be supplemented with versions that implement the standard assigned-and-if() construct. That will save MANY lines.
-	Probably need to check all the files for *_refid variables, and delete them. Caught some, but probably not all.
+	The FAILED * FUNC macros should probably be supplemented with versions
+		that implement the standard assigned-and-if() construct. That will save
+		MANY lines.
+	Probably need to check all the files for *_refid variables, and delete them.
+		Caught some, but probably not all.
 
-Aaaand the file is already out of date. Have been using already-defined stuff for the FAILED * FUNC macro note above. So, lots of line numbers below are off...
+Aaaand the file is already out of date. Have been using already-defined stuff
+for the FAILED * FUNC macro note above. So, lots of line numbers below are
+off...
 
-freshline_directives.c looks likely to just be an older version of exec.c and macroargs.c, so figure out if it should be deleted.
+freshline_directives.c looks likely to just be an older version of exec.c and
+macroargs.c, so figure out if it should be deleted.
 
-There may be a whole load of stuff that uses MONADICFAILURE() by unknowingly passing it a lib4_failure_result under the mistaken impression that it's an int.
+There may be a whole load of stuff that uses MONADICFAILURE() by unknowingly
+passing it a lib4_failure_result under the mistaken impression that it's an int.
 
 Make an example for how to use peek()'s offset correctly.
 
@@ -30,9 +37,19 @@ err.c:
 demo_errs.c:
 
 lexalike.c:
+	NEW NOTE!: Add a ",=" operator/token for non-scalar (sorta non-math,
+		except that adding elements to a matrix could be math, but IS NOT
+		scalar, and IS an example of what this should do) accumulation.
+		ALSO: add the "spaceship" operator ("<=>") and it's "inverse"
+		(">=<") to support other languages more easily.
+	SUPPORT NOTE!: Need some way to turn particular token accumulations
+		on/off in the lex stage, so that e.g. "starship" doesn't screw
+		with other stuff.
 	any functions left that belong elsewhere?
 	Needs trigraph support added in.
-    token_queue_push() needs to have some "max file size" testing added to
+    assemble_token() has now had the "was_freshline" stuff removed from it,
+		still need to check other stuff.
+	token_queue_push() needs to have some "max file size" testing added to
         one of it' conditionals. Same for token_queue_shufflepush() and
         token_queue_shuffle2queue().
 	tokenize_char() has a spot for "universal encoding", but doesn't actually
@@ -70,8 +87,7 @@ source.c:
 	deinit() doesn't clear any non-root_src instances of source{} from
 		"sources": this needs to be changed, particularly since
 		discard_source() should do most of the work already..
-	charin() has an incomplete error report near it's end- need to actually
-		return an error instead of falling through to success.
+	The final RETURNFAILURE() in charin() needs a proper failure value.
 
 basics.c:
 	Line 249 has a bit of error reporting that's probably worthy of it's own
@@ -82,7 +98,6 @@ basics.c:
 		like decent references, but not directly suitable for use.
 
 components.h:
-	Is the stuff at the bottom of the file supposed to be there?
 
 components.c:
 	Starting at line 80, "default" isn't really defined.
@@ -116,9 +131,10 @@ freshline_directives.c:
 		in order to know how the directives need to work.
 
 complexlex.c:
-	Line 159: Apparently I was uncertain about something here. Best to check.
-	Line 613: A note about a function set/function that should be built. Might
-		be further down in same file already...
+	I was somehow uncertain about the "complex" call near the end of
+		smart_dealloc_token().
+	dealloc_tokengroup() has several error returns with null function pointers
+		instead of a pointer to end_func()... is that desirable?
 	invoke_dealloctoken() appears to have an inverted test (the handler SHOULD
 		BE non-null!), and matching wrong error report.
 	On review, TOKTYPE_NUMBER_UINT shouldn't need special deallocation, but I
@@ -130,11 +146,13 @@ complexlex.c:
 		macro calls can properly be handled inside comments.
 		Added: or maybe I'll just move that into the token source? Though
 		I'm currently favoring leaving comments unmolested...
+		Correction: there's no damned reason to accumulate comments until
+		the output phase, what am I even doing? And yeah, macros should modify
+		them. Fix this.
 	accumulate_whitespace() currently will just throw errors if a
 		non-whitespace token is pointed to by the top of the stack- that needs
 		to change for the sake of making it more convenient to use.
 complexlex.h:
-	Line 95: Same note as 613 in .c
 
 simplelex.c:
 	Line 410: This default in numberentry_lex() can technically use a character
@@ -150,7 +168,8 @@ simplelex.h:
 token.h:
 	Need some notes on *_INVALID vs *_OTHER
 	"was_freshline" has been dropped from token_head, and "src", "line", and
-		"column" have been added. A LOT OF CODE NEEDS TO CHANGE.
+		"column" have been added. I think I've fixed all of the references,
+		but check again at home.
 
 headers.h:
 	Need to verify that all the relevant headers are included. Maybe make

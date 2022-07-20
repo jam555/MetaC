@@ -150,29 +150,6 @@ retframe assemble_token( stackpair *stkp, void *v )
 	}
 	
 	
-		/* This particular bit of conditionals is so that stuff that wants */
-		/*  to only have whitespace separating it from the preceding newline */
-		/*  can detect that circumstance. */
-	th.was_freshline = still_freshline;
-	if( th.toktype == TOKTYPE_NEWLINE )
-	{
-		still_freshline = 1;
-		th.was_freshline = 1;
-		
-	} else if
-	(
-		th.toktype == TOKTYPE_SPACE ||
-		th.toktype == TOKTYPE_OCTO
-	)
-	{
-		/* Leave still_freshline alone, no change to it. */
-		
-	} else {
-		
-		still_freshline = 0;
-	}
-	
-	
 #define assemble_token_DISCARD( val ) 
 	lib4_ptrresult ptrres =
 		lib4_stdmemfuncs.alloc

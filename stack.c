@@ -496,7 +496,7 @@ int push_tokenhead( stackframe *stk,  token_head val )
 	{
 		return( LIB4_STDERRS_BADARGS_SIMPLE - 1 );
 	}
-	if( !push_int( stk,  val.was_freshline ) )
+	if( !push_int( stk,  !( val.column ) ) )
 	{
 		return( LIB4_STDERRS_BADARGS_SIMPLE - 2 );
 	}
@@ -523,7 +523,7 @@ int pop_tokenhead( stackframe *stk,  token_head *dest )
 		{
 			return( LIB4_STDERRS_BADARGS_SIMPLE - 2 );
 		}
-		if( !pop_int( stk,  &( dest->was_freshline ) ) )
+		if( !pop_int( stk,  &( !( dest->column ) ) ) )
 		{
 			return( LIB4_STDERRS_BADARGS_SIMPLE - 3 );
 		}
@@ -560,7 +560,7 @@ int peek_tokenhead( stackframe *stk,  size_t off,  token_head *dest )
 			return( res - sizeof( uintptr_t ) );
 		}
 		
-		res = peek_int( stk,  off + sizeof( uintptr_t ),  &( tmp.was_freshline ) );
+		res = peek_int( stk,  off + sizeof( uintptr_t ),  &( !( tmp.column ) ) );
 		if( res == LIB4_STDERRS_BADARGS_SIMPLE ) /* ??? */
 		{
 				/* How?!? */

@@ -453,7 +453,6 @@ tokenbranch* build_tokenbranch( size_t elems )
 }
 int set_lead_tokenbranch( tokenbranch *tb, token_head *tok )
 {
-		/* We actually DON'T CARE if refid is set. */
 	if( !tb || !tok )
 	{
 		BADNULL2( set_lead_tokenbranch, &tb, &tok );
@@ -472,7 +471,6 @@ int set_lead_tokenbranch( tokenbranch *tb, token_head *tok )
 }
 int push_body_tokenbranch( tokenbranch *tb, token_head *tok )
 {
-		/* We actually DON'T CARE if refid is set. */
 	if( !tb || !tok )
 	{
 		BADNULL2( push_body_tokenbranch, &tb, &tok );
@@ -490,7 +488,6 @@ int push_body_tokenbranch( tokenbranch *tb, token_head *tok )
 }
 int set_tail_tokenbranch( tokenbranch *tb, token_head *tok )
 {
-		/* We actually DON'T CARE if refid is set. */
 	if( !tb || !tok )
 	{
 		BADNULL2( set_tail_tokenbranch, &tb, &tok );
