@@ -83,6 +83,8 @@
 
 /* Argument checking should be added to some of this stuff. */
 
+int force_comment = TOKTYPE_INVALID;
+
 #define SOH ( 0x01 )
 #define STXT ( 0x02 )
 #define ETXT ( 0x03 )
@@ -102,7 +104,17 @@ int echo_tokenhead( stackpair *stkp, void *v,  token_head **th )
 	
 	lib4_errno_popresult( &res );
 	PUTCHAR_CALL( echo_tokenhead, res, return, -3,  SOH );
-	PRINTF_CALL( echo_tokenhead, res, return, -4,  "%x", (unsigned int)( ( *th )->toktype ) );
+	switch( force_comment )
+	{
+		case TOKTYPE_INVALID:
+			PRINTF_CALL( echo_tokenhead, res, return, -4,  "%x", (unsigned int)( ( *th )->toktype ) );
+			break;
+		
+		case TOKTYPE_SYM_COMMENTOP:
+		case TOKTYPE_SYM_COMMENTLINE:
+			PRINTF_CALL( echo_tokenhead, res, return, -4,  "%x", (unsigned int)( TOKTYPE_TOKENGROUP_COMNTMERGE ) );
+			break;
+	}
 	PUTCHAR_CALL( echo_tokenhead, res, return, -5,  USEP );
 	PRINTF_CALL( echo_tokenhead, res, return, -6,  "%x", (unsigned int)( ( *th )->length ) );
 	PUTCHAR_CALL( echo_tokenhead, res, return, -7,  STXT );
@@ -144,6 +156,28 @@ retframe echo_tokens_entrypoint( stackpair *stkp, void *v )
 			return( (retframe){ &end_run, (void*)0 } );
 			
 			
+		case TOKTYPE_SYM_COMMENTOP:
+		case TOKTYPE_SYM_COMMENTLINE:
+				if( force_comment == TOKTYPE_INVALID )
+				{
+					force_comment = th->toktype;
+				}
+				return( (retframe){ (framefunc)&echo_token, (void*)0 } );
+			
+		case TOKTYPE_SYM_COMMENTCL:
+				if( force_comment == TOKTYPE_SYM_COMMENTOP )
+				{
+					force_comment = th->toktype;
+				}
+				return( (retframe){ (framefunc)&echo_token, (void*)0 } );
+		case TOKTYPE_NEWLINE:
+				if( force_comment == TOKTYPE_SYM_COMMENTLINE )
+				{
+					force_comment = th->toktype;
+				}
+				return( (retframe){ (framefunc)&echo_token, (void*)0 } );
+			
+			
 		/* These cases that follow all basically get echoed out verbatim, */
 		/*  because they're "leaf" tokens instead of ones that can possess */
 		/*  child tokens. */
@@ -165,7 +199,6 @@ retframe echo_tokens_entrypoint( stackpair *stkp, void *v )
 		case TOKTYPE_DQSTR:
 		case TOKTYPE_GRAVE:
 		case TOKTYPE_NAME:
-		case TOKTYPE_NEWLINE:
 		case TOKTYPE_NUMBER:
 		case TOKTYPE_OCTO:
 		case TOKTYPE_SPACE:
@@ -257,12 +290,6 @@ retframe echo_tokens_entrypoint( stackpair *stkp, void *v )
 		case TOKTYPE_SYM_DECLCASTCLOSE:
 		case TOKTYPE_SYM_ARRCASTCLOSE:
 		case TOKTYPE_SYM_CASTCLOSE:
-			
-			
-		case TOKTYPE_SYM_COMMENTOP:
-		case TOKTYPE_SYM_COMMENTCL:
-			
-		case TOKTYPE_SYM_COMMENTLINE:
 			
 				/* That big list of cases, and all of them come down to this. */
 			return( (retframe){ (framefunc)&echo_token, (void*)0 } );
