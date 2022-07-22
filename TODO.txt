@@ -28,6 +28,11 @@ Make an example for how to use peek()'s offset correctly.
 	Gonna need rewind capabilities to make this reliably work...
 
 
+!!!IN PROGRESS!!! Currently removing the tokenizing-stage comment packaging-
+	it belongs in the output stage insted (it's there, but might not be
+	perfect).
+
+
 tokenization.txt:
 	Needs better documentation of invoke_dealloctoken().
 

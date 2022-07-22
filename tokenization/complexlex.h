@@ -78,6 +78,9 @@
 		/*  TOKTYPE_TOKENGROUP_COMNTMERGE, with all of the tokens (including */
 		/*  whitespace and newlines) encountered between the openning and */
 		/*  closing newlines contained within the body element. */
+		/* The calls to this, and eventually the code itself, will eventually */
+		/*  be removed: it belongs in the MetaC compiler, but not the */
+		/*  preprocessor. */
 	retframe comment_entry( stackpair *stkp, void *v );
 	
 	
