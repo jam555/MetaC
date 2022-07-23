@@ -31,6 +31,8 @@ Make an example for how to use peek()'s offset correctly.
 !!!IN PROGRESS!!! Currently removing the tokenizing-stage comment packaging-
 	it belongs in the output stage insted (it's there, but might not be
 	perfect).
+	See commit 0100e105 for first commit in this series.
+	Actually, I might be done with the removal already.
 
 
 tokenization.txt:
