@@ -1,0 +1,52 @@
+Needed directives:
+	_C_stringifier(^ ^) /* Emits a single hash symbol. */
+	_C_concatenator(^ ^) /* Emits two hash symbols. */
+	
+	_end_emit(^ string ^) /* Converts the string to tokens and immediately outputs them. */
+	
+		/* Inline, the string will be used as if it was a source file. Note that the things */
+		/*  contained inside square brackets are optional. */
+	_include_text(^ string [, dir_ref, file [, line, column ] ] ^)
+		/* dir_ref is a name token as a string, marching one provided on the command line */
+		/*  and/or in preprocessor configuration files along with a directory path- this */
+		/*  is used to provide a better version of the C preprocessor differentiation */
+		/*  between #include<> and #include""- in MetaCPP, you not only get to use the */
+		/*  "standard library" ( "_stdlib" ) and "current working directory" ( "_curdir" ) */
+		/*  source directories, but you can define custom ones for e.g. libraries provided */
+		/*  by other projects; file is a path (once again, as a string) from the directory */
+		/*  specified by dir_ref to the individual file that is to be included, with all */
+		/*  special names such as ".", "..", and "~" resolved + eliminated BEFORE adding to */
+		/*  dir_ref for the sake of confining the possible search directories. */
+	_include_file(^ dir_ref, file ^)
+	_require_file(^ dir_ref, file ^) /* See include_file. */
+	
+		/* Line scoped. The contents of plain square brackets are either optional */
+		/*  (body_tokens), or semi-optional (the arg_names stuff literally markes a */
+		/*  particular define as being a function macro). Note that the body_tokens can */
+		/*  include newlines without requiring them to be escaped: the define is marked by */
+		/*  the use of _enddef, NOT by a newline. Defines CANNOT (at least currently) be */
+		/*  nested, but are allowed to contain _if(^ ^), as well as to be contained BY */
+		/*  _if(^  ^) bodies (but not conditions). */
+	_define(^ name ^) [ [^ arg_names, ... ^] ]
+			[ body_tokens ]
+		_enddef(^ ^)
+		/* Line scoped. See _define, excepting that all forset defines are function style, */
+		/*  and arbitrary numbers of _forsubset/_endsubfor pairs can be used inside of it */
+		/*  to specify individual "bite" sizes for the args under the requirement that no */
+		/*  two are allowed to have the SAME size of bite. A subset with zero named */
+		/*  arguments is illegal. */
+	_forset(^ name ^)
+		_forsubset[^ arg_names, ... ^]
+			[ body_tokens ]
+		_endsubfor
+		_endfor
+		/* As with forset, but without subsets, and running the same number of times as */
+		/*  provided a invocation. */
+	_forcount(^ name ^)
+		[ body_tokens ]
+		_endfor
+	_if(^ condition ^) /* Works like in C. */
+		_else
+		_elif(^  condition ^)
+		_endif
+	
