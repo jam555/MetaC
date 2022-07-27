@@ -757,6 +757,79 @@ retframe echo_tokenbranch( stackpair *stkp, void *v )
 }
 
 
+retframe emit_C_stringifier( stackpair *stkp, void *v )
+{
+		/* We can use token_head directly because we'll be outputing the */
+		/*  text manually. */
+	static token_head th =
+		{
+			TOKTYPE_OCTO,
+			1,
+			
+			0,
+			
+			(refed_pstr*)???,
+			line???, column???
+		};
+	token_head *ignore;
+	int len, scratch;
+	
+	STACKCHECK( stkp,  emit_C_stringifier, macroargs_ENDRETFRAME );
+	
+	push_uintptr( (uintptr_t)&th )
+	
+	len = echo_tokenhead( stkp, v,  &ignore );
+	if( !len )
+	{
+		FAILEDINTFUNC( "echo_tokenhead", emit_C_stringifier, len );
+			NOTELINE();
+			DATAPTR( &th );
+				/* ENDRETFRAME() results in a return(). */
+		ENDRETFRAME( scratch );
+	}
+	
+	PUTCHAR_CALL( emit_C_stringifier, scratch, ENDRETFRAME, ignore,  '#' );
+	
+	RETFRAMEFUNC( stkp,  emit_C_stringifier );
+}
+retframe emit_C_concatenizer( stackpair *stkp, void *v )
+{
+		/* We can use token_head directly because we'll be outputing the */
+		/*  text manually. */
+	static token_head th =
+		{
+			TOKTYPE_DOUBLEOCTO,
+			2,
+			
+			0,
+			
+			(refed_pstr*)???,
+			line???, column???
+		};
+	token_head *ignore;
+	int len, scratch;
+	
+	STACKCHECK( stkp,  emit_C_stringifier, macroargs_ENDRETFRAME );
+	
+	push_uintptr( (uintptr_t)&th )
+	
+	len = echo_tokenhead( stkp, v,  &ignore );
+	if( !len )
+	{
+		FAILEDINTFUNC( "echo_tokenhead", emit_C_stringifier, len );
+			NOTELINE();
+			DATAPTR( &th );
+				/* ENDRETFRAME() results in a return(). */
+		ENDRETFRAME( scratch );
+	}
+	
+	PUTCHAR_CALL( emit_C_stringifier, scratch, ENDRETFRAME, ignore,  '#' );
+	PUTCHAR_CALL( emit_C_stringifier, scratch, ENDRETFRAME, ignore,  '#' );
+	
+	RETFRAMEFUNC( stkp,  emit_C_stringifier );
+}
+
+
 
 #if defined( __cplusplus ) && __cplusplus >= 199711L
 	namespace

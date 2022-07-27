@@ -1,8 +1,7 @@
 Needed directives:
-	_C_stringifier(^ ^) /* Emits a single hash symbol. */
-	_C_concatenator(^ ^) /* Emits two hash symbols. */
-	
-	_end_emit(^ string ^) /* Converts the string to tokens and immediately outputs them. */
+	_emit_C_stringifier(^ ^) /* Emits a single hash symbol. */
+	_emit_C_concatenator(^ ^) /* Emits two hash symbols. */
+	_emit_string(^ string ^) /* Converts the string to tokens and immediately outputs them. */
 	
 		/* Inline, the string will be used as if it was a source file. Note that the things */
 		/*  contained inside square brackets are optional. */
@@ -18,7 +17,9 @@ Needed directives:
 		/*  special names such as ".", "..", and "~" resolved + eliminated BEFORE adding to */
 		/*  dir_ref for the sake of confining the possible search directories. */
 	_include_file(^ dir_ref, file ^)
-	_require_file(^ dir_ref, file ^) /* See include_file. */
+	_require_file(^ dir_ref, file ^) /* See _include_file. */
+		/* Packages file contents into a macro. See also _include_file and _define. */
+	_macroize_file(^ dir_ref, file, name ^)
 	
 		/* Line scoped. The contents of plain square brackets are either optional */
 		/*  (body_tokens), or semi-optional (the arg_names stuff literally markes a */
@@ -49,4 +50,34 @@ Needed directives:
 		_else
 		_elif(^  condition ^)
 		_endif
+	
+	_concatenate(^ a, b ^)
+	_stringify(^ argument ^)
+	
+	_char_findfirst(^ str, chr ^)
+	_strmatch(^ str_a, str_b ^)
+	_strcopy(^ str, start_offset, length ^)
+	_strlen(^ str ^)
+	_utctime(^ ^)
+	_localtime(^ ^)
+	_elapsedtime(^ ^)
+	
+	_randint(^ ^)
+	_randstr(^ ^)
+	_RAND_MAX(^ ^)
+	
+	_str2int(^ str ^)
+	_str2float(^ str ^)
+	
+	_num2sign(^ num ^)
+	_float2arr(^ flt ^)
+	_ceil(^ num ^)
+	_floor(^ num ^)
+	_trunc(^ num ^)
+	_round(^ num ^)
+	-isunordered(^ flt_a, flt_b ^)
+	
+	_alert(^ msg... ^)
+	_error(^ msg... ^)
+	_preproc_assert(^ num, err_message... ^)
 	

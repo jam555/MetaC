@@ -25,4 +25,9 @@
 	retframe echo_tokenbranch_tail( stackpair *stkp, void *v );
 	retframe echo_tokenbranch_body( stackpair *stkp, void *v );
 	
+	
+	
+	retframe emit_C_stringifier( stackpair *stkp, void *v );
+	retframe emit_C_concatenizer( stackpair *stkp, void *v );
+	
 #endif

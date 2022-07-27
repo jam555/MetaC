@@ -146,6 +146,7 @@
 		#define TOKTYPE_GRAVE ( 0x801 )
 	
 	#define TOKTYPE_OCTO ( 9 )
+		#define TOKTYPE_DOUBLEOCTO ( 0x900 )
 	
 	#define TOKTYPE_AT ( 10 )
 	#define TOKTYPE_OTHER ( 11 )
