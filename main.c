@@ -3,6 +3,7 @@
 #include "headers.h"
 
 #include "err/inner_err.h"
+#include "command_parse.h"
 
 
 
@@ -18,6 +19,8 @@
 #endif
 
 
+#define BADNULL( funcname, ptr ) \
+	STDMSG_BADNULL_WRAPPER( &errs, funcname, ( ptr ) )
 #define BADNULL2( funcname, ptr1, ptr2 ) \
 	STDMSG_BADNULL2_WRAPPER( &errs, funcname, ( ptr1 ), ( ptr2 ) )
 
@@ -26,20 +29,22 @@
 
 
 
-struct
+master_context globals =
 {
-	stackpair *stkp;
-	
-} globals =
-	{
-		&std_stacks
-	};
+	&std_stacks,
+
+	0,
+	(char**)0
+};
 
 
+retframe common_entrance_func( stackpair *stkp, void *v );
+
+#define main_ERREXIT() return( ??? );
 int main( int argn, char** args )
 {
-	int res;
-	retframe entrance_func = ???;
+	int res, scratch;
+	retframe entrance_func = &common_entrance_func;
 	
 	if( !argn || !args )
 	{
@@ -103,6 +108,17 @@ int main( int argn, char** args )
 		abort();
 	}
 	
+	globals.argn = argn;
+	globals.args = args;
+	STACK_PUSH_UINT(
+		( globals.stkp->data ),
+		&globals,
+		
+		&errs,
+		main,
+		scratch,
+		main_ERREXIT
+	);
 	res = run_loop( &entrance_func,  globals.stkp );
 	if( !res )
 	{
@@ -153,6 +169,79 @@ int main( int argn, char** args )
 	
 	???
 }
+
+
+
+#define common_entrance_func_ENDRETFRAME() return( (retframe){ &end_run, (void*)0 } )
+retframe common_entrance_func( stackpair *stkp, void *v )
+{
+	master_context *glob;
+	int scratch;
+	
+	{
+		uintptr_t glob_;
+		STACK_PEEK_UINT(
+			( stkp->data ),
+			0,
+			&glob_,
+
+			&errs,
+			common_entrance_func,
+			scratch,
+			common_entrance_func_ENDRETFRAME
+		);
+		glob = (master_context*)glob_;
+	}
+	if( !glob )
+	{
+		BADNULL( common_entrance_func, &glob );
+	}
+	
+	size_t iter = 1;
+	int argn = glob->argn, *matches, *eqpoints;
+	char **args = glob->args;
+	matches = (int*)malloc( sizeof( int ) * argn );
+	if( !matches )
+	{
+		/* malloc error, report and fail! */
+	}
+	eqpoints = (int*)malloc( sizeof( int ) * argn );
+	if( !eqpoints )
+	{
+		free( matches );
+		matches = (int*)0;
+		
+		/* malloc error, report and fail! */
+	}
+	if
+	(
+		!arg_parser
+		(
+			argn, args, matches, eqpoints,
+
+			commandline_options_count,
+			commandline_options_lengths,
+			commandline_options
+		)
+	)
+	{
+		???
+	}
+	while( iter < argn )
+	{
+		???
+	}
+	
+	???
+}
+
+
+#define STACKPEEK_UINT( stk, offset, dest,  caller, scratch ) \
+	STACK_PEEK_UINT( ( stk ), ( offset ), ( dest ),  &errs, ( caller ), ( scratch ), lexalike_ENDRETFRAME )
+#define STACKPOP_UINT( stk, dest,  caller, scratch ) \
+	STACK_POP_UINT( ( stk ), ( dest ),  &errs, ( caller ), ( scratch ), lexalike_ENDRETFRAME )
+#define STACKPUSH_UINT( stk, val,  caller, scratch ) \
+	STACK_PUSH_UINT( ( stk ), ( val ),  &errs, ( caller ), ( scratch ), lexalike_ENDRETFRAME )
 
 
 
