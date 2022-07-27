@@ -1,6 +1,4 @@
 Needed directives:
-	_emit_C_stringifier(^ ^) /* Emits a single hash symbol. */
-	_emit_C_concatenator(^ ^) /* Emits two hash symbols. */
 	_emit_string(^ string ^) /* Converts the string to tokens and immediately outputs them. */
 	
 		/* Inline, the string will be used as if it was a source file. Note that the things */

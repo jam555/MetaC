@@ -28,12 +28,12 @@ Make an example for how to use peek()'s offset correctly.
 	Gonna need rewind capabilities to make this reliably work...
 
 
-!!!IN PROGRESS!!! Currently removing the tokenizing-stage comment packaging-
-	it belongs in the output stage insted (it's there, but might not be
-	perfect).
-	See commit 0100e105 for first commit in this series.
-	Actually, I might be done with the removal already.
+NEEDED: a file to localize the preprocessor directives that are NOT freshline
+	directives.
 
+echo_tokens.c: Both emit_C_stringifier() and *_concatenator() need to be
+	finished up. In particular, their token_head instances need some additional
+	things set in them, some of those DYNAMICALLY.
 
 tokenization.txt:
 	Needs better documentation of invoke_dealloctoken().
