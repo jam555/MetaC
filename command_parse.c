@@ -43,6 +43,8 @@ int arg_parser
 		
 		if( args[ iter1 ] && 1 )
 		{
+			matches[ iter1 ] = -1;
+			
 				/* Will return NULL if character not found. */
 			eq = strchr( args[ iter1 ], '=' );
 			if( eq )

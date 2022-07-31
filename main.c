@@ -4,6 +4,7 @@
 
 #include "err/inner_err.h"
 #include "command_parse.h"
+#include "lexalike.h"
 
 
 
@@ -34,7 +35,9 @@ master_context globals =
 	&std_stacks,
 
 	0,
-	(char**)0
+	(char**)0,
+	
+	-1
 };
 
 
@@ -172,6 +175,38 @@ int main( int argn, char** args )
 
 
 
+retframe common_???_func( stackpair *stkp, void *v )
+{
+	???
+	
+	retframe getANDassemble_token( stackpair *stkp, void *v );
+	
+	if( ->toktype == TOKTYPE_NAME )
+	{
+		struct genericnamed
+		{
+			char_pascalarray *name;
+			void *ref;
+			uintptr_t reftype;
+		};
+			/* tok->text must point to an actual string of text. */
+		genericnamed* bsearch1_gennamearr( genname_parr *parr, token *tok );
+		
+	} else {
+		
+		struct generictyped
+		{
+			uintptr_t toktype;
+			void *ref;
+				/* ->reftype uses the same values as in struct genericnamed. */
+			uintptr_t reftype;
+		};
+		generictyped* gentyped_bsearch( gentyped_parr *parr, token *tok );
+	}
+	
+	???
+}
+
 #define common_entrance_func_ENDRETFRAME() return( (retframe){ &end_run, (void*)0 } )
 retframe common_entrance_func( stackpair *stkp, void *v )
 {
@@ -197,7 +232,7 @@ retframe common_entrance_func( stackpair *stkp, void *v )
 		BADNULL( common_entrance_func, &glob );
 	}
 	
-	size_t iter = 1;
+	size_t iter = 0;
 	int argn = glob->argn, *matches, *eqpoints;
 	char **args = glob->args;
 	matches = (int*)malloc( sizeof( int ) * argn );
@@ -225,11 +260,78 @@ retframe common_entrance_func( stackpair *stkp, void *v )
 		)
 	)
 	{
-		???
+		/* Error, log & fail. */
 	}
 	while( iter < argn )
 	{
+		switch( matches[ iter ] )
+		{
+			case common_entrance_func_CLANG:
+			case common_entrance_func_CppLANG:
+			case common_entrance_func_FORTRANLANG:
+			case common_entrance_func_METACLANG:
+			case common_entrance_func_OBJCLANG:
+			case common_entrance_func_TEXT:
+				if( glob->lang != -1 )
+				{
+					if( glob->lang == matches[ iter ] )
+					{
+						/* Warning: language was specified twice! */
+						
+					} else {
+						
+						/* Error: conflicting language specifications! */
+					}
+					
+				} else {
+					
+					glob->lang = matches[ iter ];
+				}
+				
+				if( !( eqpoints[ iter ] ) )
+				{
+					/* Error: We don't currently support any language variations. */
+				}
+				
+				break;
+			case -1:
+				break;
+			default:
+				/* Error: unrecognized match value! */
+		}
+		
 		???
+		
+		++iter;
+	}
+	
+	if( glob->lang == -1 )
+	{
+		/* Error: No language was chosen. */
+	}
+	
+	switch( glob->lang )
+	{
+		case common_entrance_func_CLANG:
+		case common_entrance_func_CppLANG:
+		case common_entrance_func_FORTRANLANG:
+		case common_entrance_func_METACLANG:
+		case common_entrance_func_OBJCLANG:
+		case common_entrance_func_TEXT:
+			/* One of these per case. We push the appropriate */
+			/*  lookup table to the appropriate stack. */
+			
+	int lexparse1_pushsearchtable
+	(
+		genname_parrparr **keys,
+		size_t *keys_used,
+		
+		genname_parr *pushable
+	);
+			
+			break;
+		default:
+			/* Error: unrecognized match value! */
 	}
 	
 	???
