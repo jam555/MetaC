@@ -35,9 +35,7 @@ master_context globals =
 	&std_stacks,
 
 	0,
-	(char**)0,
-	
-	-1
+	(char**)0
 };
 
 
@@ -174,8 +172,53 @@ int main( int argn, char** args )
 }
 
 
+retframe common_opdispatch( stackpair *stkp, void *v )
+{
+	???
+	
+	token *tok;
+	int scratch;
+	
+	if( tok->toktype != TOKTYPE_NAME )
+	{
+		generictyped *gt = gentyped_bsearch( stkp->ops, tok );
+		if( gt )
+		{
+			switch( gt->reftype )
+			{
+				case GENNAMETYPE_INVALID:
+					/* The default state, doesn't actually represent anything, invalid here. */
+				case GENNAMETYPE_NAMEONLY:
+					/* Used for tracking includes, invalid here. */
+				case GENNAMETYPE_TABLEENTRY:
+					/* ->ref points to a lookup table to be used for */
+					/*  further searches. Usually it gets pushed onto */
+					/*  a stack, but probably invalid here? */
+				case GENNAMETYPE_RETFRAMEFUNC:
+					/* ->ref points to a retframe to be called/run. */
+					
+						/* Maybe we need to setup additional returns as well? */
+					CALL_FRAMEFUNC(
+						stkp,
 
-retframe common_???_func( stackpair *stkp, void *v )
+						return_route_func, (void*)0, gt->ref->handler, gt->ref->data,
+
+						common_opdispatch, scratch, lexalike_ENDRETFRAME /* Replace this. */
+					);
+				default:
+					/* No match found, just output it. */
+			}
+			
+			???
+		}
+		
+	} else {
+		
+		/* Just print it. */
+	}
+	
+	???
+}
 {
 	???
 	
@@ -193,15 +236,6 @@ retframe common_???_func( stackpair *stkp, void *v )
 		genericnamed* bsearch1_gennamearr( genname_parr *parr, token *tok );
 		
 	} else {
-		
-		struct generictyped
-		{
-			uintptr_t toktype;
-			void *ref;
-				/* ->reftype uses the same values as in struct genericnamed. */
-			uintptr_t reftype;
-		};
-		generictyped* gentyped_bsearch( gentyped_parr *parr, token *tok );
 	}
 	
 	???
@@ -272,9 +306,9 @@ retframe common_entrance_func( stackpair *stkp, void *v )
 			case common_entrance_func_METACLANG:
 			case common_entrance_func_OBJCLANG:
 			case common_entrance_func_TEXT:
-				if( glob->lang != -1 )
+				if( stkp->lang != -1 )
 				{
-					if( glob->lang == matches[ iter ] )
+					if( stkp->lang == matches[ iter ] )
 					{
 						/* Warning: language was specified twice! */
 						
@@ -285,7 +319,7 @@ retframe common_entrance_func( stackpair *stkp, void *v )
 					
 				} else {
 					
-					glob->lang = matches[ iter ];
+					stkp->lang = matches[ iter ];
 				}
 				
 				if( !( eqpoints[ iter ] ) )
@@ -305,7 +339,7 @@ retframe common_entrance_func( stackpair *stkp, void *v )
 		++iter;
 	}
 	
-	if( glob->lang == -1 )
+	if( stkp->lang == -1 )
 	{
 		/* Error: No language was chosen. */
 	}

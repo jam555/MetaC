@@ -13,6 +13,10 @@
 		char_pascalarray *stack;
 		size_t used;
 		
+		int lang;
+		
+		gentyped_parr *ops;
+		genname_parr *directives, *linemacros, *omnimacros;
 	};
 	
 	typedef struct stackpair stackpair;

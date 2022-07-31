@@ -5,8 +5,6 @@ typedef struct master_context
 	int argn;
 	char **args;
 	
-	int lang;
-	
 } master_context;
 
 
