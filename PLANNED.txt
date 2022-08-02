@@ -82,9 +82,10 @@ Needed directives:
 		/* immediately and recursively runs "code" through the entire macro */
 		/*  handling system, essentially until there aren't any macros or */
 		/*  directives left uncalled from "code", even if embedded into e.g. */
-		/*  a _define(^^). */
+		/*  a _define(^^). This is mostly useful inside defines. */
 	_immediate(^ code ^)
 		/* encodes an invocation of _immediate(^^) for executation at */
-		/*  whatever the normal time is- this is mostly useful for defines. */
+		/*  whatever the normal time is- this is mostly useful inside */
+		/*  defines. */
 	_embed_immediate(^ code ^)
 	
