@@ -34,6 +34,7 @@
 
 
 
+	/* ( token* -- token* ( 0 | 1 ) ) */
 	/* This function MUST be given a token pointer via it's */
 	/*  void argument: that's used to comunicatre WHAT is */
 	/*  required. */
@@ -51,7 +52,7 @@ retframe require_match( stackpair *stkp, void *v )
 	int scratch;
 	
 	STACKPEEK_UINT( stkp->data, 0, a,  require_match, scratch );
-	*t = (token*)a;
+	*tok = (token*)a;
 	
 	switch( ref->header.toktype )
 	{
@@ -68,7 +69,7 @@ retframe require_match( stackpair *stkp, void *v )
 		default:
 			a = ref->header.toktype;
 	}
-	switch( t->header.toktype )
+	switch( tok->header.toktype )
 	{
 		case TOKTYPE_TOKENGROUP_SAMEMERGE:
 			if( ( (tokengroup*)ref )->subtype == a )
@@ -80,7 +81,7 @@ retframe require_match( stackpair *stkp, void *v )
 			if
 			(
 				a == TOKTYPE_TOKENGROUP_WHITESPACE ||
-				a ==  TOKTYPE_SPACE||
+				a == TOKTYPE_SPACE ||
 				a == TOKTYPE_NEWLINE
 			)
 			{
@@ -100,8 +101,8 @@ retframe require_match( stackpair *stkp, void *v )
 		case TOKTYPE_NAME:
 			if
 			(
-				a == t->header.toktype &&
-				strcmp( ref->text, t->text ) == 0
+				a == tok->header.toktype &&
+				strcmp( ref->text, tok->text ) == 0
 			)
 			{
 				ret = 1;
@@ -112,7 +113,7 @@ retframe require_match( stackpair *stkp, void *v )
 			if
 			(
 				a == TOKTYPE_TOKENGROUP_WHITESPACE ||
-				a == t->header.toktype
+				a == tok->header.toktype
 			)
 			{
 				ret = 1;
@@ -120,7 +121,7 @@ retframe require_match( stackpair *stkp, void *v )
 			break;
 		
 		default:
-			if( t->header.toktype == a )
+			if( tok->header.toktype == a )
 			{
 				ret = 1;
 			}
@@ -128,9 +129,9 @@ retframe require_match( stackpair *stkp, void *v )
 	}
 	
 	STACKPUSH_UINT( stkp->data, ret,  require_match, scratch );
-	RETFRAMEFUNC( stkp,  swap2 );
+	RETFRAMEFUNC( stkp,  require_match );
 }
-	/* ( token* -- boolean ) */
+	/* ( token* -- token* boolean ) */
 	/* Places 1 on the data stack if the token pointer */
 	/*  points to a preprocessor opening token, else */
 	/*  places 0 on the data stack. */
@@ -142,7 +143,7 @@ retframe require_preprocopener( stackpair *stkp, void *v )
 		{
 			{
 				TOKTYPE_OPPARUP,
-				1,
+				2,
 				
 				0, 0, 0, 0
 			},
@@ -152,7 +153,7 @@ retframe require_preprocopener( stackpair *stkp, void *v )
 		{
 			{
 				TOKTYPE_OPSQRUP,
-				1,
+				2,
 				
 				0, 0, 0, 0
 			},
@@ -162,7 +163,7 @@ retframe require_preprocopener( stackpair *stkp, void *v )
 		{
 			{
 				TOKTYPE_OPCRLUP,
-				1,
+				2,
 				
 				0, 0, 0, 0
 			},
@@ -200,8 +201,8 @@ retframe require_preprocopener( stackpair *stkp, void *v )
 		STDMSG_FAILEDINTFUNC_WRAPPER( &err, "push_retframe", require_preprocopener, scratch );
 		( endfunc )();
 	}
-		/* For this call, put in something to discard the token pointer that we're comparing against. */
-	scratch = push_retframe( stkp->ret, (retframe){ (rethand), (retval) } );
+		/* Move the pointer back below the results. */
+	scratch = push_retframe( stkp->ret, (retframe){ &swap4th, (void*)0 } );
 	if( !scratch )
 	{
 		STDMSG_FAILEDINTFUNC_WRAPPER( &err, "push_retframe", require_preprocopener, scratch );
@@ -250,3 +251,128 @@ retframe require_preprocopener( stackpair *stkp, void *v )
 		require_preprocopener, scratch
 	);
 }
+	/* As with require_preprocopener(). */
+retframe require_octothorp( stackpair *stkp, void *v )
+{
+		/* Our reference token. */
+	static token
+		octo =
+		{
+			{
+				TOKTYPE_OCTO,
+				1,
+				
+				0, 0, 0, 0
+			},
+			"#"
+		};
+		/* The instructions that comprise this procedure. */
+	static const retframe_parr octoreq =
+		(retframe_parr)
+		{
+			3,
+			{
+				(retframe){ &require_match, &octo },
+				(retframe){ &swap2nd, (void*)0 },
+				(retframe(){ , } /* Call something to discard the token pointer. */
+			}
+		};
+	
+	return( (retframe){ &enqueue_returns, (void*)&octoreq } );
+}
+	/* As with require_preprocopener(). */
+retframe require_anyname( stackpair *stkp, void *v )
+{
+	STACKCHECK( stkp,  require_anyname );
+	
+	token *tok;
+	uintptr_t a, ret = 0;
+	int scratch;
+	
+	STACKPEEK_UINT( stkp->data, 0, a,  require_anyname, scratch );
+	*tok = (token*)a;
+	
+	if
+	(
+		tok->header.toktype == TOKTYPE_NAME &&
+		strlen( tok->text ) > 0
+	)
+	{
+		ret = 1;
+	}
+	
+	STACKPUSH_UINT( stkp->data, ret,  require_anyname, scratch );
+	RETFRAMEFUNC( stkp,  require_anyname );
+}
+
+
+
+	/* token* token* -- tokenbranch* */
+retframe buildbranch_leadbody( stackpair *stkp, void *v )
+{
+	STACKCHECK( stkp,  buildbranch_leadbody );
+	
+	uintptr_t body, lead;
+	int scratch, tmp;
+	
+	
+	STACKPEEK_UINT( stkp->data, 0, body,  buildbranch_leadbody, scratch );
+	if( !body )
+	{
+		???
+	}
+	STACKPEEK_UINT( stkp->data, sizeof( uintptr_t ), lead,  buildbranch_leadbody, scratch );
+	if( !lead )
+	{
+		???
+	}
+	
+		/* That argument probably shouldn't be in the func sig... */
+	tokenbranch *tb = build_tokenbranch( 0 );
+	if( !tb )
+	{
+		???
+	}
+	
+	tmp = set_lead_tokenbranch( tb, (token_head*)lead );
+	if( !tmp )
+	{
+		???
+	}
+	tmp = push_body_tokenbranch( tb, (token_head*)body );
+	if( !tmp )
+	{
+		???
+	}
+	
+		/* Discard both of those tokens: we already have them linked. */
+	STACKPOP_UINT( stkp->data, body,  buildbranch_leadbody, scratch );
+	STACKPOP_UINT( stkp->data, lead,  buildbranch_leadbody, scratch );
+	
+	
+		/* Return the result.. */
+	STACKPUSH_UINT( stkp->data, &( tb->header ),  buildbranch_leadbody, scratch );
+	RETFRAMEFUNC( stkp,  require_anyname );
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

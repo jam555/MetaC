@@ -65,6 +65,23 @@ retframe enqueue_returns( stackpair *stkp, void *v )
 
 
 
+retframe dup( stackpair *stkp, void *v )
+{
+	uintptr_t a;
+	int scratch;
+	
+	STACKCHECK( stkp,  dup );
+	
+	
+	STACKPEEK_UINT( stkp->data, 0, a,  dup, scratch );
+	STACKPUSH_UINT( stkp->data, a,  dup, scratch );
+	
+	
+	RETFRAMEFUNC( stkp,  dup );
+}
+
+
+
 retframe swap2nd( stackpair *stkp, void *v )
 {
 	uintptr_t a, b;

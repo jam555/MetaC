@@ -9,7 +9,7 @@
 	/*  in) require_preprocopener() from basic_toktools.c, */
 	/*  where it would have been useful. Think of it as a */
 	/*  variation on direct threaded code. */
-retframe enqueue_returns( stackpair *stkp, void *v )
+retframe enqueue_returns( stackpair *stkp, void *v );
 
 retframe swap2nd( stackpair *stkp, void *v );
 retframe swap3rd( stackpair *stkp, void *v );
