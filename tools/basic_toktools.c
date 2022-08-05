@@ -308,7 +308,7 @@ retframe require_anyname( stackpair *stkp, void *v )
 
 
 	/* token* token* -- tokenbranch* */
-retframe buildbranch_leadbody( stackpair *stkp, void *v )
+retframe tokenbranch_buildleadbody( stackpair *stkp, void *v )
 {
 	STACKCHECK( stkp,  buildbranch_leadbody );
 	
@@ -344,6 +344,7 @@ retframe buildbranch_leadbody( stackpair *stkp, void *v )
 	{
 		???
 	}
+	tb->subtype = ( (token_head*)body )->header.toktype;
 	
 		/* Discard both of those tokens: we already have them linked. */
 	STACKPOP_UINT( stkp->data, body,  buildbranch_leadbody, scratch );
@@ -355,24 +356,172 @@ retframe buildbranch_leadbody( stackpair *stkp, void *v )
 	RETFRAMEFUNC( stkp,  require_anyname );
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+	/* ( -- tokenbranch* ) */
+retframe tokenbranch_build( stackpair *stkp, void *v )
+{
+	STACKCHECK( stkp,  buildbranch_leadbody );
+	
+	tokenbranch *tb = build_tokenbranch( 0 );
+	if( !tb )
+	{
+		???
+	}
+	
+		/* Return the result.. */
+	STACKPUSH_UINT( stkp->data, &( tb->header ),  buildbranch_leadbody, scratch );
+	RETFRAMEFUNC( stkp,  require_anyname );
+}
+	/* ( tokenbranch* token* -- tokenbranch* ) */
+retframe tokenbranch_setlead( stackpair *stkp, void *v )
+{
+	STACKCHECK( stkp,  tokenbranch_setlead );
+	
+	uintptr_t tok, bran;
+	int scratch, tmp;
+	
+	
+		/* Peek BENEATH the top of the stack, so that an */
+		/*  error here will leave things least molested. */
+	STACKPEEK_UINT( stkp->data, sizeof( uintptr_t ), bran,  tokenbranch_setlead, scratch );
+	if( !bran )
+	{
+		???
+	}
+	if( ( (tokenbranch*)bran )->lead )
+	{
+		???
+	}
+	
+	STACKPOP_UINT( stkp->data, tok,  tokenbranch_setlead, scratch );
+	if( !tok )
+	{
+		???
+	}
+	
+	
+	tmp = set_lead_tokenbranch( (tokenbranch*)bran, (token_head*)tok );
+	if( !tmp )
+	{
+		???
+	}
+	
+	
+	RETFRAMEFUNC( stkp,  tokenbranch_setlead );
+}
+	/* ( tokenbranch* token* -- tokenbranch* ) */
+retframe tokenbranch_pushbody( stackpair *stkp, void *v )
+{
+	STACKCHECK( stkp,  tokenbranch_pushbody );
+	
+	uintptr_t tok, bran;
+	int scratch, tmp;
+	
+	
+		/* Peek BENEATH the top of the stack, so that an */
+		/*  error here will leave things least molested. */
+	STACKPEEK_UINT( stkp->data, sizeof( uintptr_t ), bran,  tokenbranch_pushbody, scratch );
+	if( !bran )
+	{
+		???
+	}
+	STACKPOP_UINT( stkp->data, tok,  tokenbranch_pushbody, scratch );
+	if( !tok )
+	{
+		???
+	}
+	
+	
+	tmp = push_body_tokenbranch( (tokenbranch*)bran, (token_head*)tok );
+	if( !tmp )
+	{
+		???
+	}
+	
+	
+	RETFRAMEFUNC( stkp,  tokenbranch_pushbody );
+}
+	/* ( tokenbranch* token* -- tokenbranch* token* ) */
+retframe tokenbranch_setsubtype( stackpair *stkp, void *v )
+{
+	STACKCHECK( stkp,  tokenbranch_setsubtype );
+	
+	uintptr_t tok, bran;
+	int scratch, tmp;
+	
+	
+	STACKPEEK_UINT( stkp->data, 0, tok,  tokenbranch_setsubtype, scratch );
+	if( !tok )
+	{
+		???
+	}
+	STACKPEEK_UINT( stkp->data, sizeof( uintptr_t ), bran,  tokenbranch_setsubtype, scratch );
+	if( !bran )
+	{
+		???
+	}
+	
+	
+	if( ( (token_head*)tok )->toktype == TOKTYPE_TOKENGROUP_SAMEMERGE )
+	{
+		tok = ( (tokengroup*)tok )->subtype;
+		
+	} else if( ( (token_head*)tok )->toktype == TOKTYPE_TOKENGROUP_EQUIVMERGE )
+	{
+		tok = ( (tokenbranch*)tok )->subtype;
+		
+	} else {
+		
+		tok = ( (token_head*)tok )->toktype;
+	}
+	( (tokenbranch*)bran )->subtype = tok;
+	
+	
+	RETFRAMEFUNC( stkp,  tokenbranch_setsubtype );
+}
+	/* ( tokenbranch* token* -- tokenbranch* ) */
+retframe tokenbranch_settail( stackpair *stkp, void *v )
+{
+	STACKCHECK( stkp,  tokenbranch_settail );
+	
+	uintptr_t tok, bran;
+	int scratch, tmp;
+	
+	
+		/* Peek BENEATH the top of the stack, so that an */
+		/*  error here will leave things least molested. */
+	STACKPEEK_UINT( stkp->data, sizeof( uintptr_t ), bran,  tokenbranch_settail, scratch );
+	if( !bran )
+	{
+		???
+	}
+	if( ( (tokenbranch*)bran )->tail )
+	{
+		???
+	}
+	
+	STACKPOP_UINT( stkp->data, tok,  tokenbranch_settail, scratch );
+	if( !tok )
+	{
+		???
+	}
+	
+	
+	tmp = set_tail_tokenbranch( (tokenbranch*)bran, (token_head*)tok );
+	if( !tmp )
+	{
+		???
+	}
+	
+	
+	RETFRAMEFUNC( stkp,  tokenbranch_settail );
+}
+	/* ( tokenbranch* -- ) */
+retframe tokenbranch_settail( stackpair *stkp, void *v )
+{
+	STACKCHECK( stkp,  tokenbranch_settail );
+	
+		/* Honestly, we're best off just delegating to the */
+		/*  preexisting deallocation system in complexlex.c, */
+		/*  since it already uses the same function we would. */
+	return( (retframe){ &invoke_dealloctoken, (void*)0 } );
+}
