@@ -195,7 +195,112 @@ retframe accumulate_token( stackpair *stkp, void *v )
 
 
 
-
+	/* As with require_preprocopener(). */
+retframe conclude_try_directive( stackpair *stkp, void *v )
+{
+	STACKCHECK( stkp,  conclude_try_directive );
+	
+	uintptr_t a;
+	int scratch;
+	
+	STACKPOP_UINT( stkp->data, a,  conclude_try_directive, scratch );
+	if( a )
+	{
+		static const retframe_parr octoreq =
+			(retframe_parr)
+			{
+				7,
+				{
+					(retframe(){ &tokenbranch_build, (void*)0 },
+					
+					(retframe(){ &swap2nd, (void*)0 },
+					(retframe(){ &tokenbranch_pushbody, (void*)0 },
+					
+					(retframe(){ &swap2nd, (void*)0 },
+						/* We might be better off using a different */
+						/*  token to set this. If so, then verify that */
+						/*  the number of elements in the retframe_parr */
+						/*  gets updated. */
+					(retframe(){ &tokenbranch_setsubtype, (void*)0 },
+					(retframe(){ &tokenbranch_setlead, (void*)0 },
+					
+						/* Dispatch to the directive-recognizer code. */
+					(retframe(){ &, (void*)0 }
+				}
+			};
+		return( (retframe){ &enqueue_returns, (void*)&octoreq } );
+		
+	} else {
+		
+			/* Not a directive, queue another loop then go check something else. */
+		CALL_FFUNC(
+			stkp,
+			
+			&enter_try_directive, (void*)0, /* Prep loop. */
+			???, (void*)0, /* Proceed to the next stage of the parse checks. */
+			
+			conclude_try_directive, scratch
+		);
+	}
+}
+retframe try_directive( stackpair *stkp, void *v )
+{
+	STACKCHECK( stkp,  try_directive );
+	
+	uintptr_t a;
+	int scratch;
+	
+	STACKPOP_UINT( stkp->data, a,  try_directive, scratch );
+	if( a )
+	{
+		/* We have an octothorpe! */
+		
+		static const retframe_parr tryname =
+			(retframe_parr)
+			{
+				3,
+				{
+					(retframe(){ &accumulate_token, (void*)0 },
+					(retframe(){ &require_anyname, (void*)0 },
+					
+					(retframe(){ &conclude_try_directive, (void*)0 }
+				}
+			};
+		return( (retframe){ &enqueue_returns, (void*)&tryname } );
+		
+	} else {
+		
+			/* Not a directive, queue another loop then go check something else. */
+		CALL_FFUNC(
+			stkp,
+			
+			&enter_try_directive, (void*)0, /* Prep loop. */
+			???, (void*)0, /* Proceed to the next stage of the parse checks. */
+			
+			try_directive, scratch
+		);
+	}
+}
+retframe enter_try_directive( stackpair *stkp, void *v )
+{
+	STACKCHECK( stkp,  enter_try_directive );
+	
+	int scratch = push_retframe( stkp->ret, (retframe){ &try_directive, (void*)0 } );
+	if( !scratch )
+	{
+		STDMSG_FAILEDINTFUNC_WRAPPER( &err, "push_retframe", enter_try_directive, scratch );
+		( endfunc )();
+	}
+	
+	CALL_FFUNC(
+		stkp,
+		
+		&require_octothorp, (void*)0,
+		&accumulate_token, (void*)0,
+		
+		enter_try_directive, scratch
+	);
+}
 
 
 
