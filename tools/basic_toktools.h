@@ -6,6 +6,10 @@ retframe require_match( stackpair *stkp, void *v );
 	/* ( token* -- token* ( 0 | 1 ) ) */
 	/* If the token pointer points to a preprocessor opening */
 	/*  bracket, then 1, else 0. */
+retframe require_preprocoppar( stackpair *stkp, void *v );
+retframe require_preprocopsqr( stackpair *stkp, void *v );
+retframe require_preprocopcrl( stackpair *stkp, void *v );
+	/* Combines the results of all three above into one result. */
 retframe require_preprocopener( stackpair *stkp, void *v );
 	/* As with require_preprocopener(). */
 retframe require_octothorp( stackpair *stkp, void *v );

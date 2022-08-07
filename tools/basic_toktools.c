@@ -34,6 +34,41 @@
 
 
 
+	/* Our reference token. */
+static const token
+	prepar =
+		{
+			{
+				TOKTYPE_OPPARUP,
+				2,
+
+				0, 0, 0, 0
+			},
+			"(^"
+		},
+	presqr =
+		{
+			{
+				TOKTYPE_OPSQRUP,
+				2,
+
+				0, 0, 0, 0
+			},
+			"[^"
+		},
+	precrl =
+		{
+			{
+				TOKTYPE_OPCRLUP,
+				2,
+
+				0, 0, 0, 0
+			},
+			"{^"
+		};
+
+
+
 	/* ( token* -- token* ( 0 | 1 ) ) */
 	/* This function MUST be given a token pointer via it's */
 	/*  void argument: that's used to comunicatre WHAT is */
@@ -132,124 +167,56 @@ retframe require_match( stackpair *stkp, void *v )
 	RETFRAMEFUNC( stkp,  require_match );
 }
 	/* ( token* -- token* boolean ) */
-	/* Places 1 on the data stack if the token pointer */
+	/* Place 1 on the data stack if the token pointer */
 	/*  points to a preprocessor opening token, else */
-	/*  places 0 on the data stack. */
+	/*  place 0 on the data stack. */
+retframe require_preprocoppar( stackpair *stkp, void *v )
+{
+	return( (retframe){ &require_match, (void*)&prepar } );
+}
+retframe require_preprocopsqr( stackpair *stkp, void *v )
+{
+	return( (retframe){ &require_match, (void*)&presqr } );
+}
+retframe require_preprocopcrl( stackpair *stkp, void *v )
+{
+	return( (retframe){ &require_match, (void*)&precrl } );
+}
+	/* The combination of all three above, has the same */
+	/*  in/out sig. */
 retframe require_preprocopener( stackpair *stkp, void *v )
 {
-	int scratch;
-	static token
-		prepar =
-		{
-			{
-				TOKTYPE_OPPARUP,
-				2,
-				
-				0, 0, 0, 0
-			},
-			"(^"
-		},
-		presqr =
-		{
-			{
-				TOKTYPE_OPSQRUP,
-				2,
-				
-				0, 0, 0, 0
-			},
-			"[^"
-		},
-		precrl =
-		{
-			{
-				TOKTYPE_OPCRLUP,
-				2,
-				
-				0, 0, 0, 0
-			},
-			"{^"
-		};
-	
-	typedef struct token token;
-	struct token
-	{
-		token_head header;
-		char text[];
-	};
-	
-	
-	
-	/* A WORD OF WARNING!!! */
-	/* This function just pushes a bunch of "return calls" onto the */
-	/*  return stack to setup a sequence of calls, so the calls are */
-	/*  listed in OPPOSITE ORDER from how they will actually be */
-	/*  executed. YOU HAVE BEEN WARNED. */
-	
-	
-	
 	STACKCHECK( stkp,  require_match );
 	
+		/* The instructions that comprise this procedure. */
+	static const retframe_parr seq =
+		(retframe_parr)
+		{
+			/* The number of instructions. */,
+			{
+				/* Setup the three tests that we'll be running: */
+				/*  for each test, we'll then be swapping the */
+				/*  result and the token pointer's places, so */
+				/*  that the token pointer stays on top. */
+				
+				(retframe){ &require_preprocopcrl, (void*)0 },
+				(retframe){ &swap2nd, (void*)0 },
+				
+				(retframe){ &require_preprocopsqr, (void*)0 },
+				(retframe){ &swap2nd, (void*)0 },
+				
+				(retframe){ &require_preprocoppar, (void*)0 },
+				(retframe){ &swap2nd, (void*)0 },
+				
+				
+					/* Move the pointer back below the results... */
+				(retframe){ &swap4th, (void*)0 },
+					/* ... and merge the results into one. */
+				(retframe){ &and3, (void*)0 }
+			}
+		};
 	
-	
-	/* Push the cleanup sequence: we'll discard the token pointer, */
-	/*  then and together the three result values that were placed */
-	/*  on the stack. */
-	
-	scratch = push_retframe( stkp->ret, (retframe){ &and3, (void*)0 } );
-	if( !scratch )
-	{
-		STDMSG_FAILEDINTFUNC_WRAPPER( &err, "push_retframe", require_preprocopener, scratch );
-		( endfunc )();
-	}
-		/* Move the pointer back below the results. */
-	scratch = push_retframe( stkp->ret, (retframe){ &swap4th, (void*)0 } );
-	if( !scratch )
-	{
-		STDMSG_FAILEDINTFUNC_WRAPPER( &err, "push_retframe", require_preprocopener, scratch );
-		( endfunc )();
-	}
-	
-	
-	
-	/* Setup the three tests that we'll be running: for each test, */
-	/*  we'll then be swapping the result and the token pointer's */
-	/*  places, so that the token pointer stays on top. */
-	
-	scratch = push_retframe( stkp->ret, (retframe){ &swap2nd, (void*)0 } );
-	if( !scratch )
-	{
-		STDMSG_FAILEDINTFUNC_WRAPPER( &err, "push_retframe", require_preprocopener, scratch );
-		( endfunc )();
-	}
-	scratch = push_retframe( stkp->ret, (retframe){ &require_match, &prepar } );
-	if( !scratch )
-	{
-		STDMSG_FAILEDINTFUNC_WRAPPER( &err, "push_retframe", require_preprocopener, scratch );
-		( endfunc )();
-	}
-	
-	
-	scratch = push_retframe( stkp->ret, (retframe){ &swap2nd, (void*)0 } );
-	if( !scratch )
-	{
-		STDMSG_FAILEDINTFUNC_WRAPPER( &err, "push_retframe", require_preprocopener, scratch );
-		( endfunc )();
-	}
-	scratch = push_retframe( stkp->ret, (retframe){ &require_match, &presqr } );
-	if( !scratch )
-	{
-		STDMSG_FAILEDINTFUNC_WRAPPER( &err, "push_retframe", require_preprocopener, scratch );
-		( endfunc )();
-	}
-	
-	CALL_FFUNC(
-		stkp,
-		
-		&swap2nd, (void*)0,
-		&require_match, &precrl, /* For the call, put in something to discard the token pointer that we're comparing against. */
-		
-		require_preprocopener, scratch
-	);
+	return( (retframe){ &enqueue_returns, (void*)&seq } );
 }
 	/* As with require_preprocopener(). */
 retframe require_octothorp( stackpair *stkp, void *v )
@@ -274,7 +241,7 @@ retframe require_octothorp( stackpair *stkp, void *v )
 			{
 				(retframe){ &require_match, &octo },
 				(retframe){ &swap2nd, (void*)0 },
-				(retframe(){ , } /* Call something to discard the token pointer. */
+				(retframe){ , } /* Call something to discard the token pointer. */
 			}
 		};
 	
