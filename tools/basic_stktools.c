@@ -172,7 +172,7 @@ retframe and3( stackpair *stkp, void *v )
 	
 	STACKPUSH_UINT( stkp->data, a & b & c,  and3, scratch );
 	
-	RETFRAMEFUNC( stkp,  and2 );
+	RETFRAMEFUNC( stkp,  and3 );
 }
 retframe and4( stackpair *stkp, void *v )
 {
@@ -189,7 +189,72 @@ retframe and4( stackpair *stkp, void *v )
 	
 	STACKPUSH_UINT( stkp->data, a & b & c & d,  and4, scratch );
 	
-	RETFRAMEFUNC( stkp,  and2 );
+	RETFRAMEFUNC( stkp,  and4 );
+}
+
+retframe ior2( stackpair *stkp, void *v )
+{
+	uintptr_t a, b;
+	int scratch;
+	
+	STACKCHECK( stkp,  ior2 );
+	
+	
+	STACKPOP_UINT( stkp->data, a,  ior2, scratch );
+	STACKPOP_UINT( stkp->data, b,  ior2, scratch );
+	
+	STACKPUSH_UINT( stkp->data, a | b,  ior2, scratch );
+	
+	RETFRAMEFUNC( stkp,  ior2 );
+}
+retframe ior3( stackpair *stkp, void *v )
+{
+	uintptr_t a, b, c;
+	int scratch;
+	
+	STACKCHECK( stkp,  ior3 );
+	
+	
+	STACKPOP_UINT( stkp->data, a,  ior3, scratch );
+	STACKPOP_UINT( stkp->data, b,  ior3, scratch );
+	STACKPOP_UINT( stkp->data, c,  ior3, scratch );
+	
+	STACKPUSH_UINT( stkp->data, a | b | c,  ior3, scratch );
+	
+	RETFRAMEFUNC( stkp,  ior3 );
+}
+retframe ior4( stackpair *stkp, void *v )
+{
+	uintptr_t a, b, c, d;
+	int scratch;
+	
+	STACKCHECK( stkp,  ior4 );
+	
+	
+	STACKPOP_UINT( stkp->data, a,  ior4, scratch );
+	STACKPOP_UINT( stkp->data, b,  ior4, scratch );
+	STACKPOP_UINT( stkp->data, c,  ior4, scratch );
+	STACKPOP_UINT( stkp->data, d,  ior4, scratch );
+	
+	STACKPUSH_UINT( stkp->data, a | b | c | d,  ior4, scratch );
+	
+	RETFRAMEFUNC( stkp,  ior4 );
+}
+
+retframe xor2( stackpair *stkp, void *v )
+{
+	uintptr_t a, b;
+	int scratch;
+	
+	STACKCHECK( stkp,  xor2 );
+	
+	
+	STACKPOP_UINT( stkp->data, a,  xor2, scratch );
+	STACKPOP_UINT( stkp->data, b,  xor2, scratch );
+	
+	STACKPUSH_UINT( stkp->data, a | b,  xor2, scratch );
+	
+	RETFRAMEFUNC( stkp,  xor2 );
 }
 
 

@@ -285,21 +285,105 @@ retframe enter_try_directive( stackpair *stkp, void *v )
 {
 	STACKCHECK( stkp,  enter_try_directive );
 	
-	int scratch = push_retframe( stkp->ret, (retframe){ &try_directive, (void*)0 } );
-	if( !scratch )
+	static const retframe_parr seq =
+		(retframe_parr)
+		{
+			3 /* The number of instructions. */,
+			{
+					/* Get the token. */
+				(retframe){ &accumulate_token, (void*)0 },
+				(retframe){ &require_octothorp, (void*)0 },
+				
+					/* Proceed into the handler. */
+				(retframe){ &try_directive, (void*)0 }
+			}
+		};
+	return( (retframe){ &enqueue_returns, (void*)&seq } );
+}
+
+
+
+
+
+
+
+	/* ( token* par_bool, sqrcrl_bool -- ??? ) */
+retframe try_upparclose( stackpair *stkp, void *v )
+{
+	STACKCHECK( stkp,  try_directive );
+	
+	uintptr_t a;
+	int scratch;
+	
+	STACKPOP_UINT( stkp->data, a,  try_directive, scratch );
+	if( a )
 	{
-		STDMSG_FAILEDINTFUNC_WRAPPER( &err, "push_retframe", enter_try_directive, scratch );
-		( endfunc )();
+		/* Error! We encountered an unpaired square or curly closer instead! */
+		
+		???
 	}
 	
-	CALL_FFUNC(
-		stkp,
+	STACKPOP_UINT( stkp->data, a,  try_directive, scratch );
+	if( a )
+	{
+		/* Success! We have a parenthese closer! ... Ok, what exactly do we do now? */
 		
-		&require_octothorp, (void*)0,
-		&accumulate_token, (void*)0,
+		???
 		
-		enter_try_directive, scratch
-	);
+	} else {
+		
+			/* Not a directive, queue another loop then go check something else. */
+		CALL_FFUNC(
+			stkp,
+			
+			&enter_try_upparclose, (void*)0, /* Prep loop. */
+			???, (void*)0, /* Proceed to check for argument stuff or something. */
+			
+			try_directive, scratch
+		);
+	}
+}
+	/* (  -- ??? ) */
+retframe enter_try_upparclose( stackpair *stkp, void *v )
+{
+	STACKCHECK( stkp,  enter_try_upparclose );
+	
+		/* The instructions that comprise this procedure. */
+	static const retframe_parr seq =
+		(retframe_parr)
+		{
+			10 /* The number of instructions. */,
+			{
+				(retframe){ &accumulate_token, (void*)0},
+				
+				
+				/* Test for the desired case. */
+				
+				(retframe){ &require_preprocclpar, (void*)0 },
+				(retframe){ &swap2nd, (void*)0 },
+				
+				
+				/* Test for the erroneous cases. */
+				
+				(retframe){ &require_preprocclsqr, (void*)0 },
+				(retframe){ &swap2nd, (void*)0 },
+				
+				(retframe){ &require_preprocclpar, (void*)0 },
+				(retframe){ &swap2nd, (void*)0 },
+				
+					/* Move the pointer back below the results... */
+				(retframe){ &swap4th, (void*)0 },
+					/* ... and merge the most recent two results */
+					/*  instead of all three: no point combining */
+					/*  error with success. */
+				(retframe){ &ior2, (void*)0 },
+				
+				
+					/* And now to check our results. */
+				(retframe){ &try_upparclose, (void*)0 }
+			}
+		};
+	return( (retframe){ &enqueue_returns, (void*)&seq } );
 }
 
 

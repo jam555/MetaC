@@ -65,6 +65,37 @@ static const token
 				0, 0, 0, 0
 			},
 			"{^"
+		},
+	
+	prepar_cl =
+		{
+			{
+				TOKTYPE_SYM_PREPARCL,
+				2,
+
+				0, 0, 0, 0
+			},
+			"^)"
+		},
+	presqr_cl =
+		{
+			{
+				TOKTYPE_SYM_PRESQRCL,
+				2,
+
+				0, 0, 0, 0
+			},
+			"^]"
+		},
+	precrl_cl =
+		{
+			{
+				TOKTYPE_SYM_PRECRLCL,
+				2,
+
+				0, 0, 0, 0
+			},
+			"^}"
 		};
 
 
@@ -192,7 +223,7 @@ retframe require_preprocopener( stackpair *stkp, void *v )
 	static const retframe_parr seq =
 		(retframe_parr)
 		{
-			/* The number of instructions. */,
+			8 /* The number of instructions. */,
 			{
 				/* Setup the three tests that we'll be running: */
 				/*  for each test, we'll then be swapping the */
@@ -212,7 +243,54 @@ retframe require_preprocopener( stackpair *stkp, void *v )
 					/* Move the pointer back below the results... */
 				(retframe){ &swap4th, (void*)0 },
 					/* ... and merge the results into one. */
-				(retframe){ &and3, (void*)0 }
+				(retframe){ &ior3, (void*)0 }
+			}
+		};
+	
+	return( (retframe){ &enqueue_returns, (void*)&seq } );
+}
+	/* The closing bracket versions. */
+retframe require_preprocclpar( stackpair *stkp, void *v )
+{
+	return( (retframe){ &require_match, (void*)&prepar_cl } );
+}
+retframe require_preprocclsqr( stackpair *stkp, void *v )
+{
+	return( (retframe){ &require_match, (void*)&presqr_cl } );
+}
+retframe require_preprocclcrl( stackpair *stkp, void *v )
+{
+	return( (retframe){ &require_match, (void*)&precrl_cl } );
+}
+retframe require_preproccloser( stackpair *stkp, void *v )
+{
+	STACKCHECK( stkp,  require_match );
+	
+		/* The instructions that comprise this procedure. */
+	static const retframe_parr seq =
+		(retframe_parr)
+		{
+			8 /* The number of instructions. */,
+			{
+				/* Setup the three tests that we'll be running: */
+				/*  for each test, we'll then be swapping the */
+				/*  result and the token pointer's places, so */
+				/*  that the token pointer stays on top. */
+				
+				(retframe){ &require_preprocclcrl, (void*)0 },
+				(retframe){ &swap2nd, (void*)0 },
+				
+				(retframe){ &require_preprocclsqr, (void*)0 },
+				(retframe){ &swap2nd, (void*)0 },
+				
+				(retframe){ &require_preprocclpar, (void*)0 },
+				(retframe){ &swap2nd, (void*)0 },
+				
+				
+					/* Move the pointer back below the results... */
+				(retframe){ &swap4th, (void*)0 },
+					/* ... and merge the results into one. */
+				(retframe){ &ior3, (void*)0 }
 			}
 		};
 	

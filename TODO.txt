@@ -176,6 +176,11 @@ simplelex.c:
 		of th.toktype.
 	Make certain that the inclusive or stuff is properly implemented, instead
 		of all being "and" variations...
+	Aren't the first 2 switchs in syms_lex() using the wrong character? Pretty
+		sure it should be testing a character that it SHOULD BE retrieving from
+		under the token_head... and instead it gets an extrachar that it
+		doesn't need yet, and gets another later. Basically, everything
+		involving the "a" variable is suspect.
 simplelex.h:
 	Need some note on unused vs other chars.
 

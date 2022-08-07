@@ -15,6 +15,13 @@ retframe swap2nd( stackpair *stkp, void *v );
 retframe swap3rd( stackpair *stkp, void *v );
 retframe swap4th( stackpair *stkp, void *v );
 
+
 retframe and2( stackpair *stkp, void *v );
 retframe and3( stackpair *stkp, void *v );
 retframe and4( stackpair *stkp, void *v );
+
+retframe ior2( stackpair *stkp, void *v )
+retframe ior3( stackpair *stkp, void *v )
+retframe ior4( stackpair *stkp, void *v )
+
+retframe xor2( stackpair *stkp, void *v )

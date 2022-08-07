@@ -11,6 +11,11 @@ retframe require_preprocopsqr( stackpair *stkp, void *v );
 retframe require_preprocopcrl( stackpair *stkp, void *v );
 	/* Combines the results of all three above into one result. */
 retframe require_preprocopener( stackpair *stkp, void *v );
+	/* The closing bracket versions. */
+retframe require_preprocclpar( stackpair *stkp, void *v );
+retframe require_preprocclsqr( stackpair *stkp, void *v );
+retframe require_preprocclcrl( stackpair *stkp, void *v );
+retframe require_preproccloser( stackpair *stkp, void *v );
 	/* As with require_preprocopener(). */
 retframe require_octothorp( stackpair *stkp, void *v );
 	/* As with require_preprocopener(). The name DOES have */
