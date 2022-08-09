@@ -319,12 +319,12 @@ retframe enter_try_upparclose( stackpair *stkp, void *v );
 	*/
 retframe try_upparclose( stackpair *stkp, void *v )
 {
-	STACKCHECK( stkp,  try_directive );
+	STACKCHECK( stkp,  try_upparclose );
 	
 	uintptr_t a;
 	int scratch;
 	
-	STACKPOP_UINT( stkp->data, a,  try_directive, scratch );
+	STACKPOP_UINT( stkp->data, a,  try_upparclose, scratch );
 	if( a )
 	{
 		/* Error! We encountered an unpaired square or curly closer instead! */
@@ -332,7 +332,7 @@ retframe try_upparclose( stackpair *stkp, void *v )
 		???
 	}
 	
-	STACKPOP_UINT( stkp->data, a,  try_directive, scratch );
+	STACKPOP_UINT( stkp->data, a,  try_upparclose, scratch );
 	if( a )
 	{
 		/* Success, we have a parenthese closer! Shove into the branch, */
@@ -424,7 +424,7 @@ retframe enter_try_upparclose( stackpair *stkp, void *v )
 	/*  confirmed, it doesn't do ANY such thing itself. */
 retframe enter_try_upparopen( stackpair *stkp, void *v )
 {
-	STACKCHECK( stkp,  enter_try_upparclose );
+	STACKCHECK( stkp,  enter_try_upparopen );
 	
 		/* The instructions that comprise this procedure. */
 	static const retframe_parr seq =
