@@ -416,6 +416,76 @@ retframe tokenbranch_build( stackpair *stkp, void *v )
 	STACKPUSH_UINT( stkp->data, &( tb->header ),  buildbranch_leadbody, scratch );
 	RETFRAMEFUNC( stkp,  require_anyname );
 }
+	/* ( tokenbranch* token* -- tokenbranch* token* ) */
+retframe tokenbranch_initbase( stackpair *stkp, void *v )
+{
+	STACKCHECK( stkp,  tokenbranch_initbase );
+	
+	uintptr_t tok, bran, tmp;
+	int scratch;
+	
+	
+	STACKPEEK_UINT( stkp->data, 0, tok,  tokenbranch_initbase, scratch );
+	if( !tok )
+	{
+		???
+	}
+	STACKPEEK_UINT( stkp->data, sizeof( uintptr_t ), bran,  tokenbranch_initbase, scratch );
+	if( !bran )
+	{
+		???
+	}
+	
+	
+	
+	tmp = ( (token_head*)bran )->toktype;
+	*( (token_head*)bran ) = *( (token_head*)tok );
+	( (token_head*)bran )->toktype = tmp;
+	
+		/* *_setsubtype() does the rest of what's needed. */
+	return( (retframe){ &tokenbranch_setsubtype, (void*)0 } );
+}
+	/* ( tokenbranch* token* -- tokenbranch* token* ) */
+retframe tokenbranch_setsubtype( stackpair *stkp, void *v )
+{
+	STACKCHECK( stkp,  tokenbranch_setsubtype );
+	
+	uintptr_t tok, bran, tmp;
+	int scratch;
+	
+	
+	STACKPEEK_UINT( stkp->data, 0, tok,  tokenbranch_setsubtype, scratch );
+	if( !tok )
+	{
+		???
+	}
+	STACKPEEK_UINT( stkp->data, sizeof( uintptr_t ), bran,  tokenbranch_setsubtype, scratch );
+	if( !bran )
+	{
+		???
+	}
+	
+	
+		/* Note that this is correct: for the SOURCE OF THE TYPE we want */
+		/*  to support all three of these, whereas fcor the destination */
+		/*  we DON'T want to support all of them. */
+	if( ( (token_head*)tok )->toktype == TOKTYPE_TOKENGROUP_SAMEMERGE )
+	{
+		tok = ( (tokengroup*)tok )->subtype;
+		
+	} else if( ( (token_head*)tok )->toktype == TOKTYPE_TOKENGROUP_EQUIVMERGE )
+	{
+		tok = ( (tokenbranch*)tok )->subtype;
+		
+	} else {
+		
+		tok = ( (token_head*)tok )->toktype;
+	}
+	( (tokenbranch*)bran )->subtype = tok;
+	
+	
+	RETFRAMEFUNC( stkp,  tokenbranch_setsubtype );
+}
 	/* ( tokenbranch* token* -- tokenbranch* ) */
 retframe tokenbranch_setlead( stackpair *stkp, void *v )
 {
@@ -485,44 +555,6 @@ retframe tokenbranch_pushbody( stackpair *stkp, void *v )
 	
 	RETFRAMEFUNC( stkp,  tokenbranch_pushbody );
 }
-	/* ( tokenbranch* token* -- tokenbranch* token* ) */
-retframe tokenbranch_setsubtype( stackpair *stkp, void *v )
-{
-	STACKCHECK( stkp,  tokenbranch_setsubtype );
-	
-	uintptr_t tok, bran;
-	int scratch, tmp;
-	
-	
-	STACKPEEK_UINT( stkp->data, 0, tok,  tokenbranch_setsubtype, scratch );
-	if( !tok )
-	{
-		???
-	}
-	STACKPEEK_UINT( stkp->data, sizeof( uintptr_t ), bran,  tokenbranch_setsubtype, scratch );
-	if( !bran )
-	{
-		???
-	}
-	
-	
-	if( ( (token_head*)tok )->toktype == TOKTYPE_TOKENGROUP_SAMEMERGE )
-	{
-		tok = ( (tokengroup*)tok )->subtype;
-		
-	} else if( ( (token_head*)tok )->toktype == TOKTYPE_TOKENGROUP_EQUIVMERGE )
-	{
-		tok = ( (tokenbranch*)tok )->subtype;
-		
-	} else {
-		
-		tok = ( (token_head*)tok )->toktype;
-	}
-	( (tokenbranch*)bran )->subtype = tok;
-	
-	
-	RETFRAMEFUNC( stkp,  tokenbranch_setsubtype );
-}
 	/* ( tokenbranch* token* -- tokenbranch* ) */
 retframe tokenbranch_settail( stackpair *stkp, void *v )
 {
@@ -561,7 +593,7 @@ retframe tokenbranch_settail( stackpair *stkp, void *v )
 	RETFRAMEFUNC( stkp,  tokenbranch_settail );
 }
 	/* ( tokenbranch* -- ) */
-retframe tokenbranch_settail( stackpair *stkp, void *v )
+retframe tokenbranch_dealloc( stackpair *stkp, void *v )
 {
 	STACKCHECK( stkp,  tokenbranch_settail );
 	

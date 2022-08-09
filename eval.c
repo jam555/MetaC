@@ -307,7 +307,16 @@ retframe enter_try_directive( stackpair *stkp, void *v )
 
 
 
-	/* ( token* par_bool, sqrcrl_bool -- ??? ) */
+	/* ( tokenbranch* -- tokenbranch* token* par_bool sqrcrl_bool ) */
+retframe enter_try_upparclose( stackpair *stkp, void *v );
+	/*
+		(
+				tokenbranch* token* par_bool sqrcrl_bool
+			--
+				looping:( tokenbranch* token* ) -> ( tokenbranch* ) |
+				returning:( tokenbranch* )
+		)
+	*/
 retframe try_upparclose( stackpair *stkp, void *v )
 {
 	STACKCHECK( stkp,  try_directive );
@@ -326,24 +335,46 @@ retframe try_upparclose( stackpair *stkp, void *v )
 	STACKPOP_UINT( stkp->data, a,  try_directive, scratch );
 	if( a )
 	{
-		/* Success! We have a parenthese closer! ... Ok, what exactly do we do now? */
-		
-		???
-		
-	} else {
-		
-			/* Not a directive, queue another loop then go check something else. */
+		/* Success, we have a parenthese closer! Shove into the branch, */
+		/*  sort ->body, and return to the initial caller. */
 		CALL_FFUNC(
 			stkp,
 			
-			&enter_try_upparclose, (void*)0, /* Prep loop. */
-			???, (void*)0, /* Proceed to check for argument stuff or something. */
+				/* ( tokenbranch* -- tokenbranch* ) */
+				/* This needs to go through the contents of */
+				/*  tokenbranch->body, and process them into some more */
+				/*  meaningful form. Macros need to ALREADY be */
+				/*  processed, so that any brackets that the macros */
+				/*  insert will have ALREADY been inserted into ->body */
+				/*  via the very process of accumulation. */
+				/* This is the function that returns to */
+				/*  enter_try_upparopen()'s caller. */
+			&???, (void*)0,
+				/* ( tokenbranch* token* -- tokenbranch* ) */
+				/* Store the token. */
+			&tokenbranch_settail, (void*)0,
 			
-			try_directive, scratch
+			try_upparclose, scratch
+		);
+		
+	} else {
+		
+			/* Not a directive, queue another loop and accumulate stuff. */
+		CALL_FFUNC(
+			stkp,
+			
+				/* ( tokenbranch* -- tokenbranch* token* par_bool sqrcrl_bool ) */
+				/* Loop back through. */
+			&enter_try_upparclose, (void*)0,
+				/* ( tokenbranch* token* -- tokenbranch* ) */
+				/* Store the token. */
+			&tokenbranch_pushbody, (void*)0,
+			
+			try_upparclose, scratch
 		);
 	}
 }
-	/* (  -- ??? ) */
+	/* ( tokenbranch* -- tokenbranch* token* par_bool sqrcrl_bool ) */
 retframe enter_try_upparclose( stackpair *stkp, void *v )
 {
 	STACKCHECK( stkp,  enter_try_upparclose );
@@ -381,6 +412,42 @@ retframe enter_try_upparclose( stackpair *stkp, void *v )
 				
 					/* And now to check our results. */
 				(retframe){ &try_upparclose, (void*)0 }
+			}
+		};
+	return( (retframe){ &enqueue_returns, (void*)&seq } );
+}
+
+
+
+	/* ( token* -- tokenbranch* ) */
+	/* This requires the appropriate token to ALREADY have been */
+	/*  confirmed, it doesn't do ANY such thing itself. */
+retframe enter_try_upparopen( stackpair *stkp, void *v )
+{
+	STACKCHECK( stkp,  enter_try_upparclose );
+	
+		/* The instructions that comprise this procedure. */
+	static const retframe_parr seq =
+		(retframe_parr)
+		{
+			5 /* The number of instructions. */,
+			{
+					/* (  ) */
+				(retframe){ &tokenbranch_build, (void*)0 },
+					/* ( -- tokenbranch* ) */
+				
+				(retframe){ &swap2nd, (void*)0 },
+				(retframe){ &tokenbranch_initbase, (void*)0 },
+					/* ( -- tokenbranch* token* ) */
+				
+				(retframe){ &tokenbranch_setlead, (void*)0 },
+					/* ( -- tokenbranch* ) */
+				
+					/* The function that searches for our closer */
+					/*  shall handle the rest. Note that THIS is */
+					/*  the only difference between the assorted */
+					/*  versions of this function... */
+				(retframe){ &enter_try_upparclose, (void*)0 }
 			}
 		};
 	return( (retframe){ &enqueue_returns, (void*)&seq } );

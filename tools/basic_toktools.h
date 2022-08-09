@@ -31,20 +31,20 @@ retframe tokenbranch_buildleadbody( stackpair *stkp, void *v );
 
 	/* ( -- tokenbranch* ) */
 retframe tokenbranch_build( stackpair *stkp, void *v );
+	/* ( tokenbranch* token* -- tokenbranch* token* ) */
+	/* Note that the token* is NOT removed, since it is NOT */
+	/*  itself stored in the tokenbranch instance. It's worth */
+	/*  noting that normal tokens, tokengroups, and */
+	/*  tokenbranches are all handled as the source token. */
+retframe tokenbranch_initbase( stackpair *stkp, void *v );
+	/* ( tokenbranch* token* -- tokenbranch* token* ) */
+	/* Same note as tokenbranch_initbase(). */
+retframe tokenbranch_setsubtype( stackpair *stkp, void *v );
 	/* ( tokenbranch* token* -- tokenbranch* ) */
 retframe tokenbranch_setlead( stackpair *stkp, void *v );
 	/* ( tokenbranch* token* -- tokenbranch* ) */
 retframe tokenbranch_pushbody( stackpair *stkp, void *v );
-	/* ( tokenbranch* token* -- tokenbranch* token* ) */
-	/* The ->subtype of the tokenbranch DOES need to be set, */
-	/*  but I don't believe that it actually DOES get set */
-	/*  anywhere, hence the need for this function. Note */
-	/*  that the token* is NOT removed, since it is NOT */
-	/*  itself stored in the tokenbranch instance. It's */
-	/*  worth noting that normal tokens, tokengroups, and */
-	/*  tokenbranches are all handled as the source token. */
-retframe tokenbranch_setsubtype( stackpair *stkp, void *v );
 	/* ( tokenbranch* token* -- tokenbranch* ) */
 retframe tokenbranch_settail( stackpair *stkp, void *v );
 	/* ( tokenbranch* -- ) */
-retframe tokenbranch_settail( stackpair *stkp, void *v );
+retframe tokenbranch_dealloc( stackpair *stkp, void *v );
