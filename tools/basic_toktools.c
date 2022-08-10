@@ -17,8 +17,11 @@
 
 
 
+
 #define STACKCHECK( stack,  caller ) \
-	STACK_CHECK( ( stack ),  &err, ( caller ), lexalike_ENDRETFRAME )
+	STACK_CHECK( ( stack ),  &errs, ( caller ), lexalike_ENDRETFRAME )
+#define STACKCHECK2( stack, v,  caller ) \
+	STACK_CHECK2( ( stack ), ( v ),  &errs, ( caller ), lexalike_ENDRETFRAME )
 
 #define STACKPEEK_UINT( stk, offset, dest,  caller, scratch ) \
 	STACK_PEEK_UINT( ( stk ), ( offset ), ( dest ),  &errs, ( caller ), ( scratch ), lexalike_ENDRETFRAME )
@@ -31,6 +34,41 @@
 	RET_FRAMEFUNC( ( stkpair ),  &errs, ( caller ), res, stack_ENDRETFRAME )
 #define CALL_FFUNC( stkpair,  rethand, retdat,  callhand, calldat,  caller, scratch ) \
 	CALL_FRAMEFUNC( stkpair,  rethand, retdat,  callhand, calldat,  &errs, caller, scratch, lexalike_ENDRETFRAME )
+
+
+
+	/* ( token* -- token* ) */
+retframe bad_token( stackpair *stkp, void *v_ )
+{
+	STACKCHECK2( stkp, v_,  bad_token );
+	bad_token_report *rep = (bad_token_report*)v_;
+	
+	uintptr_t a;
+	int scratch;
+	
+	STACKPEEK_UINT( stkp->data, 0, a,  bad_token, scratch );
+	
+	
+	msg_interface
+	(
+		&errs, 1,
+		
+		( rep->file ),
+		(uintmax_t)( rep->caller ), ( rep->callername ),
+		( rep->line ),
+		
+		( rep->message ),
+		(unsigned)( ( (token_head*)a )->toktype )
+	);
+#define bad_token_ERRMSG "\nSyntax error from %s:%jx, %s(), file line %x : %s, ->toktype was %x."
+	
+	
+	if( rep.freethis )
+	{
+		free( rep );
+	}
+	RETFRAMEFUNC( stkp,  bad_token );
+}
 
 
 
@@ -349,6 +387,35 @@ retframe require_anyname( stackpair *stkp, void *v )
 	STACKPUSH_UINT( stkp->data, ret,  require_anyname, scratch );
 	RETFRAMEFUNC( stkp,  require_anyname );
 }
+	/* As with require_preprocopener(). */
+retframe require_comma( stackpair *stkp, void *v )
+{
+		/* Our reference token. */
+	static token
+		comma =
+		{
+			{
+				TOKTYPE_SYM_COMMA,
+				1,
+				
+				0, 0, 0, 0
+			},
+			","
+		};
+		/* The instructions that comprise this procedure. */
+	static const retframe_parr octoreq =
+		(retframe_parr)
+		{
+			3,
+			{
+				(retframe){ &require_match, &comma },
+				(retframe){ &swap2nd, (void*)0 },
+				(retframe){ , } /* Call something to discard the token pointer. */
+			}
+		};
+	
+	return( (retframe){ &enqueue_returns, (void*)&octoreq } );
+}
 
 
 
@@ -602,3 +669,21 @@ retframe tokenbranch_dealloc( stackpair *stkp, void *v )
 		/*  since it already uses the same function we would. */
 	return( (retframe){ &invoke_dealloctoken, (void*)0 } );
 }
+
+
+
+
+
+
+#if defined( __cplusplus ) && __cplusplus >= 199711L
+	namespace
+	{
+		msg_styleset errs =
+		{
+			(msg_piece[]){ BUILD_MSGPIECE_STYLE( (msg_style){ bad_token_ERRMSG } ) },
+			1
+		};
+	};
+#elif defined( __STDC__ ) && __STDC_VERSION__ >= 199901L
+	static msg_styleset errs = (msg_styleset){ 0, 0 };
+#endif

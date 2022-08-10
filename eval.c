@@ -309,6 +309,160 @@ retframe enter_try_directive( stackpair *stkp, void *v )
 
 	/* ( tokenbranch* -- tokenbranch* token* par_bool sqrcrl_bool ) */
 retframe enter_try_upparclose( stackpair *stkp, void *v );
+	/* ( tokenbranch* token* -- tokenbranch* ) */
+retframe pack_upparclose( stackpair *stkp, void *v )
+{
+		/* Make const? */
+	static bad_token_report
+		needcomma =
+		{
+			0, /* Do not free, lest segfault. */
+			
+			(char*)( __FILE__ ),
+			&enterpack_upparclose, "enterpack_upparclose",
+			(unsigned)( __LINE__ ),
+			
+			"Encountered a non-comma when requiring a comma"
+		},
+		badcomma =
+		{
+			0, /* Do not free, lest segfault. */
+			
+			(char*)( __FILE__ ),
+			&enterpack_upparclose, "enterpack_upparclose",
+			(unsigned)( __LINE__ ),
+			
+			"Encountered a comma when requiring a non-comma"
+		};
+	static const retframe_parr
+			/* ( uintptr_t -- ) */
+		on_bad_nocomma_ =
+			(retframe_parr)
+			{
+				3 /* The number of instructions. */,
+				{
+						/* We won't need that test result again. */
+					(retframe){ &drop, (void*)0 },
+					
+					(retframe){ &bad_token, &needcomma },
+					(retframe){ &end_run, (void*)0 }
+				}
+			},
+			/* ( uintptr_t -- ) */
+		on_bad_comma_ =
+			(retframe_parr)
+			{
+				3 /* The number of instructions. */,
+				{
+						/* We won't need that test result again. */
+					(retframe){ &drop, (void*)0 },
+					
+					(retframe){ &bad_token, &badcomma },
+					(retframe){ &end_run, (void*)0 }
+				}
+			},
+		on_good_nocomma_ =
+			(retframe_parr)
+			{
+				3 /* The number of instructions. */,
+				{
+						/* We won't need that test result again. */
+					(retframe){ &drop, (void*)0 },
+					
+					(retframe){ &tokenbranch_pushbody, (void*) }
+				}
+			};
+	retframe
+		on_bad_nocomma = { &enqueue_returns, &on_bad_nocomma_ },
+		on_bad_comma = { &enqueue_returns, &on_bad_comma_ };
+	static const retframe_parr
+		on_good_comma_ =
+			(retframe_parr)
+			{
+				10 /* The number of instructions. */,
+				{
+						/* We won't need that test result again. */
+					(retframe){ &drop, (void*)0 },
+					
+					
+					/* Fetch the next token and confirm it's validity: it MUST be a */
+					/*  name, or maybe a triple ellipsis... except we don't currently */
+					/*  HAVE triple ellipsis support in simplelex.c OR token.h, so skip */
+					/*  that. */
+					
+					(retframe){ &accumulate_token, (void*)0 },
+					
+					(retframe){ &require_anyname, (void*)0 },
+						/* And this is the reason we're in another declaration. */
+					(retframe){ &run_else, (void*)&on_bad_comma },
+						/* We won't need that test result again. */
+					(retframe){ &drop, (void*)0 },
+					
+					
+					/* Push the tokens into the body, and do it in the correct order. */
+					/*  Note that they should probably be in a tokenbranch instead of */
+					/*  directly being pushed in. Or maybe just ditch the comma? */
+					
+						/* tokenbranch* token*a token*b -- token*b token*a tokenbranch* */
+					(retframe){ &swap3rd, (void*)0 },
+						/* token*a tokenbranch* -- tokenbranch* token*a */
+					(retframe){ &swap2nd, (void*)0 },
+						/* tokenbranch* token*a -- tokenbranch* */
+					(retframe){ &tokenbranch_pushbody, (void*)0 },
+					
+						/* token*b tokenbranch* -- tokenbranch* token*b */
+					(retframe){ &swap2nd, (void*)0 },
+						/* tokenbranch* token*b -- tokenbranch* */
+					(retframe){ &tokenbranch_pushbody, (void*)0 }
+				}
+			};
+	retframe
+		on_good_nocomma = { &enqueue_returns, &on_bad_nocomma_ },
+		on_good_comma = { &enqueue_returns, &on_bad_comma_ };
+	
+	
+	STACKCHECK( stkp,  enterpack_upparclose );
+	
+	tokenbranch *tb;
+	uintptr_t a;
+	int scratch;
+	
+	STACKPEEK_UINT( stkp->data, sizeof( uintptr_t ), a,  enterpack_upparclose, scratch );
+	tb = (tokenbranch*)a;
+	
+	if( tb->body )
+	{
+		/* We already have a body member, so this better be a comma. */
+		
+		static const retframe_parr seq =
+			(retframe_parr)
+			{
+				3 /* The number of instructions. */,
+				{
+					(retframe){ &require_comma, (void*)0 },
+					(retframe){ &run_if, (void*)&( ??? ) },
+					(retframe){ &run_else, (void*)&on_bad_nocomma }
+				}
+			};
+		return( (retframe){ &enqueue_returns, (void*)&seq } );
+		
+	} else {
+		
+		/* We don't yet have a body member, so this better NOT be a comma. */
+		
+		static const retframe_parr seq =
+			(retframe_parr)
+			{
+				3 /* The number of instructions. */,
+				{
+					(retframe){ &require_comma, (void*)0 },
+					(retframe){ &run_if, (void*)&on_bad_comma },
+					(retframe){ &run_else, (void*)&on_good_nocomma }
+				}
+			};
+		return( (retframe){ &enqueue_returns, (void*)&seq } );
+	}
+}
 	/*
 		(
 				tokenbranch* token* par_bool sqrcrl_bool
@@ -367,8 +521,9 @@ retframe try_upparclose( stackpair *stkp, void *v )
 				/* Loop back through. */
 			&enter_try_upparclose, (void*)0,
 				/* ( tokenbranch* token* -- tokenbranch* ) */
-				/* Store the token. */
-			&tokenbranch_pushbody, (void*)0,
+				/* Store the token, including by grabbing a following */
+				/*  token if appropriate to also store. */
+			&pack_upparclose, (void*)0,
 			
 			try_upparclose, scratch
 		);
@@ -385,7 +540,7 @@ retframe enter_try_upparclose( stackpair *stkp, void *v )
 		{
 			10 /* The number of instructions. */,
 			{
-				(retframe){ &accumulate_token, (void*)0},
+				(retframe){ &accumulate_token, (void*)0 },
 				
 				
 				/* Test for the desired case. */

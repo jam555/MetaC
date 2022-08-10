@@ -40,6 +40,8 @@ eval.c:
 		but it should actually dispatch first to a dedicated function for
 		things like preprocessor math, and that should dispatch to an error
 		reporter if it can't find a match. So, fix that failing.
+	on_good_comma_[] in pack_upparclose() should probably be shoving the
+		paired tokens into a tokenbranch, so fix that.
 
 echo_tokens.c: Both emit_C_stringifier() and *_concatenator() need to be
 	finished up. In particular, their token_head instances need some additional
@@ -192,6 +194,8 @@ token.h:
 	"was_freshline" has been dropped from token_head, and "src", "line", and
 		"column" have been added. I think I've fixed all of the references,
 		but check again at home.
+	Add triple-ellipsis support here, then in simplelex.c, then in
+		pack_upparclose() inside eval.c.
 
 headers.h:
 	Need to verify that all the relevant headers are included. Maybe make

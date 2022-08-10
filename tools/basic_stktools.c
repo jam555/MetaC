@@ -20,6 +20,8 @@
 
 #define STACKCHECK( stack,  caller ) \
 	STACK_CHECK( ( stack ),  &err, ( caller ), lexalike_ENDRETFRAME )
+#define STACKCHECK2( stack, v,  caller ) \
+	STACK_CHECK2( ( stack ), ( v ),  &errs, ( caller ), lexalike_ENDRETFRAME )
 
 #define STACKPEEK_UINT( stk, offset, dest,  caller, scratch ) \
 	STACK_PEEK_UINT( ( stk ), ( offset ), ( dest ),  &errs, ( caller ), ( scratch ), lexalike_ENDRETFRAME )
@@ -78,6 +80,19 @@ retframe dup( stackpair *stkp, void *v )
 	
 	
 	RETFRAMEFUNC( stkp,  dup );
+}
+retframe drop( stackpair *stkp, void *v )
+{
+	uintptr_t a;
+	int scratch;
+	
+	STACKCHECK( stkp,  drop );
+	
+	
+	STACKPOP_UINT( stkp->data, a,  drop, scratch );
+	
+	
+	RETFRAMEFUNC( stkp,  drop );
 }
 
 
@@ -255,6 +270,46 @@ retframe xor2( stackpair *stkp, void *v )
 	STACKPUSH_UINT( stkp->data, a | b,  xor2, scratch );
 	
 	RETFRAMEFUNC( stkp,  xor2 );
+}
+
+
+	/* ( uintptr_t -- uintptr_t ) */
+	/* Requires a pointer to a retframe as v. */
+retframe run_if( stackpair *stkp, void *v )
+{
+	STACKCHECK2( stkp, v,  run_if );
+	
+	uintptr_t a;
+	int scratch;
+	
+	STACKPEEK_UINT( stkp->data, 0, a,  run_if, scratch );
+	
+	if( a )
+	{
+		return( *( (retframe*)v ) );
+		
+	} else {
+		
+		RETFRAMEFUNC( stkp,  run_if );
+	}
+}
+retframe run_else( stackpair *stkp, void *v )
+{
+	STACKCHECK2( stkp, v,  run_if );
+	
+	uintptr_t a;
+	int scratch;
+	
+	STACKPEEK_UINT( stkp->data, 0, a,  run_if, scratch );
+	
+	if( !a )
+	{
+		return( *( (retframe*)v ) );
+		
+	} else {
+		
+		RETFRAMEFUNC( stkp,  run_if );
+	}
 }
 
 

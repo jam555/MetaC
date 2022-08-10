@@ -1,3 +1,22 @@
+
+	/* This is given to bad_token() via it's void to carry some */
+	/*  error info. It MUST be allocated via malloc if freethis */
+	/*  is > 0, or else will be left alone. */
+typedef struct
+{
+	int freethis;
+	
+	char *file;
+	framefunc caller;
+	char *callername;
+	unsigned line;
+	
+	char *message;
+	
+} bad_token_report;
+	/* ( token* -- token* ) */
+retframe bad_token( stackpair *stkp, void *v_ );
+
 	/* ( token* -- token* ( 0 | 1 ) ) */
 	/* This function MUST be given a token pointer via it's */
 	/*  void argument: that's used to comunicatre WHAT is */
@@ -21,6 +40,8 @@ retframe require_octothorp( stackpair *stkp, void *v );
 	/* As with require_preprocopener(). The name DOES have */
 	/*  to have a minimum length of 1. */
 retframe require_anyname( stackpair *stkp, void *v );
+	/* As with require_preprocopener(). */
+retframe require_comma( stackpair *stkp, void *v );
 
 
 	/* token*(a) token*(b) -- tokenbranch* */
