@@ -1,0 +1,71 @@
+Preprocessor grammar:
+
+
+name : ??? ;
+value : ??? ;
+string : ??? ;
+symbol : ??? ;
+octothorpe : ??? ;
+
+shabang : '#!' ;
+newline : '\n' ;
+
+parop : '(" ;
+parcl : ')' ;
+parupop : '(^' ;
+parupcl : '^)' ;
+sqrupop : '[^' ;
+sqrupcl : '^]' ;
+crlupop : '{^' ;
+crlupcl : '^}' ;
+
+
+characters : ??? ;
+
+token:
+	name | value | string | symbol | octothorpe |
+	shabang |
+	parop | parcl | parupop | parupcl | sqrupop | sqrupcl | crlupop | crlupcl |
+	??? ;
+
+
+directive_head : octothorpe name ;
+directive : directive_head defframes ;
+
+macro_invocation : name invoke_frame ;
+
+
+pardef : parupop pardef_body parupcl ;
+pardef_body : name | pardef_body ',' name ;
+
+sqrdef : sqrupop sqrdef_body sqrupcl ;
+sqrdef_body : name | sqrdef_body ',' name ;
+
+crldef : crlupop crldef_body crlupcl ;
+crldef_body : name | crldef_body ',' name ;
+
+
+defframes : defframe | defframes defframe ;
+defframe : pardef | sqrdef | crldef ;
+
+
+
+shabang_line : shabang characters newline ;
+
+
+lines : line | lines line;
+
+line : directive newline | parse_parts newline ;
+
+	/* Note: for these two recipes alone, there is a preference: */
+	/*  the closer to the name of the recipe, the more prefered */
+	/*  the result. */
+parse_parts : macro_invocation | token | parse_parts parse_part ;
+parse_part : directive | macro_invocation | token ;
+
+
+	/* Yes, two shabang lines: the second holds arguments to the */
+	/*  preprocessor. */
+file : shabang_line shabang_line lines ;
+
+START: file ;

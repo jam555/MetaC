@@ -42,6 +42,8 @@ eval.c:
 		reporter if it can't find a match. So, fix that failing.
 	on_good_comma_[] in pack_upparclose() should probably be shoving the
 		paired tokens into a tokenbranch, so fix that.
+	pack_pardefclose() drops results when they are still needed: do something
+		to fix that.
 
 echo_tokens.c: Both emit_C_stringifier() and *_concatenator() need to be
 	finished up. In particular, their token_head instances need some additional

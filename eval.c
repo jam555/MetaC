@@ -308,9 +308,9 @@ retframe enter_try_directive( stackpair *stkp, void *v )
 
 
 	/* ( tokenbranch* -- tokenbranch* token* par_bool sqrcrl_bool ) */
-retframe enter_try_upparclose( stackpair *stkp, void *v );
+retframe enter_try_pardefclose( stackpair *stkp, void *v );
 	/* ( tokenbranch* token* -- tokenbranch* ) */
-retframe pack_upparclose( stackpair *stkp, void *v )
+retframe pack_pardefclose( stackpair *stkp, void *v )
 {
 		/* Make const? */
 	static bad_token_report
@@ -319,7 +319,7 @@ retframe pack_upparclose( stackpair *stkp, void *v )
 			0, /* Do not free, lest segfault. */
 			
 			(char*)( __FILE__ ),
-			&enterpack_upparclose, "enterpack_upparclose",
+			&pack_pardefclose, "pack_pardefclose",
 			(unsigned)( __LINE__ ),
 			
 			"Encountered a non-comma when requiring a comma"
@@ -329,7 +329,7 @@ retframe pack_upparclose( stackpair *stkp, void *v )
 			0, /* Do not free, lest segfault. */
 			
 			(char*)( __FILE__ ),
-			&enterpack_upparclose, "enterpack_upparclose",
+			&pack_pardefclose, "pack_pardefclose",
 			(unsigned)( __LINE__ ),
 			
 			"Encountered a comma when requiring a non-comma"
@@ -421,13 +421,13 @@ retframe pack_upparclose( stackpair *stkp, void *v )
 		on_good_comma = { &enqueue_returns, &on_bad_comma_ };
 	
 	
-	STACKCHECK( stkp,  enterpack_upparclose );
+	STACKCHECK( stkp,  pack_pardefclose );
 	
 	tokenbranch *tb;
 	uintptr_t a;
 	int scratch;
 	
-	STACKPEEK_UINT( stkp->data, sizeof( uintptr_t ), a,  enterpack_upparclose, scratch );
+	STACKPEEK_UINT( stkp->data, sizeof( uintptr_t ), a,  pack_pardefclose, scratch );
 	tb = (tokenbranch*)a;
 	
 	if( tb->body )
@@ -440,7 +440,7 @@ retframe pack_upparclose( stackpair *stkp, void *v )
 				3 /* The number of instructions. */,
 				{
 					(retframe){ &require_comma, (void*)0 },
-					(retframe){ &run_if, (void*)&( ??? ) },
+					(retframe){ &run_if, (void*)&on_good_comma },
 					(retframe){ &run_else, (void*)&on_bad_nocomma }
 				}
 			};
@@ -471,14 +471,14 @@ retframe pack_upparclose( stackpair *stkp, void *v )
 				returning:( tokenbranch* )
 		)
 	*/
-retframe try_upparclose( stackpair *stkp, void *v )
+retframe try_pardefclose( stackpair *stkp, void *v )
 {
-	STACKCHECK( stkp,  try_upparclose );
+	STACKCHECK( stkp,  try_pardefclose );
 	
 	uintptr_t a;
 	int scratch;
 	
-	STACKPOP_UINT( stkp->data, a,  try_upparclose, scratch );
+	STACKPOP_UINT( stkp->data, a,  try_pardefclose, scratch );
 	if( a )
 	{
 		/* Error! We encountered an unpaired square or curly closer instead! */
@@ -486,7 +486,7 @@ retframe try_upparclose( stackpair *stkp, void *v )
 		???
 	}
 	
-	STACKPOP_UINT( stkp->data, a,  try_upparclose, scratch );
+	STACKPOP_UINT( stkp->data, a,  try_pardefclose, scratch );
 	if( a )
 	{
 		/* Success, we have a parenthese closer! Shove into the branch, */
@@ -508,7 +508,7 @@ retframe try_upparclose( stackpair *stkp, void *v )
 				/* Store the token. */
 			&tokenbranch_settail, (void*)0,
 			
-			try_upparclose, scratch
+			try_pardefclose, scratch
 		);
 		
 	} else {
@@ -523,16 +523,16 @@ retframe try_upparclose( stackpair *stkp, void *v )
 				/* ( tokenbranch* token* -- tokenbranch* ) */
 				/* Store the token, including by grabbing a following */
 				/*  token if appropriate to also store. */
-			&pack_upparclose, (void*)0,
+			&pack_pardefclose, (void*)0,
 			
-			try_upparclose, scratch
+			try_pardefclose, scratch
 		);
 	}
 }
 	/* ( tokenbranch* -- tokenbranch* token* par_bool sqrcrl_bool ) */
-retframe enter_try_upparclose( stackpair *stkp, void *v )
+retframe enter_try_pardefclose( stackpair *stkp, void *v )
 {
-	STACKCHECK( stkp,  enter_try_upparclose );
+	STACKCHECK( stkp,  enter_try_pardefclose );
 	
 		/* The instructions that comprise this procedure. */
 	static const retframe_parr seq =
@@ -572,14 +572,12 @@ retframe enter_try_upparclose( stackpair *stkp, void *v )
 	return( (retframe){ &enqueue_returns, (void*)&seq } );
 }
 
-
-
 	/* ( token* -- tokenbranch* ) */
 	/* This requires the appropriate token to ALREADY have been */
 	/*  confirmed, it doesn't do ANY such thing itself. */
-retframe enter_try_upparopen( stackpair *stkp, void *v )
+retframe enter_try_pardefopen( stackpair *stkp, void *v )
 {
-	STACKCHECK( stkp,  enter_try_upparopen );
+	STACKCHECK( stkp,  enter_try_pardefopen );
 	
 		/* The instructions that comprise this procedure. */
 	static const retframe_parr seq =
@@ -602,7 +600,181 @@ retframe enter_try_upparopen( stackpair *stkp, void *v )
 					/*  shall handle the rest. Note that THIS is */
 					/*  the only difference between the assorted */
 					/*  versions of this function... */
-				(retframe){ &enter_try_upparclose, (void*)0 }
+				(retframe){ &enter_try_pardefclose, (void*)0 }
+			}
+		};
+	return( (retframe){ &enqueue_returns, (void*)&seq } );
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	static bad_token_report
+		needcomma =
+		{
+			0, /* Do not free, lest segfault. */
+			
+			(char*)( __FILE__ ),
+			&pack_pardefclose, "pack_pardefclose",
+			(unsigned)( __LINE__ ),
+			
+			"Encountered a non-comma when requiring a comma"
+		};
+	static const retframe_parr
+			/* ( uintptr_t -- ) */
+		on_bad_nocomma_ =
+			(retframe_parr)
+			{
+				3 /* The number of instructions. */,
+				{
+						/* We won't need that test result again. */
+					(retframe){ &drop, (void*)0 },
+					
+					(retframe){ &bad_token, &needcomma },
+					(retframe){ &end_run, (void*)0 }
+				}
+			};
+		static const retframe_parr seq =
+			(retframe_parr)
+			{
+				3 /* The number of instructions. */,
+				{
+					(retframe){ &require_comma, (void*)0 },
+				}
+			};
+		return( (retframe){ &enqueue_returns, (void*)&seq } );
+	retframe require_parenopener( stackpair *stkp, void *v );
+	retframe require_parencloser( stackpair *stkp, void *v );
+	retframe require_comma( stackpair *stkp, void *v );
+	/* ( tokenbranch* tokengroup* -- ??? ) */
+retframe enter_parenclose( stackpair *stkp, void *v )
+{
+	STACKCHECK( stkp,  enter_parenclose );
+	
+	static const retframe_parr
+		is_comma_ =
+			(retframe_parr)
+			{
+				??? /* The number of instructions. */,
+				{
+					/* We don't care about the token anymore. */
+						/* ( tokenbranch* tokengroup* token* result -- ... ) */
+					(retframe){ &swap2nd, (void*)0 },
+					(retframe){ &invoke_dealloctoken, (void*)0 },
+					(retframe){ &swap3rd, (void*)0 },
+					(retframe){ &swap2nd, (void*)0 },
+						/* ( ... -- result tokenbranch* tokengroup* ) */
+					
+					/* Push and replace the list that we've been filling with tokens. */
+					(retframe){ &tokenbranch_pushbody, (void*)0 },
+					(retframe){ &tokengroup_build, (void*)0 },
+					
+					???
+					
+				}
+			},
+		not_comma_ =
+			(retframe_parr)
+			{
+				??? /* The number of instructions. */,
+				{
+					/* Hide the result. */
+						/* ( tokenbranch* tokengroup* token* result -- ... ) */
+					(retframe){ &swap4th, (void*)0 },
+					(retframe){ &swap3rd, (void*)0 },
+					(retframe){ &swap2nd, (void*)0 },
+						/* ( ... -- result tokenbranch* tokengroup* token* ) */
+					
+					???
+						/* Before we do this, check for macros, directives, etc. */
+					(retframe){ &tokengroup_pushtoken, (void*)0 },
+					???
+					
+					
+						/* ( result tokenbranch* tokengroup* -- ... ) */
+					(retframe){ &swap2nd, (void*)0 },
+					(retframe){ &swap3rd, (void*)0 }
+						/* ( ... -- tokenbranch* tokengroup* result ) */
+					
+					/* And now we return to the caller, for it to dispose */
+					/*  of the result that it put on the stack in the first */
+					/*  place. */
+				}
+			};
+	static retframe
+		is_comma = (retframe){ &enqueue_returns, (void*)&seq },
+		not_comma = (retframe){ &enqueue_returns, (void*)&seq };
+		/* The instructions that comprise this procedure. */
+	static const retframe_parr seq =
+		(retframe_parr)
+		{
+			??? /* The number of instructions. */,
+			{
+				(retframe){ &accumulate_token, (void*)0 },
+				(retframe){ &require_comma, (void*)0 },
+				
+					/* And now to check our results. */
+				(retframe){ &run_if, (void*)&is_comma },
+				(retframe){ &run_else, (void*)&not_comma },
+					/* We won't need that test result again. */
+				(retframe){ &drop, (void*)0 },
+				
+				???
+				
+			}
+		};
+	return( (retframe){ &enqueue_returns, (void*)&seq } );
+}
+	/* ( token* -- tokenbranch* ) */
+	/* Requires the token to ALREADY be verified. */
+retframe enter_parenopen( stackpair *stkp, void *v )
+{
+	STACKCHECK( stkp,  enter_parenopen );
+	
+	static const retframe_parr seq =
+		(retframe_parr)
+		{
+			5 /* The number of instructions. */,
+			{
+					/* (  ) */
+				(retframe){ &tokenbranch_build, (void*)0 },
+					/* ( -- tokenbranch* ) */
+				
+				(retframe){ &swap2nd, (void*)0 },
+				(retframe){ &tokenbranch_initbase, (void*)0 },
+					/* ( -- tokenbranch* token* ) */
+				
+				(retframe){ &tokenbranch_setlead, (void*)0 },
+					/* ( -- tokenbranch* ) */
+				
+				
+				
+				(retframe){ &tokengroup_build, (void*)0 },
+				
+				
+				
+				
+					/* The function that searches for our closer */
+					/*  shall handle the rest. Note that THIS is */
+					/*  the only difference between the assorted */
+					/*  versions of this function... */
+				(retframe){ &enter_parenclose, (void*)0 }
 			}
 		};
 	return( (retframe){ &enqueue_returns, (void*)&seq } );

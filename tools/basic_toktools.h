@@ -42,6 +42,9 @@ retframe require_octothorp( stackpair *stkp, void *v );
 retframe require_anyname( stackpair *stkp, void *v );
 	/* As with require_preprocopener(). */
 retframe require_comma( stackpair *stkp, void *v );
+	/* As with require_preprocopener(). */
+retframe require_parenopener( stackpair *stkp, void *v );
+retframe require_parencloser( stackpair *stkp, void *v );
 
 
 	/* token*(a) token*(b) -- tokenbranch* */
@@ -69,3 +72,7 @@ retframe tokenbranch_pushbody( stackpair *stkp, void *v );
 retframe tokenbranch_settail( stackpair *stkp, void *v );
 	/* ( tokenbranch* -- ) */
 retframe tokenbranch_dealloc( stackpair *stkp, void *v );
+
+retframe tokengroup_build( stackpair *stkp, void *v );
+retframe tokengroup_pushtoken( stackpair *stkp, void *v );
+retframe tokengroup_dealloc( stackpair *stkp, void *v );

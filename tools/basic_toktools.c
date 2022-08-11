@@ -416,6 +416,39 @@ retframe require_comma( stackpair *stkp, void *v )
 	
 	return( (retframe){ &enqueue_returns, (void*)&octoreq } );
 }
+	/* As with require_preprocopener(). */
+retframe require_parenopener( stackpair *stkp, void *v )
+{
+		/* Our reference token. */
+	static token
+		tok =
+		{
+			{
+				TOKTYPE_OPPAR,
+				1,
+				
+				0, 0, 0, 0
+			},
+			"("
+		};
+	return( (retframe){ &require_match, (void*)( &tok ) } );
+}
+retframe require_parencloser( stackpair *stkp, void *v )
+{
+		/* Our reference token. */
+	static token
+		tok =
+		{
+			{
+				TOKTYPE_SYM_PARENCLOSE,
+				1,
+				
+				0, 0, 0, 0
+			},
+			")"
+		};
+	return( (retframe){ &require_match, (void*)( &tok ) } );
+}
 
 
 
@@ -471,8 +504,9 @@ retframe tokenbranch_buildleadbody( stackpair *stkp, void *v )
 	/* ( -- tokenbranch* ) */
 retframe tokenbranch_build( stackpair *stkp, void *v )
 {
-	STACKCHECK( stkp,  buildbranch_leadbody );
+	STACKCHECK( stkp,  tokenbranch_build );
 	
+	int scratch;
 	tokenbranch *tb = build_tokenbranch( 0 );
 	if( !tb )
 	{
@@ -480,8 +514,8 @@ retframe tokenbranch_build( stackpair *stkp, void *v )
 	}
 	
 		/* Return the result.. */
-	STACKPUSH_UINT( stkp->data, &( tb->header ),  buildbranch_leadbody, scratch );
-	RETFRAMEFUNC( stkp,  require_anyname );
+	STACKPUSH_UINT( stkp->data, &( tb->header ),  tokenbranch_build, scratch );
+	RETFRAMEFUNC( stkp,  tokenbranch_build );
 }
 	/* ( tokenbranch* token* -- tokenbranch* token* ) */
 retframe tokenbranch_initbase( stackpair *stkp, void *v )
@@ -662,7 +696,78 @@ retframe tokenbranch_settail( stackpair *stkp, void *v )
 	/* ( tokenbranch* -- ) */
 retframe tokenbranch_dealloc( stackpair *stkp, void *v )
 {
-	STACKCHECK( stkp,  tokenbranch_settail );
+	STACKCHECK( stkp,  tokenbranch_dealloc );
+	
+		/* Honestly, we're best off just delegating to the */
+		/*  preexisting deallocation system in complexlex.c, */
+		/*  since it already uses the same function we would. */
+	return( (retframe){ &invoke_dealloctoken, (void*)0 } );
+}
+
+
+
+	/* ( -- tokengroup* ) */
+retframe tokengroup_build( stackpair *stkp, void *v )
+{
+	STACKCHECK( stkp,  tokengroup_build );
+	
+	int scratch;
+	tokengroup *tg = build_tokengroup( 0 );
+	if( !tg )
+	{
+		???
+	}
+	
+		/* Return the result.. */
+	STACKPUSH_UINT( stkp->data, &( tg->header ),  tokengroup_build, scratch );
+	RETFRAMEFUNC( stkp,  tokengroup_build );
+}
+???
+/*
+	int regrow_tokengroup
+	(
+		tokengroup *tgrp,
+		size_t newlen
+	);
+*/
+???
+	/* ( tokengroup* token* -- tokengroup* ) */
+retframe tokengroup_pushtoken( stackpair *stkp, void *v )
+{
+	STACKCHECK( stkp,  tokengroup_pushtoken );
+	
+	uintptr_t tok, grp;
+	int scratch, tmp;
+	
+	
+		/* Peek BENEATH the top of the stack, so that an */
+		/*  error here will leave things least molested. */
+	STACKPEEK_UINT( stkp->data, sizeof( uintptr_t ), grp,  tokengroup_pushtoken, scratch );
+	if( !grp )
+	{
+		???
+	}
+	
+	STACKPOP_UINT( stkp->data, tok,  tokengroup_pushtoken, scratch );
+	if( !tok )
+	{
+		???
+	}
+	
+	
+	tmp = pushto_tokengroup( (tokengroup*)grp, (token_head*)tok );
+	if( !tmp )
+	{
+		???
+	}
+	
+	
+	RETFRAMEFUNC( stkp,  tokengroup_pushtoken );
+}
+	/* ( tokengroup* -- ) */
+retframe tokengroup_dealloc( stackpair *stkp, void *v )
+{
+	STACKCHECK( stkp,  tokengroup_dealloc );
 	
 		/* Honestly, we're best off just delegating to the */
 		/*  preexisting deallocation system in complexlex.c, */
