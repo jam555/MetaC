@@ -231,6 +231,7 @@ struct
 {
 	size_t used, shuffleused;
 	FILE *f, *shuffle;
+	intmax_t fetch_lock;
 	
 } token_queue;
 
@@ -288,6 +289,12 @@ int token_queue_init()
 size_t token_queue_used()
 {
 	return( token_queue.used );
+}
+intmax_t token_queue_fetchlock( intmax_t loc )
+{
+	intmax_t ret = token_queue.fetch_lock;
+	token_queue.fetch_lock = loc;
+	return( ret );
 }
 int token_queue_push( token *tok )
 {
@@ -362,21 +369,50 @@ int token_queue_pop( token **tok )
 }
 retframe token_queue_fetch( stackpair *stkp, void *v )
 {
+	int tmp;
+	if( token_queue.fetch_lock >= 0 && token_queue.fetch_lock => token_queue.used )
+	{
+		/* Signal that fetching cannot continue until the fetch */
+		/*  lock has been reset. */
+		
+		token_head th =
+			{
+				TOKTYPE_PARSEBREAK,
+				0,
+				
+				0,
+				
+				0, 0, 0
+			};
+		
+			/* This token is ONLY the head, so we don't need */
+			/*  anything else. */
+		tmp = push_tokenhead( stkp->data,  th );
+		if( !tmp )
+		{
+			???
+		}
+		
+			/* Continue into the standard stack-value->stack-pointer */
+			/*  conversion. */
+		return( (retframe){ &assemble_token, (void*)0 } );
+	}
+	
 	if( token_queue.used )
 	{
 		token *tok;
 		
-		int res = token_queue_pop( &tok );
-		if( !res )
+		tmp = token_queue_pop( &tok );
+		if( !tmp )
 		{
-			FAILEDINTFUNC( "token_queue_pop", token_queue_fetch, res );
+			FAILEDINTFUNC( "token_queue_pop", token_queue_fetch, tmp );
 			return( (retframe){ &end_run, (void*)0 } );
 		}
 		
-		res = push_uintptr( &( stkp->data ),  (uintptr_t)a );
-		if( !res )
+		tmp = push_uintptr( &( stkp->data ),  (uintptr_t)a );
+		if( !tmp )
 		{
-			FAILEDINTFUNC( "push_uintptr", token_queue_fetch, res );
+			FAILEDINTFUNC( "push_uintptr", token_queue_fetch, tmp );
 			return( (retframe){ &end_run, (void*)0 } );
 		}
 		

@@ -108,7 +108,8 @@ retframe common_macrodispatch( stackpair *stkp, void *v )
 	
 	???
 	
-	retframe getANDassemble_token( stackpair *stkp, void *v );
+		/* Use this instead of getANDassemble_token(). */
+	retframe token_queue_fetch( stackpair *stkp, void *v )
 	
 	if( ->toktype == TOKTYPE_NAME )
 	{

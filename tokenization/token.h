@@ -51,6 +51,11 @@
 	
 	#define TOKTYPE_SPACE ( 1 )
 	#define TOKTYPE_NEWLINE ( 2 )
+			/* Break the current parse layer. Used for 1st-stage */
+			/*  directive/macro/whatever parsing, specifically */
+			/*  in the process of finishing up bracket */
+			/*  parse-tree building. */
+		#define TOKTYPE_PARSEBREAK ( 0x200 )
 	
 	#define TOKTYPE_NAME ( 3 )
 	#define TOKTYPE_NUMBER ( 4 )
@@ -168,17 +173,17 @@
 		#define TOKTYPE_TOKENGROUP_DELIMITED ( 0xB05 )
 		
 		
-		#define TOKTYPE_TOKENGROUP_MACROLINK (0xB06 )
-		#define TOKTYPE_TOKENGROUP_MACROTOKEN (0xB07 )
+		#define TOKTYPE_TOKENGROUP_MACROLINK ( 0xB06 )
+		#define TOKTYPE_TOKENGROUP_MACROTOKEN ( 0xB07 )
 				/* Same data structure as *_MACROTOKEN, but specifically */
 				/*  establishes a firewall against deallocation: it will only be */
 				/*  deallocated when it's parent is deallocated, and the things */
 				/*  it points at will be left untouched as well. */
-			#define TOKTYPE_TOKENGROUP_MACROTOKEN_INDIRECTION (0xB08 )
-		#define TOKTYPE_TOKENGROUP_MACRORUN (0xB09 )
-		#define TOKTYPE_TOKENGROUP_MACRODIRECTIVE (0xB0A )
+			#define TOKTYPE_TOKENGROUP_MACROTOKEN_INDIRECTION ( 0xB08 )
+		#define TOKTYPE_TOKENGROUP_MACRORUN ( 0xB09 )
+		#define TOKTYPE_TOKENGROUP_MACRODIRECTIVE ( 0xB0A )
 		
-		#define TOKTYPE_TOKENGROUP_MACROCALL (0xB0B )
+		#define TOKTYPE_TOKENGROUP_MACROCALL ( 0xB0B )
 	
 	
 #endif

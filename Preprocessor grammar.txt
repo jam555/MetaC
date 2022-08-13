@@ -1,3 +1,36 @@
+Execution stages:
+	on parse
+		"_immediate" runs, everything else effectively enueues something else to run, args receive values AFTER this
+	on apply (tail-end of parse)
+		directives in general run, args receive values BEFORE this
+	on invoke (macro invocations, etc.)
+		only the "most delayed" things will run during this
+
+
+
+
+close bracket:
+	size_t bookmark = token_queue_used();
+		Note: use token_queue_fetchlock()
+	find directive/identify as macro
+		exec the found handler
+	recursively process any tokens added to token_queue
+		Note: keep an eye out for ->toktype == TOKTYPE_PARSEBREAK, because that means the end of any added tokens has been reached.
+	exit bracket handler
+
+
+
+
+accumulate token
+if hash
+else if name
+else if bracket
+else if invalid
+else
+
+
+
+
 Preprocessor grammar:
 
 

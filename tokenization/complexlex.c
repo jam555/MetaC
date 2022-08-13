@@ -647,7 +647,7 @@ retframe accumulate_whitespace( stackpair *stkp, void *v )
 	
 	CALLFRAMEFUNC(
 		&accumulate_whitespace, 0,
-		&getANDassemble_token, 0,
+		&token_queue_fetch, 0,
 		
 		accumulate_whitespace
 	);
@@ -656,7 +656,7 @@ retframe accumulate_whitespace( stackpair *stkp, void *v )
 	/*  a pointer on the top of the data stack. It will then either directly */
 	/*  defer to accumulate_whitespace() (if that token is a SPACE, NEWLINE, */
 	/*  or OTHER), or else shove it into a tokenbranch, push a return to */
-	/*  conclude_accumulate_token(), then call getANDassemble_token() with a */
+	/*  conclude_accumulate_token(), then call token_queue_fetch() with a */
 	/*  return to accumulate_whitespace(). accumulate_whitespace() will then */
 	/*  loop (accumulating whitespace as it goes) until it finds something */
 	/*  that isn't whitespace, at which point it will return via the */
@@ -709,7 +709,7 @@ retframe accumulate_token( stackpair *stkp, void *v )
 	}
 	CALLFRAMEFUNC(
 		&accumulate_whitespace, 0,
-		&getANDassemble_token, 0,
+		&token_queue_fetch, 0,
 		
 		accumulate_token
 	);

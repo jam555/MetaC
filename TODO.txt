@@ -20,6 +20,12 @@ Make an example for how to use peek()'s offset correctly.
 All sorts of stuff will need to be rechecked to ensure that e.g. line numbers
 	are being set correctly in token_head.
 
+!!!VITAL NOTE!!! : Keep an eye out for ->toktype == TOKTYPE_PARSEBREAK, because
+	THAT means that we've reached the end of a localized batch of replacement
+	(or supplemental...) tokens, and thus whatever we were doing needs to start
+	dropping levels of nesting until something that ACTUALLY knows HOW ELSE to
+	react is reached.
+
 !!!VITAL NOTE!!! : For the sake of regularity, the execution of macros
 	realistically probably needs to be handled sorta like "freshlines"- in
 	particular, the "get token" functionality needs to track "the last

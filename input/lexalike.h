@@ -67,6 +67,7 @@
 		/*  token_queue_fetch() if you want a token, token_queue_push() if you */
 		/*  want to give it back. */
 	size_t token_queue_used();
+	intmax_t token_queue_fetchlock( intmax_t loc );
 	int token_queue_push( token *tok );
 	int token_queue_pop( token **tok );
 	retframe token_queue_fetch( stackpair *stkp, void *v );
