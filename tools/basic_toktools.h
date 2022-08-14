@@ -45,6 +45,7 @@ retframe require_comma( stackpair *stkp, void *v );
 	/* As with require_preprocopener(). */
 retframe require_parenopener( stackpair *stkp, void *v );
 retframe require_parencloser( stackpair *stkp, void *v );
+retframe require_parsebreak( stackpair *stkp, void *v );
 
 
 	/* token*(a) token*(b) -- tokenbranch* */

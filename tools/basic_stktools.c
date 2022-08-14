@@ -273,6 +273,36 @@ retframe xor2( stackpair *stkp, void *v )
 }
 
 
+retframe vm_pushdata( stackpair *stkp, void *v_ )
+{
+	int scratch;
+	
+	STACKCHECK2( stkp, v_,  vm_pushuintptr );
+	
+	STACKPUSH_UINT( stkp->data, *( (uintptr_t*)v_ ),  vm_pushdata, scratch );
+	
+	RETFRAMEFUNC( stkp,  vm_pushdata );
+}
+retframe vm_popdata( stackpair *stkp, void *v_ )
+{
+	uintptr_t val;
+	int scratch;
+	
+	STACKCHECK2( stkp, v_,  vm_popdata );
+	
+	STACKPOP_UINT( stkp->data, val,  vm_popdata, scratch );
+	*( (uintptr_t*)v_ ) = val;
+	
+	RETFRAMEFUNC( stkp,  vm_popdata );
+}
+
+
+retframe just_run( stackpair *stkp, void *v )
+{
+	STACKCHECK2( stkp, v,  just_run );
+	
+	return( *( (retframe*)v ) );
+}
 	/* ( uintptr_t -- uintptr_t ) */
 	/* Requires a pointer to a retframe as v. */
 retframe run_if( stackpair *stkp, void *v )
@@ -295,12 +325,12 @@ retframe run_if( stackpair *stkp, void *v )
 }
 retframe run_else( stackpair *stkp, void *v )
 {
-	STACKCHECK2( stkp, v,  run_if );
+	STACKCHECK2( stkp, v,  run_else );
 	
 	uintptr_t a;
 	int scratch;
 	
-	STACKPEEK_UINT( stkp->data, 0, a,  run_if, scratch );
+	STACKPEEK_UINT( stkp->data, 0, a,  run_else, scratch );
 	
 	if( !a )
 	{
@@ -308,8 +338,57 @@ retframe run_else( stackpair *stkp, void *v )
 		
 	} else {
 		
-		RETFRAMEFUNC( stkp,  run_if );
+		RETFRAMEFUNC( stkp,  run_else );
 	}
+}
+
+
+retframe setjump_callstack( stackpair *stkp, void *v_ )
+{
+	STACKCHECK2( stkp, v,  bookmark_stack );
+	
+	uintptr_t *bookmark = (uintptr_t*)v_;
+	size_t tmp;
+	int scratch;
+	
+	scratch = tellmark_stack( &( stkp->ret ),  &tmp );
+	if( !scratch )
+	{
+			/* Error! */
+		???;
+	}
+	
+	*bookmark = tmp;
+	STACKPUSH_UINT( stkp->data, 0,  setjump_callstack, scratch );
+	
+	
+	retframe ret;
+		/* We DO NOT want to directly pop the next retframe, */
+		/*  since longjump_*() will want it. */
+	scratch = peek_retframe( stkp->ret,  0,  &ret );
+	if( !scratch )
+	{
+		STDMSG_FAILEDINTFUNC_WRAPPER( &errs, "pop_retframe", setjump_callstack, scratch );
+		stack_ENDRETFRAME();
+	}
+	return( ret );
+}
+retframe longjump_callstack( stackpair *stkp, void *v_ )
+{
+	STACKCHECK2( stkp, v,  longjump_callstack );
+	
+	uintptr_t *bookmark = (uintptr_t*)v_;
+	int scratch;
+	
+	scratch = rewind_stack( &( stkp->ret ),  *bookmark );
+	if( !scratch )
+	{
+			/* Error! */
+		???;
+	}
+	
+	STACKPUSH_UINT( stkp->data, 1,  longjump_callstack, scratch );
+	RETFRAMEFUNC( stkp,  longjump_callstack );
 }
 
 

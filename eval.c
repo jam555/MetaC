@@ -308,6 +308,30 @@ retframe enter_try_directive( stackpair *stkp, void *v )
 
 
 
+	/* We absolutely want an error if this is used before */
+	/*  initialization: this is the best I can do in C. */
+uintptr_t pardef_bookmark = UINTPTR_MAX;
+	??? /* We should replace noop with something else, but no idea what. */
+retframe hook_PARSEBREAK = { &noop, (void*)0 };
+		/* ( uintptr_t -- ) */
+const retframe_parr on_TOKTYPE_PARSEBREAK_ =
+	(retframe_parr)
+	{
+		3 /* The number of instructions. */,
+		{
+			/* We won't need that test result again. */
+			(retframe){ &drop, (void*)0 },
+			
+				/* There should be something that needs to be done here, right? */
+			(retframe){ &just_run, &hook_PARSEBREAK },
+			
+				/* This needs to break us out of this bracket match. */
+			(retframe){ &longjump_callstack, (void*)&pardef_bookmark }
+		}
+	};
+const retframe
+	on_PARSEBREAK = { &enqueue_returns, &on_TOKTYPE_PARSEBREAK_ };
+
 	/* ( tokenbranch* -- tokenbranch* token* par_bool sqrcrl_bool ) */
 retframe enter_try_pardefclose( stackpair *stkp, void *v );
 	/* ( tokenbranch* token* -- tokenbranch* ) */
@@ -365,9 +389,15 @@ retframe pack_pardefclose( stackpair *stkp, void *v )
 		on_good_nocomma_ =
 			(retframe_parr)
 			{
-				3 /* The number of instructions. */,
+				5 /* The number of instructions. */,
 				{
 						/* We won't need that test result again. */
+					(retframe){ &drop, (void*)0 },
+					
+						/* Now we test for our "absolute break" hazard. */
+					(retframe){ &require_parsebreak, (void*)0 },
+						/* This needs to break us out of this bracket match. */
+					(retframe){ &run_if, (void*)&on_PARSEBREAK },
 					(retframe){ &drop, (void*)0 },
 					
 					(retframe){ &tokenbranch_pushbody, (void*) }
@@ -380,7 +410,7 @@ retframe pack_pardefclose( stackpair *stkp, void *v )
 		on_good_comma_ =
 			(retframe_parr)
 			{
-				10 /* The number of instructions. */,
+				13 /* The number of instructions. */,
 				{
 						/* We won't need that test result again. */
 					(retframe){ &drop, (void*)0 },
@@ -392,6 +422,12 @@ retframe pack_pardefclose( stackpair *stkp, void *v )
 					/*  that. */
 					
 					(retframe){ &accumulate_token, (void*)0 },
+					
+					(retframe){ &require_parsebreak, (void*)0 },
+						/* This needs to break us out of this bracket match. */
+					(retframe){ &run_if, (void*)&on_PARSEBREAK },
+					(retframe){ &drop, (void*)0 },
+					
 					
 					(retframe){ &require_anyname, (void*)0 },
 						/* And this is the reason we're in another declaration. */
@@ -504,6 +540,8 @@ retframe try_pardefclose( stackpair *stkp, void *v )
 				/*  via the very process of accumulation. */
 				/* This is the function that returns to */
 				/*  enter_try_upparopen()'s caller. */
+				/* Actually, since these are the "def" functions, I */
+				/*  think there SHOULDN'T BE any macros allowed here. */
 			&???, (void*)0,
 				/* ( tokenbranch* token* -- tokenbranch* ) */
 				/* Store the token. */
@@ -539,9 +577,16 @@ retframe enter_try_pardefclose( stackpair *stkp, void *v )
 	static const retframe_parr seq =
 		(retframe_parr)
 		{
-			10 /* The number of instructions. */,
+			13 /* The number of instructions. */,
 			{
 				(retframe){ &accumulate_token, (void*)0 },
+				
+				
+					??? /* Do we have the code to trigger parse breaks? If not, then it needs to be put somewhere. */
+				(retframe){ &require_parsebreak, (void*)0 },
+					/* This needs to break us out of this bracket match. */
+				(retframe){ &run_if, (void*)&on_PARSEBREAK },
+				(retframe){ &drop, (void*)0 },
 				
 				
 				/* Test for the desired case. */
@@ -586,6 +631,26 @@ retframe enter_try_pardefopen( stackpair *stkp, void *v )
 		{
 			5 /* The number of instructions. */,
 			{
+				
+				
+				???/* We need to put this somewhere in here: */
+					/*
+						(retframe){ &vm_pushdata, &pardef_bookmark }
+						(retframe){ &setjump_callstack, (void*)&pardef_bookmark },
+						(retframe){ &just_run, (void*)&some_other_retframe }
+					*/
+				/*  ... it specifically will setup a longjump_*() */
+				/*  context to exit back to the just_run{} (unless */
+				/*  that's been replaced), so that an encounter with */
+				/*  TOKTYPE_PARSEBREAK can use a "universal handler" */
+				/*  or whatever. */
+				/* Note that a: */
+					/* (retframe){ &vm_popdata, &pardef_bookmark } */
+				/*  ... will be needed later to restore any already */
+				/*  existing longjump_*() contexts to functional */
+				/*  status. */
+				
+				
 					/* (  ) */
 				(retframe){ &tokenbranch_build, (void*)0 },
 					/* ( -- tokenbranch* ) */

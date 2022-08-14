@@ -42,10 +42,16 @@
 	int run_loop( retframe*,  stackpair* );
 	retframe end_run( stackpair*, void* );
 	
+		/* Seriously, all it does is return. For when you want */
+		/*  a placeholder, but don't want to end execution. */
+	retframe noop( stackpair *stkp, void *v );
+	
 	
 	
 	int init_stack( stackframe *stk );
 	int resize_stack( stackframe *stk,  int deltaChars );
+		int tellmark_stack( stackframe *stk,  size_t *res );
+		int rewind_stack( stackframe *stk,  size_t targ );
 	int clear_stack( stackframe *stk );
 	
 	

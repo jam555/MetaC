@@ -449,6 +449,22 @@ retframe require_parencloser( stackpair *stkp, void *v )
 		};
 	return( (retframe){ &require_match, (void*)( &tok ) } );
 }
+retframe require_parsebreak( stackpair *stkp, void *v )
+{
+		/* Our reference token. */
+	static token
+		tok =
+		{
+			{
+				TOKTYPE_PARSEBREAK,
+				1,
+				
+				0, 0, 0, 0
+			},
+			")"
+		};
+	return( (retframe){ &require_match, (void*)( &tok ) } );
+}
 
 
 

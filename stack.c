@@ -4,6 +4,8 @@
 
 #include "err/inner_err.h"
 
+#include "stack.h"
+
 
 
 stackpair std_stacks;
@@ -32,6 +34,10 @@ stackpair std_stacks;
 
 #define STACKCHECK( stack,  caller, endfunc ) \
 	STACK_CHECK( ( stack ),  &err, ( caller ), ( endfunc ) )
+
+
+#define RET_FRAMEFUNC( stkpair,  caller, scratch ) \
+	RET_FRAMEFUNC( ( stkpair ),  &errs, ( caller ), ( scratch ), stack_ENDRETFRAME )
 
 
 
@@ -79,6 +85,15 @@ retframe end_run( stackpair *stkp, void *v )
 	stkp->run = 0;
 	
 	return( (retframe){ (framefunc)0, (void*)0 } );
+}
+
+retframe noop( stackpair *stkp, void *v )
+{
+	STACKCHECK( stkp,  end_run, stack_ENDRETFRAME );
+	
+	int scratch;
+	
+	RET_FRAMEFUNC( stkp,  noop, scratch );
 }
 
 
@@ -135,6 +150,37 @@ int resize_stack( stackframe *stk,  int deltaChars )
 	
 	return( 1 );
 }
+	int tellmark_stack( stackframe *stk,  size_t *res )
+	{
+		if( !stk || !res )
+		{
+			STACK_BADNULL2( tellmark_stack, &stk, &len );
+			return( LIB4_STDERRS_BADARGS_SIMPLE );
+		}
+
+		*res = stk->used;
+
+		return( 1 );
+	}
+	int rewind_stack( stackframe *stk,  size_t targ )
+	{
+		if( !stk || !res )
+		{
+			STACK_BADNULL2( rewind_stack, &stk, &len );
+			return( LIB4_STDERRS_BADARGS_SIMPLE );
+		}
+
+		if( targ > stk->used )
+		{
+			/* Error: tried to "shrink" to a LARGER size. */
+
+			return( LIB4_STDERRS_RANGEERR );
+		}
+
+		stk->used = targ;
+
+		return( 1 );
+	}
 int clear_stack( stackframe *stk )
 {
 	if( !stk )
