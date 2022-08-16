@@ -626,50 +626,56 @@ retframe enter_try_pardefopen( stackpair *stkp, void *v )
 	STACKCHECK( stkp,  enter_try_pardefopen );
 	
 		/* The instructions that comprise this procedure. */
-	static const retframe_parr seq =
-		(retframe_parr)
-		{
-			5 /* The number of instructions. */,
+	static const retframe_parr
+		on_parsebreak_ =
+			(retframe_parr)
 			{
-				
-				
-				???/* We need to put this somewhere in here: */
-					/*
-						(retframe){ &vm_pushdata, &pardef_bookmark }
-						(retframe){ &setjump_callstack, (void*)&pardef_bookmark },
-						(retframe){ &just_run, (void*)&some_other_retframe }
-					*/
-				/*  ... it specifically will setup a longjump_*() */
-				/*  context to exit back to the just_run{} (unless */
-				/*  that's been replaced), so that an encounter with */
-				/*  TOKTYPE_PARSEBREAK can use a "universal handler" */
-				/*  or whatever. */
-				/* Note that a: */
-					/* (retframe){ &vm_popdata, &pardef_bookmark } */
-				/*  ... will be needed later to restore any already */
-				/*  existing longjump_*() contexts to functional */
-				/*  status. */
-				
-				
-					/* (  ) */
-				(retframe){ &tokenbranch_build, (void*)0 },
-					/* ( -- tokenbranch* ) */
-				
-				(retframe){ &swap2nd, (void*)0 },
-				(retframe){ &tokenbranch_initbase, (void*)0 },
-					/* ( -- tokenbranch* token* ) */
-				
-				(retframe){ &tokenbranch_setlead, (void*)0 },
-					/* ( -- tokenbranch* ) */
-				
-					/* The function that searches for our closer */
-					/*  shall handle the rest. Note that THIS is */
-					/*  the only difference between the assorted */
-					/*  versions of this function... */
-				(retframe){ &enter_try_pardefclose, (void*)0 }
-			}
-		};
-	return( (retframe){ &enqueue_returns, (void*)&seq } );
+				???,
+				{
+					/* Handling code goes here! */
+				}
+			},
+		mainbody_ =
+			(retframe_parr)
+			{
+				5 /* The number of instructions. */,
+				{
+						/* (  ) */
+					(retframe){ &tokenbranch_build, (void*)0 },
+						/* ( -- tokenbranch* ) */
+
+					(retframe){ &swap2nd, (void*)0 },
+					(retframe){ &tokenbranch_initbase, (void*)0 },
+						/* ( -- tokenbranch* token* ) */
+
+					(retframe){ &tokenbranch_setlead, (void*)0 },
+						/* ( -- tokenbranch* ) */
+
+						/* The function that searches for our closer */
+						/*  shall handle the rest. Note that THIS is */
+						/*  the only difference between the assorted */
+						/*  versions of this function... */
+					(retframe){ &enter_try_pardefclose, (void*)0 }
+				}
+			};
+	
+	retframe
+		mainbody = (retframe){ &enqueue_returns, &mainbody_ },
+		on_parsebreak = (retframe){ &enqueue_returns, &on_parsebreak_ };
+	LOCALIZE_SETJUMP(
+		pardef_bookmark,
+		enter_try_pardefopen,
+		setjump,
+		
+		&mainbody,
+		&on_parsebreak
+	);
+		/* setjump will setup a longjump_callstack() context for use */
+		/*  in case a TOKTYPE_PARSEBREAK (or maybe other erroneous?) */
+		/*  token was encountered. It'll later undo that same setup, */
+		/*  just in case we're dealing with nested contexts. */
+	
+	return( (retframe){ &enqueue_returns, (void*)&setjump } );
 }
 
 

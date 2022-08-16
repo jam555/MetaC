@@ -273,6 +273,37 @@ retframe xor2( stackpair *stkp, void *v )
 }
 
 
+retframe vm_push0( stackpair *stkp, void *v )
+{
+	int scratch;
+	
+	STACKCHECK( stkp,  vm_push0 );
+	
+	STACKPUSH_UINT( stkp->data, 0,  vm_push0, scratch );
+	
+	RETFRAMEFUNC( stkp,  vm_push0 );
+}
+retframe vm_push1( stackpair *stkp, void *v )
+{
+	int scratch;
+	
+	STACKCHECK( stkp,  vm_push1 );
+	
+	STACKPUSH_UINT( stkp->data, 1,  vm_push1, scratch );
+	
+	RETFRAMEFUNC( stkp,  vm_push1 );
+}
+retframe vm_pushmax( stackpair *stkp, void *v )
+{
+	int scratch;
+	
+	STACKCHECK( stkp,  vm_pushmax );
+	
+	STACKPUSH_UINT( stkp->data, UINTPTR_MAX,  vm_pushmax, scratch );
+	
+	RETFRAMEFUNC( stkp,  vm_pushmax );
+}
+
 retframe vm_pushdata( stackpair *stkp, void *v_ )
 {
 	int scratch;
