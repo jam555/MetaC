@@ -10,6 +10,7 @@
 		/* Defines char_pascalarray, char_pascalarray_result, and various */
 		/*  functions. */
 	LIB4_DEFINE_PASCALARRAY_STDDEFINE( char_, char );
+	typedef char_pascalarray char_parr;
 	#define BUILD_CHARPARR( string ) \
 		(char_pascalarray){ sizeof( (char[]){ string } ) - 1, (char[]){ string } }
 	

@@ -285,6 +285,36 @@ int pushto_tokengroup
 	
 	return( 1 );
 }
+tokenheadptr_result popfrom_tokengroup( tokengroup *tgrp )
+{
+	token_head *th;
+	
+	if( !tgrp )
+	{
+		BADNULL( popfrom_tokengroup, &tgrp );
+		TOKENHEADPTR_RESULT_RETURNFAILURE( 1 );
+	}
+	if( !( tgrp->used && tgrp->arr ) )
+	{
+		BADNULL2( popfrom_tokengroup, &( tgrp->used ), &( tgrp->arr ) );
+		TOKENHEADPTR_RESULT_RETURNFAILURE( 2 );
+	}
+	if( !( tgrp->arr->len ) )
+	{
+		BADNULL( popfrom_tokengroup, &( tgrp->arr->len ) );
+		TOKENHEADPTR_RESULT_RETURNFAILURE( 3 );
+	}
+	if( tgrp->used >= tgrp->arr->len )
+	{
+		TRESPASSPATH( popfrom_tokengroup, "ERROR: popfrom_tokengroup detected a used size larger than the available size." );
+		TOKENHEADPTR_RESULT_RETURNFAILURE( 4 );
+	}
+	
+	--( tgrp->used );
+	th = tgrp->arr->body[ tgrp->used ];
+	
+	TOKENHEADPTR_RESULT_RETURNSUCCESS( th );
+}
 int place_tokenhead( token_head **dest, token_head *tok )
 {
 	int res;
@@ -485,6 +515,36 @@ int push_body_tokenbranch( tokenbranch *tb, token_head *tok )
 	}
 	
 	return( 1 );
+}
+tokenheadptr_result pop_body_tokenbranch( tokenbranch *tb )
+{
+	if( !tb )
+	{
+		BADNULL( set_lead_tokenbranch, &tb );
+		TOKENHEADPTR_RESULT_RETURNFAILURE( 1 );
+	}
+	if( !( tb->body ) )
+	{
+		BADNULL( set_lead_tokenbranch, &( tb->body ) );
+		TOKENHEADPTR_RESULT_RETURNFAILURE( 2 );
+	}
+	
+	
+	if( tb->body->toktype != TOKTYPE_TOKENGROUP_SAMEMERGE )
+	{
+		token_head *th = tb->body;
+		tb->body = (token_head*)0;
+		TOKENHEADPTR_RESULT_RETURNSUCCESS( th );
+		
+	} else {
+		
+		tokenheadptr_result res = popfrom_tokengroup( tokengroup *tgrp );
+		
+#define pop_body_tokenbranch_RETURN_POPFROM_ERROR( val ) \
+	TOKENHEADPTR_RESULT_RETURNFAILURE( val + 3 );
+		
+		TOKENHEADPTR_RESULT_BODYMATCH( res, TOKENHEADPTR_RESULT_RETURNSUCCESS, pop_body_tokenbranch_RETURN_POPFROM_ERROR );
+	}
 }
 int set_tail_tokenbranch( tokenbranch *tb, token_head *tok )
 {

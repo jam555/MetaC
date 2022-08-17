@@ -1,0 +1,30 @@
+
+	LIB4_MONAD_EITHER_BUILDTYPE_DEFINITION(
+		msg_piece_result,
+		
+		msg_piece,
+		lib4_failure_uipresult
+	);
+	#define MSG_PIECE_RESULT_BUILDSUCCESS( val ) \
+		LIB4_MONAD_EITHER_BUILDLEFT( \
+			msg_piece_result, msg_piece, (val) \
+		)
+	#define MSG_PIECE_RESULT_BUILDFAILURE( val ) \
+		LIB4_MONAD_EITHER_BUILDRIGHT( \
+			msg_piece_result, lib4_failure_uipresult, (val) \
+		)
+	#define MSG_PIECE_RESULT_BODYMATCH( var, matcha, matchb ) \
+		LIB4_MONAD_EITHER_BODYMATCH( var, matcha, matchb )
+	#define MSG_PIECE_RESULT_EXPRMATCH( var, matcha, matchb ) \
+		LIB4_MONAD_EITHER_EXPRMATCH( var, matcha, matchb )
+	#define MSG_PIECE_RESULT_RETURNSUCCESS( val ) \
+		LIB4_MONAD_EITHER_RETURNLEFT( \
+			msg_piece_result, msg_piece, val )
+	#define MSG_PIECE_RESULT_RETURNFAILURE( val ) \
+		LIB4_MONAD_EITHER_RETURNRIGHT( \
+			msg_piece_result, lib4_failure_uipresult, val )
+
+	LIB4_OP_SETa( val )
+	LIB4_OP_SETb( val )
+	LIB4_OP_SETc( val )
+	LIB4_OP_SETd( val )

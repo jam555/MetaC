@@ -48,6 +48,7 @@
 		tokengroup *tgrp,
 		token_head *thd
 	);
+	tokenheadptr_result popfrom_tokengroup( tokengroup *tgrp );
 	int place_tokenhead( token_head **dest, token_head *tok );
 	retframe dealloc_tokengroup
 	(
@@ -60,6 +61,7 @@
 	tokenbranch* build_tokenbranch( size_t elems );
 	int set_lead_tokenbranch( tokenbranch *tb, token_head *tok );
 	int push_body_tokenbranch( tokenbranch *tb, token_head *tok );
+	tokenheadptr_result pop_body_tokenbranch( tokenbranch *tb );
 	int set_tail_tokenbranch( tokenbranch *tb, token_head *tok );
 	retframe dealloc_tokenbranch
 	(

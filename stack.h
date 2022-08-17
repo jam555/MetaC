@@ -37,6 +37,14 @@
 		void *data;
 	};
 	
+	LIB4_DEFINE_PASCALARRAY_STDDEFINE( retframe_, retframe );
+	typedef retframe_pascalarray retframe_parr;
+	#define BUILD_RETFRAMEPARR( set ) \
+		(retframe_pascalarray){ \
+			sizeof( (retframe[]){ set } ) / sizeof( retframe ) - 1, \
+			(retframe[]){ set } \
+		}
+	
 	
 	int enable_loop( stackpair* );
 	int run_loop( retframe*,  stackpair* );

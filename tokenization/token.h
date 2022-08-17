@@ -24,6 +24,35 @@
 		
 	} token_head;
 	
+	LIB4_DEFINE_PASCALARRAY_STDDEFINE( tokenheadptr_, token_head* );
+	typedef tokenheadptr_pascalarray tokhdptr_parr;
+	
+	LIB4_MONAD_EITHER_BUILDTYPE_DEFINITION(
+		tokenheadptr_result,
+		
+		token_head*,
+		uintptr_t
+	);
+	#define TOKENHEADPTR_RESULT_BUILDSUCCESS( val ) \
+		LIB4_MONAD_EITHER_BUILDLEFT( \
+			tokenheadptr_result, token_head*, (val) \
+		)
+	#define TOKENHEADPTR_RESULT_BUILDFAILURE( val ) \
+		LIB4_MONAD_EITHER_BUILDRIGHT( \
+			tokenheadptr_result, uintptr_t, (val) \
+		)
+	#define TOKENHEADPTR_RESULT_BODYMATCH( var, matcha, matchb ) \
+		LIB4_MONAD_EITHER_BODYMATCH( var, matcha, matchb )
+	#define TOKENHEADPTR_RESULT_EXPRMATCH( var, matcha, matchb ) \
+		LIB4_MONAD_EITHER_EXPRMATCH( var, matcha, matchb )
+	#define TOKENHEADPTR_RESULT_RETURNSUCCESS( val ) \
+		LIB4_MONAD_EITHER_RETURNLEFT( \
+			tokenheadptr_result, token_head*, val )
+	#define TOKENHEADPTR_RESULT_RETURNFAILURE( val ) \
+		LIB4_MONAD_EITHER_RETURNRIGHT( \
+			tokenheadptr_result, uintptr_t, val )
+	
+	
 	typedef struct token token;
 	struct token
 	{
@@ -39,9 +68,6 @@
 		char text[];
 		
 	} token_uint;
-	
-	LIB4_DEFINE_PASCALARRAY_STDDEFINE( tokenheadptr_, token_head* );
-	typedef tokenheadptr_pascalarray tokhdptr_parr;
 	
 	
 	#define token_ENDRETFRAME( ... ) return( (retframe){ &end_run, (void*)0 } )
