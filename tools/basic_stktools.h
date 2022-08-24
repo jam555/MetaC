@@ -47,10 +47,12 @@ retframe vm_push0( stackpair *stkp, void *v );
 retframe vm_push1( stackpair *stkp, void *v );
 retframe vm_pushmax( stackpair *stkp, void *v );
 
-/* These require v_ to point to a uintptr_t, which will be used as the data */
+	/* These require v_ to point to a uintptr_t, which will be used as the data */
 	/*  in question. */
 retframe vm_pushdata( stackpair *stkp, void *v_ );
 retframe vm_popdata( stackpair *stkp, void *v_ );
+	/* retframe*, not uintptr_t pointer. */
+retframe vm_pushretframe( stackpair *stkp, void *v_ );
 
 
 	/* These all require a pointer to a retframe as v. */
@@ -58,6 +60,8 @@ retframe just_run( stackpair *stkp, void *v );
 	/* ( uintptr_t -- uintptr_t ) */
 retframe run_if( stackpair *stkp, void *v );
 retframe run_else( stackpair *stkp, void *v );
+	/* Pops a retframe from the data stack, and returns it. */
+retframe vm_datacall( stackpair *stkp, void *v );
 
 
 	/* v_ MUST point to a uintptr_t in both funcs: it will be treated as a bookmark. */

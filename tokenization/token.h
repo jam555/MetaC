@@ -23,6 +23,13 @@
 		/*  (because null) characters. */
 		
 	} token_head;
+	int is_stdtoken( token_head *th );
+	
+	retframe set_dealloctoken( retframe dealc_ );
+	retframe invoke_dealloctoken( stackpair *stkp, void *v );
+	retframe smart_dealloc_token( stackpair *stkp, void *v );
+	
+	
 	
 	LIB4_DEFINE_PASCALARRAY_STDDEFINE( tokenheadptr_, token_head* );
 	typedef tokenheadptr_pascalarray tokhdptr_parr;

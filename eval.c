@@ -194,6 +194,301 @@ retframe accumulate_token( stackpair *stkp, void *v )
 
 
 
+uintptr_t token2char_parr_bookmark = UINTPTR_MAX;
+static uintptr_t token2char_parr_??? = ???;
+LOCALIZE_SETJUMP(
+	token2char_parrbookmark,
+	token2char_parr,
+	localname, /* Set this, then build an invocation function for it. */
+	
+		??? /* Remember: retframe pointers. */
+	onset_ptr,
+	onjump_ptr
+);
+retframe token2char_parr( stackpair *stkp, void *v )
+{
+	STACKCHECK( stkp,  token2char_parr );
+	
+	if( token2char_parr_bookmark == UINTPTR_MAX )
+	{
+		/* Error: the longjump route hasn't been set. */
+		
+		???
+	}
+	
+	int scratch;
+	uintptr_t tmp;
+	
+	STACKPEEK_UINT( &( stkp->data ), 0, tmp,  token2char_parr, scratch )
+	token *tok = (token*)tmp;
+	
+	scratch = is_stdtoken( &( tok->header ) );
+	switch( scratch )
+	{
+		case 1:
+				/* The one and only 'good' path. */
+			STACKPOP_UINT( &( stkp->data ), tmp,  token2char_parr, scratch );
+			break;
+			
+		case -1:
+		default:
+				/* Error, full break! */
+			???;
+			
+		case 0:
+				/* Error, use longjump. */
+			return( (retframe){ &longjump_callstack, (void*)&token2char_parr_bookmark } );
+	}
+	
+	char_parr *cparr = char_pascalarray_build( strlen( tok->text ) + 1 );
+	if( !cparr )
+	{
+		???
+	}
+	
+	strcpy( tok->text, cparr->body );
+	
+	
+	STACKPUSH_UINT( &( stkp->data ), (uintptr_t)cparr,  token2char_parr, scratch );
+	
+		/* DRop the token, we don't want it anymore. */
+	STACKPUSH_UINT( &( stkp->data ), (uintptr_t)tok,  token2char_parr, scratch );
+	return( (retframe){ &invoke_dealloctoken, (void*)0 } );
+}
+	typedef struct macro_call_argval macro_call_argval;
+	struct macro_call_argval
+	{
+			/* One and ONLY one of these should be non-null. */
+			/* ... */
+			/* Actually, does args_offset even belong here? */
+		size_t args_offset;
+		char_pascalarray *text;
+	};
+	LIB4_DEFINE_PASCALARRAY_STDDEFINE( macrocallargval_, macro_call_argval );
+	typedef macrocallargval_pascalarray macrocllaval_parr;
+	typedef struct macro_call macro_call;
+	struct macro_call
+	{
+		token_head header;
+		
+			/* This gets used while a macro is first getting parsed to figure */
+			/*  out if a particular token corresponds to a macro arg or not, and */
+			/*  furthermore WHICH arg. */
+		macrocllaval_parr *args;
+		
+			/* This gets used to hold the tokens that represent the macro's */
+			/*  body. */
+		tokhdptr_parr *body;
+		
+		???;
+	};
+	/* ( tokenbranch* macrocllaval_parr* char_parr* -- tokenbranch* macrocllaval_parr* ??? ) */
+retframe tokens2macrocllaval_parr_continue( stackpair *stkp, void *v )
+{
+	STACKCHECK( stkp,  tokens2macrocllaval_parr_continue );
+	
+	if( token2char_parr_bookmark == UINTPTR_MAX )
+	{
+		/* Error: the longjump route hasn't been set. */
+		
+		???
+	}
+	
+	int scratch;
+	uintptr_t tmp;
+	
+	STACKPOP_UINT( &( stkp->data ), tmp,  tokens2macrocllaval_parr_continue, scratch );
+	char_parr *cparr = (char_parr*)tmp;
+	if( !cparr )
+	{
+		???
+	}
+	
+	STACKPOP_UINT( &( stkp->data ), tmp,  tokens2macrocllaval_parr_continue, scratch );
+	macrocllaval_parr *a = (macrocllaval_parr*)tmp; /* argnames grouping. */
+	if( !a )
+	{
+		???
+	}
+		/* Grow the array. */
+	{
+		macrocallargval_pascalarray_result res =
+			macrocallargval_pascalarray_rebuild( a, a->len + 1 );
+#define tokens2macrocllaval_parr_continue_BUILDFAIL( err ) \
+	???
+		LIB4_MONAD_EITHER_BODYMATCH( res, LIB4_OP_SETa, tokens2macrocllaval_parr_continue_BUILDFAIL );
+		if( !a )
+		{
+			???
+		}
+	}
+	STACKPUSH_UINT( &( stkp->data ), (uintptr_t)cparr,  tokens2macrocllaval_parr_continue, scratch );
+	
+		/* Actually save the char array. */
+	a->body[ a->len - 1 ].text = cparr;
+	
+	
+	
+	
+	
+	
+	
+	retframe loopframe = (retframe){ &tokens2macrocllaval_parr_continue, (void*)0 };
+	
+	on_yes
+	{
+		(retframe){ &drop, (void*)0 },
+		
+			(retframe){ &vm_popfront_body_tokenbranch, (void*)0 },
+			
+			???,
+		
+			/* Store a looping value on the data stack. This should really */
+			/*  be conditionalized, with */
+				/* retframe noop( stackpair *stkp, void *v ); */
+			/*  as the other option. */
+		(retframe){ &vm_pushretframe, (void*)&loopframe }
+			/* Surpress the "run_else" test that will follow. */
+		(retframe){ &vm_push0, (void*)0 }
+	}
+	on_no
+	{
+			/* We need to break or something? */
+		(retframe){ & ???, (void*)0 }
+	}
+	entry
+	{
+			/* ( tokenbranch* macrocllaval_parr* ) */
+		(retframe){ &swap2nd, (void*)0 },
+		(retframe){ &vm_lengthof_body_tokenbranch, (void*)0 },
+		(retframe){ &swap2nd, (void*)0 },
+		(retframe){ &swap3rd, (void*)0 },
+		(retframe){ &swap2nd, (void*)0 },
+			/* ( tokenbranch* macrocllaval_parr* length ) */
+		
+		(retframe){ &run_if, (void*)&( ??? on_yes ??? ) },
+		(retframe){ &run_else, (void*)&( ??? on_no ??? ) },
+			/* There WILL be a number that we need to pop */
+			/*  on top of the stack, we just don't know (or */
+			/*  care) what that number is. */
+		(retframe){ &drop, (void*)0 },
+		
+			/* Loop via a retframe stored on the data stack. */
+		(retframe){ &vm_datacall, (void*)0 }
+	}
+	(retframe){ &, (void*)0 }
+	
+	
+	
+retframe drop( stackpair *stkp, void *v );
+retframe dup( stackpair *stkp, void *v );
+
+retframe swap2nd( stackpair *stkp, void *v );
+	/* ( uintptr_t*a uintptr_t uintptr_t*b -- uintptr_t*b uintptr_t uintptr_t*a ) */
+retframe swap3rd( stackpair *stkp, void *v );
+	/* ( uintptr_t*a uintptr_t uintptr_t uintptr_t*b -- uintptr_t*b uintptr_t uintptr_t uintptr_t*a ) */
+retframe swap4th( stackpair *stkp, void *v );
+
+retframe vm_push0( stackpair *stkp, void *v );
+retframe vm_push1( stackpair *stkp, void *v );
+
+	/* These all require a pointer to a retframe as v. */
+retframe just_run( stackpair *stkp, void *v );
+	/* ( uintptr_t -- uintptr_t ) */
+retframe run_if( stackpair *stkp, void *v );
+retframe run_else( stackpair *stkp, void *v );
+	
+	
+	
+	
+	
+	???
+	
+	
+	scratch = is_stdtoken( &( tok->header ) );
+	
+	???
+	
+	tokenheadptr_result popfront_body_tokenbranch( tokenbranch *tb );
+	
+	retframe vm_push_body_tokenbranch( stackpair *stkp, void *v );
+	retframe vm_popfront_body_tokenbranch( stackpair *stkp, void *v );
+	retframe vm_pop_body_tokenbranch( stackpair *stkp, void *v );
+	
+	???
+}
+	/* ( tokenbranch* token* -- tokenbranch* macrocllaval_parr* char_parr* ) */
+retframe tokens2macrocllaval_parr( stackpair *stkp, void *v )
+{
+	STACKCHECK( stkp,  tokens2macrocllaval_parr );
+	
+	if( token2char_parr_bookmark == UINTPTR_MAX )
+	{
+		/* Error: the longjump route hasn't been set. */
+		
+		???
+	}
+	
+	int scratch;
+	uintptr_t tmp;
+	
+	STACKPEEK_UINT( &( stkp->data ), 0, tmp,  tokens2macrocllaval_parr, scratch )
+	token *tok = (token*)tmp;
+	
+	scratch = is_stdtoken( &( tok->header ) );
+	switch( scratch )
+	{
+		case 1:
+				/* The one and only 'good' path. */
+			break;
+			
+		case -1:
+		default:
+				/* Error, full break! */
+			???;
+			
+		case 0:
+				/* Error, use longjump. */
+			return( (retframe){ &longjump_callstack, (void*)&token2char_parr_bookmark } );
+	}
+	
+	macrocllaval_parr *a; /* argnames grouping. */
+	macrocallargval_pascalarray_result res =
+		macrocallargval_pascalarray_build( 0 );
+#define tokens2macrocllaval_parr_BUILDFAIL( err ) \
+		???
+	LIB4_MONAD_EITHER_BODYMATCH( res, LIB4_OP_SETa, tokens2macrocllaval_parr_BUILDFAIL );
+	if( !a )
+	{
+		???
+	}
+	STACKPUSH_UINT( &( stkp->data ), (uintptr_t)a,  tokens2macrocllaval_parr, scratch );
+	
+	
+	static const retframe_parr seq =
+		(retframe_parr)
+		{
+			3,
+			{
+					/* Move argnames below the token. */
+				(retframe){ &swap2nd, (void*)0 },
+					/* Convert token. */
+				(retframe){ &token2char_parr, (void*)0 },
+					/* And now, we enter the loop... */
+				(retframe){ &tokens2macrocllaval_parr_continue, (void*)0 }
+			}
+		};
+	return( (retframe){ &enqueue_returns, (void*)&seq } );
+}
+
+
+
+
+
+
+
+
+
 
 
 	/* As with require_preprocopener(). */
@@ -212,21 +507,21 @@ retframe conclude_try_directive( stackpair *stkp, void *v )
 			{
 				7,
 				{
-					(retframe(){ &tokenbranch_build, (void*)0 },
+					(retframe){ &tokenbranch_build, (void*)0 },
 					
-					(retframe(){ &swap2nd, (void*)0 },
-					(retframe(){ &tokenbranch_pushbody, (void*)0 },
+					(retframe){ &swap2nd, (void*)0 },
+					(retframe){ &tokenbranch_pushbody, (void*)0 },
 					
-					(retframe(){ &swap2nd, (void*)0 },
+					(retframe){ &swap2nd, (void*)0 },
 						/* We might be better off using a different */
 						/*  token to set this. If so, then verify that */
 						/*  the number of elements in the retframe_parr */
 						/*  gets updated. */
-					(retframe(){ &tokenbranch_setsubtype, (void*)0 },
-					(retframe(){ &tokenbranch_setlead, (void*)0 },
+					(retframe){ &tokenbranch_setsubtype, (void*)0 },
+					(retframe){ &tokenbranch_setlead, (void*)0 },
 					
 						/* Dispatch to the directive-recognizer code. */
-					(retframe(){ &, (void*)0 }
+					(retframe){ &, (void*)0 }
 				}
 			};
 		return( (retframe){ &enqueue_returns, (void*)&octoreq } );
@@ -261,10 +556,10 @@ retframe try_directive( stackpair *stkp, void *v )
 			{
 				3,
 				{
-					(retframe(){ &accumulate_token, (void*)0 },
-					(retframe(){ &require_anyname, (void*)0 },
+					(retframe){ &accumulate_token, (void*)0 },
+					(retframe){ &require_anyname, (void*)0 },
 					
-					(retframe(){ &conclude_try_directive, (void*)0 }
+					(retframe){ &conclude_try_directive, (void*)0 }
 				}
 			};
 		return( (retframe){ &enqueue_returns, (void*)&tryname } );

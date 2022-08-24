@@ -62,117 +62,6 @@
 
 
 
-retframe complexlex_dealloctoken = (retframe){ &smart_dealloc_token, (void*)0 };
-
-retframe set_dealloctoken( retframe dealc_ )
-{
-	retframe ret = (retframe){ 0, 0 };
-	
-	if( dealc_.handler )
-	{
-		ret = complexlex_dealloctoken;
-		complexlex_dealloctoken = dealc_;
-		
-	} else {
-		
-		BADNULL( set_dealloctoken, &( dealc_.handler ) );
-	}
-	
-	return( ret );
-}
-retframe invoke_dealloctoken( stackpair *stkp, void *v )
-{
-	if( complexlex_dealloctoken.handler )
-	{
-		BADNONULL( invoke_dealloctoken, &( complexlex_dealloctoken.handler ) );
-		return( (retframe){ (framefunc)&end_run, (void*)0 } );
-	}
-	
-	return( complexlex_dealloctoken );
-}
-retframe smart_dealloc_token( stackpair *stkp, void *v )
-{
-	uintptr_t a;
-	token_head *th = (token_head*)0;
-		/* One way or another, this SHOULDN'T be the value actually getting */
-		/*  returned. But just in case... */
-	retframe ret = (retframe){ &end_run, (void*)0 };
-	int res;
-	
-	STACKCHECK( stkp,  smart_dealloc_token, macroargs_ENDRETFRAME );
-	
-	STACKPEEK_UINT( &( stk->data ), 0, &a,  smart_dealloc_token, res, macroargs_ENDRETFRAME );
-	th = (token_head*)a;
-	
-	if( th->toktype == TOKTYPE_TOKENGROUP_SAMEMERGE )
-	{
-		tokengroup *tgrp = (tokengroup*)th;
-		
-		ret =
-			dealloc_tokengroup
-			(
-				stkp, v,
-				
-				tgrp
-			);
-		if( !ret.handler && !ret.data )
-		{
-			BADNULL2( smart_dealloc_token, &( ret.handler ), &( ret.data ) );
-			return( (retframe){ (framefunc)&end_run, (void*)0 } );
-		}
-		
-	} else if( th->toktype == TOKTYPE_TOKENGROUP_EQUIVMERGE )
-	{
-		tokenbranch *tb = (tokenbranch*)th;
-		
-		ret = dealloc_tokenbranch( stkp, v,  tb );
-		if( !ret.handler && !ret.data )
-		{
-			BADNULL2( smart_dealloc_token, &( ret.handler ), &( ret.data ) );
-			return( (retframe){ (framefunc)&end_run, (void*)0 } );
-		}
-		
-	} else {
-		
-		/* Wasn't either of the two "complexly structured" categories of */
-		/*  tokens, so that means it's one of the simple ones instead. Time */
-		/*  to outsource appropriately, with a hardwired return. */
-		
-		return( (retframe){ &dealloc_token, (void*)0 } );
-	}
-	
-	
-	if( ret.handler )
-	{
-		/* We're dealing with a complexly structured token (it has child */
-		/*  tokens), and we haven't finished dealing with the children, so */
-		/*  we'll queue up our "standard" deallocator (which is this */
-		/*  function by default) as a return route, and then call whichever */
-		/*  retframe was returned to us (which will probably ALSO be this */
-		/*  function...).  */
-		
-		/* ??? */
-		CALLFRAMEFUNC(
-			complexlex_dealloctoken.handler,
-			complexlex_dealloctoken.data,
-			
-			ret.handler, ret.data,
-			
-			smart_dealloc_token
-		);
-		
-	} else {
-		
-			/* The children have been previously deallocated, and the */
-			/*  complex type was deallocated by the helper function that we */
-			/*  got the current value of "ret" from, so it's time to return */
-			/*  to OUR caller (or at least the "designated return route")! */
-		RETFRAMEFUNC( smart_dealloc_token );
-	}
-}
-
-
-
 tokengroup* build_tokengroup( size_t elems )
 {
 	tokengroup *ret;
@@ -284,6 +173,42 @@ int pushto_tokengroup
 	++( tgrp->used );
 	
 	return( 1 );
+}
+tokenheadptr_result popfront_tokengroup( tokengroup *tgrp )
+{
+	token_head *th;
+	
+	if( !tgrp )
+	{
+		BADNULL( popfrom_tokengroup, &tgrp );
+		TOKENHEADPTR_RESULT_RETURNFAILURE( 1 );
+	}
+	if( !( tgrp->used && tgrp->arr ) )
+	{
+		BADNULL2( popfrom_tokengroup, &( tgrp->used ), &( tgrp->arr ) );
+		TOKENHEADPTR_RESULT_RETURNFAILURE( 2 );
+	}
+	if( !( tgrp->arr->len ) )
+	{
+		BADNULL( popfrom_tokengroup, &( tgrp->arr->len ) );
+		TOKENHEADPTR_RESULT_RETURNFAILURE( 3 );
+	}
+	if( tgrp->used >= tgrp->arr->len )
+	{
+		TRESPASSPATH( popfrom_tokengroup, "ERROR: popfrom_tokengroup detected a used size larger than the available size." );
+		TOKENHEADPTR_RESULT_RETURNFAILURE( 4 );
+	}
+	
+	th = tgrp->arr->body[ 0 ];
+	--( tgrp->used );
+	size_t i = 0;
+	while( i < tgrp->used )
+	{
+		tgrp->arr->body[ i ] = tgrp->arr->body[ i + 1 ];
+		i += 1;
+	}
+	
+	TOKENHEADPTR_RESULT_RETURNSUCCESS( th );
 }
 tokenheadptr_result popfrom_tokengroup( tokengroup *tgrp )
 {
@@ -449,6 +374,134 @@ retframe dealloc_tokengroup
 	return( ret );
 }
 
+retframe vm_pushto_tokengroup( stackpair *stkp, void *v )
+{
+	STACKCHECK( stkp,  vm_pushto_tokengroup, macroargs_ENDRETFRAME );
+	
+	uintptr_t a;
+	int res;
+	
+	STACKPOP_UINT(
+		&( stkp->data ), &a,
+		vm_pushto_tokengroup, res, macroargs_ENDRETFRAME
+	);
+	token_head *th = (token_head*)a;
+	if( !th )
+	{
+		???
+	}
+	
+	STACKPEEK_UINT(
+		&( stkp->data ), 0, &a,
+		vm_pushto_tokengroup, res, macroargs_ENDRETFRAME
+	);
+	tokengroup *tg = (tokengroup*)a;
+	if( !tg )
+	{
+		???
+	}
+	
+	if( !pushto_tokengroup( tg, th ) )
+	{
+		???
+	}
+	
+	RETFRAMEFUNC( vm_pushto_tokengroup );
+}
+retframe vm_popfront_tokengroup( stackpair *stkp, void *v )
+{
+	STACKCHECK( stkp,  vm_popfront_tokengroup, macroargs_ENDRETFRAME );
+	
+	uintptr_t a;
+	int res;
+	
+	STACKPEEK_UINT(
+		&( stkp->data ), 0, &a,
+		vm_popfront_tokengroup, res, macroargs_ENDRETFRAME
+	);
+	tokengroup *tg = (tokengroup*)a;
+	if( !tg )
+	{
+		???
+	}
+	
+#define vm_popfront_tokengroup_ONSUCC( val ) \
+		STACKPUSH_UINT( &( stkp->data ),  (uintptr_t)( val ), \
+			vm_popfront_tokengroup, res, macroargs_ENDRETFRAME );
+#define vm_popfront_tokengroup_ONERR( err ) \
+		???
+	
+	tokenheadptr_result thp = popfront_tokengroup( tg );
+	TOKENHEADPTR_RESULT_BODYMATCH(
+		thp,
+		vm_popfront_tokengroup_ONSUCC,
+		vm_popfront_tokengroup_ONERR
+	);
+	
+	RETFRAMEFUNC( vm_popfront_tokengroup );
+}
+retframe vm_popfrom_tokengroup( stackpair *stkp, void *v )
+{
+	STACKCHECK( stkp,  vm_popfrom_tokengroup, macroargs_ENDRETFRAME );
+	
+	uintptr_t a;
+	int res;
+	
+	STACKPEEK_UINT(
+		&( stkp->data ), 0, &a,
+		vm_popfrom_tokengroup, res, macroargs_ENDRETFRAME
+	);
+	tokengroup *tg = (tokengroup*)a;
+	if( !tg )
+	{
+		???
+	}
+	
+#define vm_popfrom_tokengroup_ONSUCC( val ) \
+		STACKPUSH_UINT( &( stkp->data ),  (uintptr_t)( val ), \
+			vm_popfrom_tokengroup, res, macroargs_ENDRETFRAME );
+#define vm_popfrom_tokengroup_ONERR( err ) \
+		???
+	
+	tokenheadptr_result thp = popfrom_tokengroup( tg );
+	TOKENHEADPTR_RESULT_BODYMATCH(
+		thp,
+		vm_popfrom_tokengroup_ONSUCC,
+		vm_popfrom_tokengroup_ONERR
+	);
+	
+	RETFRAMEFUNC( vm_popfrom_tokengroup );
+}
+retframe vm_lengthof_tokengroup( stackpair *stkp, void *v )
+{
+	STACKCHECK( stkp,  vm_lengthof_tokengroup, macroargs_ENDRETFRAME );
+	
+	uintptr_t a;
+	int res;
+	
+	STACKPEEK_UINT(
+		&( stkp->data ), 0, &a,
+		vm_lengthof_tokengroup, res, macroargs_ENDRETFRAME
+	);
+	tokengroup *tg = (tokengroup*)a;
+	if( !tg )
+	{
+		???
+	}
+	if( !( tg->arr ) )
+	{
+		???
+	}
+	
+	STACKPUSH_UINT(
+		&( stkp->data ), (uintptr_t)( tg->arr->len ),
+		
+		vm_lengthof_tokengroup, res, macroargs_ENDRETFRAME
+	);
+	
+	RETFRAMEFUNC( vm_popfrom_tokengroup );
+}
+
 
 tokenbranch* build_tokenbranch( size_t elems )
 {
@@ -516,16 +569,16 @@ int push_body_tokenbranch( tokenbranch *tb, token_head *tok )
 	
 	return( 1 );
 }
-tokenheadptr_result pop_body_tokenbranch( tokenbranch *tb )
+tokenheadptr_result popfront_body_tokenbranch( tokenbranch *tb )
 {
 	if( !tb )
 	{
-		BADNULL( set_lead_tokenbranch, &tb );
+		BADNULL( popfront_body_tokenbranch, &tb );
 		TOKENHEADPTR_RESULT_RETURNFAILURE( 1 );
 	}
 	if( !( tb->body ) )
 	{
-		BADNULL( set_lead_tokenbranch, &( tb->body ) );
+		BADNULL( popfront_body_tokenbranch, &( tb->body ) );
 		TOKENHEADPTR_RESULT_RETURNFAILURE( 2 );
 	}
 	
@@ -538,7 +591,37 @@ tokenheadptr_result pop_body_tokenbranch( tokenbranch *tb )
 		
 	} else {
 		
-		tokenheadptr_result res = popfrom_tokengroup( tokengroup *tgrp );
+		tokenheadptr_result res = popfront_tokengroup( (tokengroup*)( tb->body ) );
+		
+#define pop_body_tokenbranch_RETURN_POPFROM_ERROR( val ) \
+	TOKENHEADPTR_RESULT_RETURNFAILURE( val + 3 );
+		
+		TOKENHEADPTR_RESULT_BODYMATCH( res, TOKENHEADPTR_RESULT_RETURNSUCCESS, pop_body_tokenbranch_RETURN_POPFROM_ERROR );
+	}
+}
+tokenheadptr_result pop_body_tokenbranch( tokenbranch *tb )
+{
+	if( !tb )
+	{
+		BADNULL( pop_body_tokenbranch, &tb );
+		TOKENHEADPTR_RESULT_RETURNFAILURE( 1 );
+	}
+	if( !( tb->body ) )
+	{
+		BADNULL( pop_body_tokenbranch, &( tb->body ) );
+		TOKENHEADPTR_RESULT_RETURNFAILURE( 2 );
+	}
+	
+	
+	if( tb->body->toktype != TOKTYPE_TOKENGROUP_SAMEMERGE )
+	{
+		token_head *th = tb->body;
+		tb->body = (token_head*)0;
+		TOKENHEADPTR_RESULT_RETURNSUCCESS( th );
+		
+	} else {
+		
+		tokenheadptr_result res = popfrom_tokengroup( (tokengroup*)( tb->body ) );
 		
 #define pop_body_tokenbranch_RETURN_POPFROM_ERROR( val ) \
 	TOKENHEADPTR_RESULT_RETURNFAILURE( val + 3 );
@@ -621,6 +704,157 @@ retframe dealloc_tokenbranch
 	
 	STACKPUSH_UINT( &( stkp->data ), a,  dealloc_tokenbranch, res, macroargs_ENDRETFRAME );
 	return( complexlex_dealloctoken );
+}
+
+retframe vm_push_body_tokenbranch( stackpair *stkp, void *v )
+{
+	STACKCHECK( stkp,  vm_push_body_tokenbranch, macroargs_ENDRETFRAME );
+	
+	uintptr_t a;
+	int res;
+	
+	STACKPOP_UINT(
+		&( stkp->data ), &a,
+		vm_push_body_tokenbranch, res, macroargs_ENDRETFRAME
+	);
+	token_head *th = (token_head*)a;
+	if( !th )
+	{
+		???
+	}
+	
+	STACKPEEK_UINT(
+		&( stkp->data ), 0, &a,
+		vm_push_body_tokenbranch, res, macroargs_ENDRETFRAME
+	);
+	tokengroup *tb = (tokenbranch*)a;
+	if( !tb )
+	{
+		???
+	}
+	
+	if( !push_body_tokenbranch( tb, th ) )
+	{
+		???
+	}
+	
+	RETFRAMEFUNC( vm_push_body_tokenbranch );
+}
+retframe vm_popfront_body_tokenbranch( stackpair *stkp, void *v )
+{
+	STACKCHECK( stkp,  vm_popfront_body_tokenbranch, macroargs_ENDRETFRAME );
+	
+	uintptr_t a;
+	int res;
+	
+	STACKPEEK_UINT(
+		&( stkp->data ), 0, &a,
+		vm_popfront_body_tokenbranch, res, macroargs_ENDRETFRAME
+	);
+	tokenbranch *tb = (tokenbranch*)a;
+	if( !tb )
+	{
+		???
+	}
+	
+#define vm_popfront_tokenbranch_ONSUCC( val ) \
+		STACKPUSH_UINT( &( stkp->data ),  (uintptr_t)( val ), \
+			vm_popfront_body_tokenbranch, res, macroargs_ENDRETFRAME );
+#define vm_popfront_tokenbranch_ONERR( err ) \
+		???
+	
+	tokenheadptr_result thp = popfront_body_tokenbranch( tb );
+	TOKENHEADPTR_RESULT_BODYMATCH(
+		thp,
+		vm_popfront_tokenbranch_ONSUCC,
+		vm_popfront_tokenbranch_ONERR
+	);
+	
+	RETFRAMEFUNC( vm_popfront_body_tokenbranch );
+}
+retframe vm_pop_body_tokenbranch( stackpair *stkp, void *v )
+{
+	STACKCHECK( stkp,  vm_pop_body_tokenbranch, macroargs_ENDRETFRAME );
+	
+	uintptr_t a;
+	int res;
+	
+	STACKPEEK_UINT(
+		&( stkp->data ), 0, &a,
+		vm_pop_body_tokenbranch, res, macroargs_ENDRETFRAME
+	);
+	tokenbranch *tb = (tokenbranch*)a;
+	if( !tb )
+	{
+		???
+	}
+	
+#define vm_popfrom_tokenbranch_ONSUCC( val ) \
+		STACKPUSH_UINT( &( stkp->data ),  (uintptr_t)( val ), \
+			vm_pop_body_tokenbranch, res, macroargs_ENDRETFRAME );
+#define vm_popfrom_tokenbranch_ONERR( err ) \
+		???
+	
+	tokenheadptr_result thp = pop_body_tokenbranch( tb );
+	TOKENHEADPTR_RESULT_BODYMATCH(
+		thp,
+		vm_popfrom_tokenbranch_ONSUCC,
+		vm_popfrom_tokenbranch_ONERR
+	);
+	
+	RETFRAMEFUNC( vm_pop_body_tokenbranch );
+}
+retframe vm_lengthof_body_tokenbranch( stackpair *stkp, void *v )
+{
+	STACKCHECK( stkp,  vm_lengthof_body_tokenbranch, macroargs_ENDRETFRAME );
+	
+	uintptr_t a;
+	int res;
+	
+	STACKPEEK_UINT(
+		&( stkp->data ), 0, &a,
+		vm_lengthof_body_tokenbranch, res, macroargs_ENDRETFRAME
+	);
+	tokenbranch *tb = (tokenbranch*)a;
+	if( !tb )
+	{
+		???
+	}
+	if( !( tb->body ) )
+	{
+		???
+	}
+	
+	if( tb->body->toktype != TOKTYPE_TOKENGROUP_SAMEMERGE )
+	{
+		STACKPUSH_UINT(
+			&( stkp->data ),  (uintptr_t)1,
+			vm_lengthof_body_tokenbranch, res, macroargs_ENDRETFRAME
+		);
+		
+		RETFRAMEFUNC( vm_pop_body_tokenbranch );
+		
+	} else {
+		
+		STACKPUSH_UINT(
+			&( stkp->data ),  (uintptr_t)( tb->body ),
+			vm_lengthof_body_tokenbranch, res, macroargs_ENDRETFRAME
+		);
+		
+		static const retframe_parr seq =
+			(retframe_parr)
+			{
+				3,
+				{
+					(retframe){ &vm_lengthof_tokengroup, (void*)0 },
+					(retframe){ &swap2nd, (void*)0 },
+						/* DON'T deallocate, JUST drop. The tokengroup is */
+						/*  still referenced elsewhere. */
+					(retframe){ &drop, (void*)0 }
+				}
+			};
+		return( (retframe){ &enqueue_returns, (void*)&seq } );
+	}
 }
 
 

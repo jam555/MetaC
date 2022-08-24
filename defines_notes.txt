@@ -1,6 +1,10 @@
 
 	LIB4_DEFINE_PASCALARRAY_STDDEFINE( prefix, element_type )
-		Results in "struct prefix##_pascalarray { len; body[]; };", plus maybe extras.
+		Results in "struct prefix##_pascalarray { len; body[]; };", plus some functions.
+		
+		prefix##_pascalarray_result res = prefix##_pascalarray_build( size_t len );
+		prefix##_pascalarray_result res = prefix##_pascalarray_rebuild( prefix##_pascalarray*, size_t newlen );
+		lib4_result res = prefix##_pascalarray_destroy( prefix##_pascalarray* );
 
 
 	LIB4_MONAD_EITHER_BUILDTYPE_DEFINITION(

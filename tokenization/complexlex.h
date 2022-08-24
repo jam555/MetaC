@@ -31,12 +31,6 @@
 	
 	
 	
-	retframe set_dealloctoken( retframe dealc_ );
-	retframe invoke_dealloctoken( stackpair *stkp, void *v );
-	retframe smart_dealloc_token( stackpair *stkp, void *v );
-	
-	
-	
 	tokengroup* build_tokengroup( size_t elems );
 	int regrow_tokengroup
 	(
@@ -48,6 +42,9 @@
 		tokengroup *tgrp,
 		token_head *thd
 	);
+		/* popfront_*() is slow, TRY to use popfrom_*() (which */
+		/*  removes from the back) instead. */
+	tokenheadptr_result popfront_tokengroup( tokengroup *tgrp );
 	tokenheadptr_result popfrom_tokengroup( tokengroup *tgrp );
 	int place_tokenhead( token_head **dest, token_head *tok );
 	retframe dealloc_tokengroup
@@ -57,10 +54,16 @@
 		tokengroup *tgrp
 	);
 	
+	retframe vm_pushto_tokengroup( stackpair *stkp, void *v );
+	retframe vm_popfront_tokengroup( stackpair *stkp, void *v );
+	retframe vm_popfrom_tokengroup( stackpair *stkp, void *v );
+	retframe vm_lengthof_tokengroup( stackpair *stkp, void *v );
+	
 	
 	tokenbranch* build_tokenbranch( size_t elems );
 	int set_lead_tokenbranch( tokenbranch *tb, token_head *tok );
 	int push_body_tokenbranch( tokenbranch *tb, token_head *tok );
+	tokenheadptr_result popfront_body_tokenbranch( tokenbranch *tb );
 	tokenheadptr_result pop_body_tokenbranch( tokenbranch *tb );
 	int set_tail_tokenbranch( tokenbranch *tb, token_head *tok );
 	retframe dealloc_tokenbranch
@@ -69,6 +72,11 @@
 		
 		tokenbranch *tb
 	);
+	
+	retframe vm_push_body_tokenbranch( stackpair *stkp, void *v );
+	retframe vm_popfront_body_tokenbranch( stackpair *stkp, void *v );
+	retframe vm_pop_body_tokenbranch( stackpair *stkp, void *v );
+	retframe vm_lengthof_body_tokenbranch( stackpair *stkp, void *v );
 	
 	
 		/* Expects a token of type TOKTYPE_SYM_COMMENTOP or */

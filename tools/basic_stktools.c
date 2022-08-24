@@ -18,6 +18,11 @@
 
 
 
+#define NOTELINE() STDMSG_NOTELINE_WRAPPER( &errs )
+#define DATAPTR( ptr ) STDMSG_DATAPTRARG_WRAPPER( &errs, ( ptr ) )
+
+
+
 #define STACKCHECK( stack,  caller ) \
 	STACK_CHECK( ( stack ),  &err, ( caller ), lexalike_ENDRETFRAME )
 #define STACKCHECK2( stack, v,  caller ) \
@@ -308,7 +313,7 @@ retframe vm_pushdata( stackpair *stkp, void *v_ )
 {
 	int scratch;
 	
-	STACKCHECK2( stkp, v_,  vm_pushuintptr );
+	STACKCHECK2( stkp, v_,  vm_pushdata );
 	
 	STACKPUSH_UINT( stkp->data, *( (uintptr_t*)v_ ),  vm_pushdata, scratch );
 	
@@ -325,6 +330,21 @@ retframe vm_popdata( stackpair *stkp, void *v_ )
 	*( (uintptr_t*)v_ ) = val;
 	
 	RETFRAMEFUNC( stkp,  vm_popdata );
+}
+retframe vm_pushretframe( stackpair *stkp, void *v_ )
+{
+	int scratch;
+	
+	STACKCHECK2( stkp, v_,  vm_pushretframe );
+	
+	scratch = push_retframe( stkp->data,  (retframe*)v_ );
+	if( !scratch )
+	{
+		STDMSG_FAILEDINTFUNC_WRAPPER( &errs, "push_retframe", vm_pushretframe, scratch );
+		return( (retframe){ &end_run, (void*)0 } );
+	}
+	
+	RETFRAMEFUNC( stkp,  vm_pushretframe );
 }
 
 
@@ -371,6 +391,22 @@ retframe run_else( stackpair *stkp, void *v )
 		
 		RETFRAMEFUNC( stkp,  run_else );
 	}
+}
+retframe vm_datacall( stackpair *stkp, void *v )
+{
+	STACKCHECK2( stkp, v,  vm_datacall );
+	
+	int scratch;
+	retframe rf;
+	
+	scratch = pop_retframe( stkp->data,  &rf );
+	if( !scratch )
+	{
+		STDMSG_FAILEDINTFUNC_WRAPPER( &errs, "pop_retframe", vm_datacall, scratch );
+		return( (retframe){ &end_run, (void*)0 } );
+	}
+	
+	return( rf );
 }
 
 
