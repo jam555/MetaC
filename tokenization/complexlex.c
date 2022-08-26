@@ -373,6 +373,19 @@ retframe dealloc_tokengroup
 	
 	return( ret );
 }
+int lengthof_tokengroup( tokengroup *tg )
+{
+	if( !tg )
+	{
+		return( -1 );
+	}
+	if( !( tg->arr ) )
+	{
+		return( -2 );
+	}
+	
+	return( tg->arr->len );
+}
 
 retframe vm_pushto_tokengroup( stackpair *stkp, void *v )
 {
@@ -483,18 +496,17 @@ retframe vm_lengthof_tokengroup( stackpair *stkp, void *v )
 		&( stkp->data ), 0, &a,
 		vm_lengthof_tokengroup, res, macroargs_ENDRETFRAME
 	);
-	tokengroup *tg = (tokengroup*)a;
-	if( !tg )
-	{
-		???
-	}
-	if( !( tg->arr ) )
+	
+	
+	int sz = lengthof_tokengroup( (tokengroup*)a );
+	if( !res )
 	{
 		???
 	}
 	
+	
 	STACKPUSH_UINT(
-		&( stkp->data ), (uintptr_t)( tg->arr->len ),
+		&( stkp->data ), (uintptr_t)sz,
 		
 		vm_lengthof_tokengroup, res, macroargs_ENDRETFRAME
 	);
@@ -704,6 +716,26 @@ retframe dealloc_tokenbranch
 	
 	STACKPUSH_UINT( &( stkp->data ), a,  dealloc_tokenbranch, res, macroargs_ENDRETFRAME );
 	return( complexlex_dealloctoken );
+}
+int lengthof_body_tokenbranch( tokenbranch *tb )
+{
+	if( !tb )
+	{
+		return( -1 );
+	}
+	if( !( tb->body ) )
+	{
+		return( -2 );
+	}
+	
+	if( tb->body->toktype != TOKTYPE_TOKENGROUP_SAMEMERGE )
+	{
+		return( ( tb->body ) ? 1 : 0 );
+		
+	} else {
+		
+		return( lengthof_tokengroup( (tokengroup*)( tb->body ) ) );
+	}
 }
 
 retframe vm_push_body_tokenbranch( stackpair *stkp, void *v )

@@ -53,6 +53,7 @@
 		
 		tokengroup *tgrp
 	);
+	int lengthof_tokengroup( tokengroup *tg );
 	
 	retframe vm_pushto_tokengroup( stackpair *stkp, void *v );
 	retframe vm_popfront_tokengroup( stackpair *stkp, void *v );
@@ -72,6 +73,7 @@
 		
 		tokenbranch *tb
 	);
+	int lengthof_body_tokenbranch( tokenbranch *tb );
 	
 	retframe vm_push_body_tokenbranch( stackpair *stkp, void *v );
 	retframe vm_popfront_body_tokenbranch( stackpair *stkp, void *v );

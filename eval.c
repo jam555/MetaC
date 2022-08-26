@@ -46,6 +46,8 @@
 
 #define CALL_FFUNC( stkpair,  rethand, retdat,  callhand, calldat,  caller, scratch ) \
 	CALL_FRAMEFUNC( stkpair,  rethand, retdat,  callhand, calldat,  &errs, caller, scratch, lexalike_ENDRETFRAME )
+#define RETFRAMEFUNC( caller ) \
+	RET_FRAMEFUNC( stkp,  &errs, ( caller ), res, stack_ENDRETFRAME )
 
 
 
@@ -322,100 +324,163 @@ retframe tokens2macrocllaval_parr_continue( stackpair *stkp, void *v )
 			???
 		}
 	}
-	STACKPUSH_UINT( &( stkp->data ), (uintptr_t)cparr,  tokens2macrocllaval_parr_continue, scratch );
+	STACKPUSH_UINT( &( stkp->data ), (uintptr_t)a,  tokens2macrocllaval_parr_continue, scratch );
 	
 		/* Actually save the char array. */
 	a->body[ a->len - 1 ].text = cparr;
 	
+	STACKPEEK_UINT( &( stkp->data ), sizeof( uintptr_t ), tmp,  tokens2macrocllaval_parr_continue, scratch );
 	
 	
 	
+	static retframe
+		loopframe = (retframe){ &tokens2macrocllaval_parr_continue, (void*)0 },
+		noopframe = (retframe){ &noop, (void*)0 };
+	
+	static const retframe_parr
+		on_dropcomma_ =
+			(retframe_parr)
+			{
+				3,
+				{
+					(retframe){ &drop, (void*)0 },
+						(retframe){ &invoke_dealloctoken, (void*)0 },
+					(retframe){ &vm_push0, (void*)0 }
+				}
+			}.
+		on_notcomma_ =
+			(retframe_parr)
+			{
+				???,
+				{
+					(retframe){ &drop, (void*)0 },
+					
+					???
+					
+					(retframe){ &longjump_callstack, (void*)&token2char_parr_bookmark }
+				}
+			},
+		on_loosecomma_ =
+			(retframe_parr)
+			{
+				???,
+				{
+					(retframe){ &drop, (void*)0 },
+					
+					???
+					
+					(retframe){ &longjump_callstack, (void*)&token2char_parr_bookmark }
+				}
+			},
+		on_name_ =
+			(retframe_parr)
+			{
+				3,
+				{
+					(retframe){ &drop, (void*)0 },
+						(retframe){ &token2char_parr, (void*)0 },
+					(retframe){ &vm_push0, (void*)0 }
+				}
+			},
+		on_notname_ =
+			(retframe_parr)
+			{
+				???,
+				{
+					(retframe){ &drop, (void*)0 },
+					
+					???
+					
+					(retframe){ &longjump_callstack, (void*)&token2char_parr_bookmark }
+				}
+	static const retframe
+		on_dropcomma = (retframe){ &enqueue_returns, (void*)&on_dropcomma_ },
+		on_notcomma = (retframe){ &enqueue_returns, (void*)&on_notcomma_ },
+		on_loosecomma = (retframe){ &enqueue_returns, (void*)&on_loosecomma_ },
+		on_name = (retframe){ &enqueue_returns, (void*)&on_name_ },
+		on_notname = (retframe){ &enqueue_returns, (void*)&on_notname_ };
+			};
+	static const retframe_parr
+		on_yes_ =
+			(retframe_parr)
+			{
+				16,
+				{
+					(retframe){ &drop, (void*)0 },
+					
+					(retframe){ &vm_popfront_body_tokenbranch, (void*)0 },
+					(retframe){ &require_comma, (void*)0 },
+						(retframe){ &run_if, (void*)& on_dropcomma },
+						(retframe){ &run_else, (void*)& on_notcomma },
+					(retframe){ &drop, (void*)0 },
+					
+					(retframe){ &vm_lengthof_body_tokenbranch, (void*)0 },
+						(retframe){ &run_else, (void*)& on_loosecomma },
+					(retframe){ &drop, (void*)0 },
+					
+					(retframe){ &vm_popfront_body_tokenbranch, (void*)0 },
+					(retframe){ &require_anyname, (void*)0 },
+						(retframe){ &run_if, (void*)& on_name },
+						(retframe){ &run_else, (void*)& on_notname },
+					(retframe){ &drop, (void*)0 },
+					
+					
+						/* Store our loop value onto the data stack. */
+					(retframe){ &vm_pushretframe, (void*)&loopframe },
+						/* Surpress the "run_else" test that will follow. */
+					(retframe){ &vm_push0, (void*)0 }
+				}
+			},
+		on_no_ =
+			(retframe_parr)
+			{
+				1,
+				{
+					(retframe){ &drop, (void*)0 },
+							/* All we need to do, is to do nothing at all. */
+						(retframe){ &vm_pushretframe, (void*)&noopframe },
+					(retframe){ &vm_push0, (void*)0 }
+				}
+			};
+	static const retframe
+		on_yes = (retframe){ &enqueue_returns, (void*)&on_yes_ },
+		on_no = (retframe){ &enqueue_returns, (void*)&on_no_ };
+	static const retframe_parr entry =
+		(retframe_parr)
+		{
+			9,
+			{
+					/* ( tokenbranch* macrocllaval_parr* ) */
+				(retframe){ &swap2nd, (void*)0 },
+				(retframe){ &vm_lengthof_body_tokenbranch, (void*)0 },
+				(retframe){ &swap2nd, (void*)0 },
+				(retframe){ &swap3rd, (void*)0 },
+				(retframe){ &swap2nd, (void*)0 },
+					/* ( tokenbranch* macrocllaval_parr* length ) */
+				
+				(retframe){ &run_if, (void*)&on_yes },
+				(retframe){ &run_else, (void*)&on_no },
+					/* There WILL be a number that we need to pop */
+					/*  on top of the stack, we just don't know (or */
+					/*  care) what that number is. */
+				(retframe){ &drop, (void*)0 },
+				
+					/* Loop via a retframe stored on the data stack. */
+				(retframe){ &vm_datacall, (void*)0 }
+			}
+		};
 	
 	
 	
-	retframe loopframe = (retframe){ &tokens2macrocllaval_parr_continue, (void*)0 };
-	
-	on_yes
+	int sz = lengthof_body_tokenbranch( (tokenbranch*)tmp );
+	if( !sz )
 	{
-		(retframe){ &drop, (void*)0 },
+		RETFRAMEFUNC( tokens2macrocllaval_parr_continue );
 		
-			(retframe){ &vm_popfront_body_tokenbranch, (void*)0 },
-			
-			???,
+	} else {
 		
-			/* Store a looping value on the data stack. This should really */
-			/*  be conditionalized, with */
-				/* retframe noop( stackpair *stkp, void *v ); */
-			/*  as the other option. */
-		(retframe){ &vm_pushretframe, (void*)&loopframe }
-			/* Surpress the "run_else" test that will follow. */
-		(retframe){ &vm_push0, (void*)0 }
+		return( (retframe){ &enqueue_returns, (void*)&entry } );
 	}
-	on_no
-	{
-			/* We need to break or something? */
-		(retframe){ & ???, (void*)0 }
-	}
-	entry
-	{
-			/* ( tokenbranch* macrocllaval_parr* ) */
-		(retframe){ &swap2nd, (void*)0 },
-		(retframe){ &vm_lengthof_body_tokenbranch, (void*)0 },
-		(retframe){ &swap2nd, (void*)0 },
-		(retframe){ &swap3rd, (void*)0 },
-		(retframe){ &swap2nd, (void*)0 },
-			/* ( tokenbranch* macrocllaval_parr* length ) */
-		
-		(retframe){ &run_if, (void*)&( ??? on_yes ??? ) },
-		(retframe){ &run_else, (void*)&( ??? on_no ??? ) },
-			/* There WILL be a number that we need to pop */
-			/*  on top of the stack, we just don't know (or */
-			/*  care) what that number is. */
-		(retframe){ &drop, (void*)0 },
-		
-			/* Loop via a retframe stored on the data stack. */
-		(retframe){ &vm_datacall, (void*)0 }
-	}
-	(retframe){ &, (void*)0 }
-	
-	
-	
-retframe drop( stackpair *stkp, void *v );
-retframe dup( stackpair *stkp, void *v );
-
-retframe swap2nd( stackpair *stkp, void *v );
-	/* ( uintptr_t*a uintptr_t uintptr_t*b -- uintptr_t*b uintptr_t uintptr_t*a ) */
-retframe swap3rd( stackpair *stkp, void *v );
-	/* ( uintptr_t*a uintptr_t uintptr_t uintptr_t*b -- uintptr_t*b uintptr_t uintptr_t uintptr_t*a ) */
-retframe swap4th( stackpair *stkp, void *v );
-
-retframe vm_push0( stackpair *stkp, void *v );
-retframe vm_push1( stackpair *stkp, void *v );
-
-	/* These all require a pointer to a retframe as v. */
-retframe just_run( stackpair *stkp, void *v );
-	/* ( uintptr_t -- uintptr_t ) */
-retframe run_if( stackpair *stkp, void *v );
-retframe run_else( stackpair *stkp, void *v );
-	
-	
-	
-	
-	
-	???
-	
-	
-	scratch = is_stdtoken( &( tok->header ) );
-	
-	???
-	
-	tokenheadptr_result popfront_body_tokenbranch( tokenbranch *tb );
-	
-	retframe vm_push_body_tokenbranch( stackpair *stkp, void *v );
-	retframe vm_popfront_body_tokenbranch( stackpair *stkp, void *v );
-	retframe vm_pop_body_tokenbranch( stackpair *stkp, void *v );
-	
-	???
 }
 	/* ( tokenbranch* token* -- tokenbranch* macrocllaval_parr* char_parr* ) */
 retframe tokens2macrocllaval_parr( stackpair *stkp, void *v )
