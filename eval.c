@@ -196,17 +196,10 @@ retframe accumulate_token( stackpair *stkp, void *v )
 
 
 
-uintptr_t token2char_parr_bookmark = UINTPTR_MAX;
-static uintptr_t token2char_parr_??? = ???;
-LOCALIZE_SETJUMP(
-	token2char_parrbookmark,
-	token2char_parr,
-	localname, /* Set this, then build an invocation function for it. */
-	
-		??? /* Remember: retframe pointers. */
-	onset_ptr,
-	onjump_ptr
-);
+static uintptr_t token2char_parr_bookmark = UINTPTR_MAX;
+retframe tokens2macrocllaval_parr_onerr_( stackpair *stkp, void *v );
+static retframe tokens2macrocllaval_parr_onerr =
+	(retframe){ &tokens2macrocllaval_parr_onerr_, (void*)0 };
 retframe token2char_parr( stackpair *stkp, void *v )
 {
 	STACKCHECK( stkp,  token2char_parr );
@@ -238,7 +231,9 @@ retframe token2char_parr( stackpair *stkp, void *v )
 			???;
 			
 		case 0:
-				/* Error, use longjump. */
+				/* Error, so use longjump. */
+			STACKPUSH_UINT( &( stkp->data ), (uintptr_t)0,  token2char_parr, scratch );
+			STACKPUSH_UINT( &( stkp->data ), (uintptr_t)&token2char_parr,  token2char_parr, scratch );
 			return( (retframe){ &longjump_callstack, (void*)&token2char_parr_bookmark } );
 	}
 	
@@ -253,40 +248,15 @@ retframe token2char_parr( stackpair *stkp, void *v )
 	
 	STACKPUSH_UINT( &( stkp->data ), (uintptr_t)cparr,  token2char_parr, scratch );
 	
-		/* DRop the token, we don't want it anymore. */
+		/* Drop the token, we don't want it anymore. */
 	STACKPUSH_UINT( &( stkp->data ), (uintptr_t)tok,  token2char_parr, scratch );
 	return( (retframe){ &invoke_dealloctoken, (void*)0 } );
 }
-	typedef struct macro_call_argval macro_call_argval;
-	struct macro_call_argval
-	{
-			/* One and ONLY one of these should be non-null. */
-			/* ... */
-			/* Actually, does args_offset even belong here? */
-		size_t args_offset;
-		char_pascalarray *text;
-	};
-	LIB4_DEFINE_PASCALARRAY_STDDEFINE( macrocallargval_, macro_call_argval );
-	typedef macrocallargval_pascalarray macrocllaval_parr;
-	typedef struct macro_call macro_call;
-	struct macro_call
-	{
-		token_head header;
-		
-			/* This gets used while a macro is first getting parsed to figure */
-			/*  out if a particular token corresponds to a macro arg or not, and */
-			/*  furthermore WHICH arg. */
-		macrocllaval_parr *args;
-		
-			/* This gets used to hold the tokens that represent the macro's */
-			/*  body. */
-		tokhdptr_parr *body;
-		
-		???;
-	};
 	/* ( tokenbranch* macrocllaval_parr* char_parr* -- tokenbranch* macrocllaval_parr* ??? ) */
 retframe tokens2macrocllaval_parr_continue( stackpair *stkp, void *v )
 {
+	static uintptr_t thisfuncptr = (uintptr_t)&tokens2macrocllaval_parr_continue;
+	
 	STACKCHECK( stkp,  tokens2macrocllaval_parr_continue );
 	
 	if( token2char_parr_bookmark == UINTPTR_MAX )
@@ -347,28 +317,32 @@ retframe tokens2macrocllaval_parr_continue( stackpair *stkp, void *v )
 						(retframe){ &invoke_dealloctoken, (void*)0 },
 					(retframe){ &vm_push0, (void*)0 }
 				}
-			}.
+			},
 		on_notcomma_ =
 			(retframe_parr)
 			{
-				???,
+				4,
 				{
 					(retframe){ &drop, (void*)0 },
 					
-					???
+					/* ( macrocllaval_parr* tokenbranch* token* ) */
 					
+					(retframe){ &vm_push0, (void*)0 },
+					(retframe){ &vm_pushdata, (void*)&thisfuncptr },
 					(retframe){ &longjump_callstack, (void*)&token2char_parr_bookmark }
 				}
 			},
 		on_loosecomma_ =
 			(retframe_parr)
 			{
-				???,
+				4,
 				{
 					(retframe){ &drop, (void*)0 },
 					
-					???
+					/* ( macrocllaval_parr* tokenbranch* ) */
 					
+					(retframe){ &vm_push1, (void*)0 },
+					(retframe){ &vm_pushdata, (void*)&thisfuncptr },
 					(retframe){ &longjump_callstack, (void*)&token2char_parr_bookmark }
 				}
 			},
@@ -378,21 +352,26 @@ retframe tokens2macrocllaval_parr_continue( stackpair *stkp, void *v )
 				3,
 				{
 					(retframe){ &drop, (void*)0 },
+							/* ( macrocllaval_parr* tokenbranch* token* ) */
 						(retframe){ &token2char_parr, (void*)0 },
+							/* ( macrocllaval_parr* tokenbranch* char_parr* ) */
 					(retframe){ &vm_push0, (void*)0 }
 				}
 			},
 		on_notname_ =
 			(retframe_parr)
 			{
-				???,
+				4,
 				{
 					(retframe){ &drop, (void*)0 },
 					
-					???
+					/* ( macrocllaval_parr* tokenbranch* token* ) */
 					
+					(retframe){ &vm_push2, (void*)0 },
+					(retframe){ &vm_pushdata, (void*)&thisfuncptr },
 					(retframe){ &longjump_callstack, (void*)&token2char_parr_bookmark }
 				}
+			};
 	static const retframe
 		on_dropcomma = (retframe){ &enqueue_returns, (void*)&on_dropcomma_ },
 		on_notcomma = (retframe){ &enqueue_returns, (void*)&on_notcomma_ },
@@ -404,29 +383,44 @@ retframe tokens2macrocllaval_parr_continue( stackpair *stkp, void *v )
 		on_yes_ =
 			(retframe_parr)
 			{
-				16,
+				20,
 				{
+					/* ( tokenbranch* macrocllaval_parr* length ) */
+					
 					(retframe){ &drop, (void*)0 },
 					
-					(retframe){ &vm_popfront_body_tokenbranch, (void*)0 },
-					(retframe){ &require_comma, (void*)0 },
-						(retframe){ &run_if, (void*)& on_dropcomma },
-						(retframe){ &run_else, (void*)& on_notcomma },
-					(retframe){ &drop, (void*)0 },
-					
-					(retframe){ &vm_lengthof_body_tokenbranch, (void*)0 },
-						(retframe){ &run_else, (void*)& on_loosecomma },
-					(retframe){ &drop, (void*)0 },
-					
-					(retframe){ &vm_popfront_body_tokenbranch, (void*)0 },
-					(retframe){ &require_anyname, (void*)0 },
-						(retframe){ &run_if, (void*)& on_name },
-						(retframe){ &run_else, (void*)& on_notname },
-					(retframe){ &drop, (void*)0 },
-					
-					
-						/* Store our loop value onto the data stack. */
-					(retframe){ &vm_pushretframe, (void*)&loopframe },
+						/* ( tokenbranch* macrocllaval_parr* ) */
+						
+						(retframe){ &swap2nd, (void*)0 },
+						(retframe){ &vm_popfront_body_tokenbranch, (void*)0 },
+						(retframe){ &require_comma, (void*)0 },
+								/* ( macrocllaval_parr* tokenbranch* token* result ) */
+							(retframe){ &run_if, (void*)&on_dropcomma },
+							(retframe){ &run_else, (void*)&on_notcomma },
+						(retframe){ &drop, (void*)0 },
+						
+						(retframe){ &vm_lengthof_body_tokenbranch, (void*)0 },
+								/* ( macrocllaval_parr* tokenbranch* length ) */
+							(retframe){ &run_else, (void*)&on_loosecomma },
+						(retframe){ &drop, (void*)0 },
+						
+						(retframe){ &vm_popfront_body_tokenbranch, (void*)0 },
+						(retframe){ &require_anyname, (void*)0 },
+								/* ( macrocllaval_parr* tokenbranch* token* result ) */
+							(retframe){ &run_if, (void*)&on_name },
+							(retframe){ &run_else, (void*)&on_notname },
+						(retframe){ &drop, (void*)0 },
+						
+						
+							/* ( macrocllaval_parr* tokenbranch* char_parr* ) */
+						(retframe){ &swap2nd, (void*)0 },
+						(retframe){ &swap3rd, (void*)0 },
+						(retframe){ &swap2nd, (void*)0 },
+							/* ( tokenbranch* macrocllaval_parr* char_parr* ) */
+						
+						
+							/* Store our loop value onto the data stack. */
+						(retframe){ &vm_pushretframe, (void*)&loopframe },
 						/* Surpress the "run_else" test that will follow. */
 					(retframe){ &vm_push0, (void*)0 }
 				}
@@ -438,6 +432,7 @@ retframe tokens2macrocllaval_parr_continue( stackpair *stkp, void *v )
 				{
 					(retframe){ &drop, (void*)0 },
 							/* All we need to do, is to do nothing at all. */
+							/* ( tokenbranch* macrocllaval_parr* ) */
 						(retframe){ &vm_pushretframe, (void*)&noopframe },
 					(retframe){ &vm_push0, (void*)0 }
 				}
@@ -465,7 +460,8 @@ retframe tokens2macrocllaval_parr_continue( stackpair *stkp, void *v )
 					/*  care) what that number is. */
 				(retframe){ &drop, (void*)0 },
 				
-					/* Loop via a retframe stored on the data stack. */
+					/* Loop via a retframe stored on the data stack... */
+					/*  unless we don't! *insert dramatic chipmunk* */
 				(retframe){ &vm_datacall, (void*)0 }
 			}
 		};
@@ -513,8 +509,8 @@ retframe tokens2macrocllaval_parr( stackpair *stkp, void *v )
 			???;
 			
 		case 0:
-				/* Error, use longjump. */
-			return( (retframe){ &longjump_callstack, (void*)&token2char_parr_bookmark } );
+				/* Error, use ... longjump isn't setup yet, what do we do? */
+			return( ??? );
 	}
 	
 	macrocllaval_parr *a; /* argnames grouping. */
@@ -530,6 +526,7 @@ retframe tokens2macrocllaval_parr( stackpair *stkp, void *v )
 	STACKPUSH_UINT( &( stkp->data ), (uintptr_t)a,  tokens2macrocllaval_parr, scratch );
 	
 	
+	
 	static const retframe_parr seq =
 		(retframe_parr)
 		{
@@ -543,7 +540,101 @@ retframe tokens2macrocllaval_parr( stackpair *stkp, void *v )
 				(retframe){ &tokens2macrocllaval_parr_continue, (void*)0 }
 			}
 		};
-	return( (retframe){ &enqueue_returns, (void*)&seq } );
+	retframe local_entry = (retframe){ &enqueue_returns, &seq };
+	
+	LOCALIZE_SETJUMP(
+		token2char_parrbookmark,
+		token2char_parr,
+		local_setjump, /* Set this, then build an invocation function for it. */
+		
+		&local_entry,
+		&tokens2macrocllaval_parr_onerr
+	);
+	return( (retframe){ &enqueue_returns, (void*)&local_setjump } );
+}
+retframe tokens2macrocllaval_parr_onerr_( stackpair *stkp, void *v )
+{
+	STACKCHECK( stkp,  tokens2macrocllaval_parr_onerr_ );
+	
+	int scratch;
+	uintptr_t setjump_flag;
+	
+	STACKPOP_UINT( &( stkp->data ), setjump_flag,  tokens2macrocllaval_parr_onerr_, scratch );
+	
+	{
+		uintptr_t errfunc, errid;
+		
+		STACKPOP_UINT( &( stkp->data ), errfunc,  tokens2macrocllaval_parr_onerr_, scratch );
+		STACKPOP_UINT( &( stkp->data ), errid,  tokens2macrocllaval_parr_onerr_, scratch );
+		
+		switch( errfunc )
+		{
+			case ( (uintptr_t)&token2char_parr ):
+				if( errid != 0 )
+				{
+					???
+				}
+				
+					/* The top of the stack will point to a token: it */
+					/*  was supposed to be a normal one so that we could */
+					/*  convert it to a string, but it was one of the */
+					/*  fancy complex types instead. */
+				???
+				
+				stack_ENDRETFRAME();
+			case ( (uintptr_t)&tokens2macrocllaval_parr_continue ):
+				switch( errid )
+				{
+					case 0: /* on_notcomma_ */
+						/* ( macrocllaval_parr* tokenbranch* token* ) */
+						/* Expected a comma, got something else instead. */
+						
+						???
+						
+					case 1: /* on_loosecomma_ */
+						/* ( macrocllaval_parr* tokenbranch* ) */
+						/* Expected SOMETHING to follow the most recent */
+						/*  token, and yet nothing. */
+						
+						???
+						
+					case 2: /* on_notname_ */
+						/* ( macrocllaval_parr* tokenbranch* token* ) */
+						/* That thing following the comma? Should have */
+						/*  been a name (or ellipsis which we CAN'T */
+						/*  encode at the moment...), but it was some */
+						/*  other type instead. */
+						
+						???
+					
+					default:
+						???
+				}
+				
+				stack_ENDRETFRAME();
+			case ( (uintptr_t)&tokens2macrocllaval_parr ):
+				/* Actually, this one should never be entered. */
+				
+				???;
+				
+				stack_ENDRETFRAME();
+			
+			default:
+				???
+				stack_ENDRETFRAME();
+		}
+		
+		
+			/* Handle errors here! */
+		???
+		
+	}
+	
+		/* Restore value (because it needs to be there when it */
+		/*  gets popped by LOCALIZE_SETJUMP::prefix##_DISPATCH{} )... */
+	STACKPUSH_UINT( &( stkp->data ), setjump_flag,  tokens2macrocllaval_parr_onerr_, scratch );
+	
+	RETFRAMEFUNC( tokens2macrocllaval_parr_onerr_ );
 }
 
 

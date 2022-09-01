@@ -40,6 +40,9 @@ All sorts of stuff will need to be rechecked to ensure that e.g. line numbers
 NEEDED: a file to localize the preprocessor directives that are NOT freshline
 	directives.
 
+token.c:
+	Should is_stdtoken() return 0 on whitespace or not?
+
 eval.c:
 	conclude_try_directive() dispatches to the same next stage as
 		try_directive() if it doesn't detect a name as the appropriate token,

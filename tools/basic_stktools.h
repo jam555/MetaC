@@ -45,6 +45,7 @@ retframe xor2( stackpair *stkp, void *v );
 
 retframe vm_push0( stackpair *stkp, void *v );
 retframe vm_push1( stackpair *stkp, void *v );
+retframe vm_push2( stackpair *stkp, void *v );
 retframe vm_pushmax( stackpair *stkp, void *v );
 
 	/* These require v_ to point to a uintptr_t, which will be used as the data */
@@ -84,19 +85,20 @@ retframe longjump_callstack( stackpair *stkp, void *v_ );
 				(retframe){ &vm_push0, (void*)0 } \
 			} }, \
 		prefix##_ONFALSE = \
-			(retframe_parr){ 2, { \
-				(retframe){ &drop, (void*)0 }, \
+			(retframe_parr){ 1, { \
 				(retframe){ &just_run, (void*)( onjump_ptr ) } \
 			} }, \
 		prefix##_DISPATCH = \
-			(retframe_parr){ 2, { \
+			(retframe_parr){ 3, { \
 				(retframe){ &run_if, (void*)&( prefix##_ONTRUE ) }, \
 				(retframe){ &run_else, (void*)&( prefix##_ONFALSE ) }, \
+				(retframe){ &drop, (void*)0 } \
 			} }, \
 		localname = \
 			(retframe_parr){ 4, { \
 				(retframe){ &vm_pushdata, &( bookmark ) }, \
 				(retframe){ &setjump_callstack, (void*)&( bookmark ) }, \
+					/* setjump() peeks just_run(), it DOESN'T POP IT! */ \
 				(retframe){ &just_run, (void*)&( prefix##_DISPATCH ) }, \
 				(retframe){ &vm_popdata, &( bookmark ) } \
 			} };

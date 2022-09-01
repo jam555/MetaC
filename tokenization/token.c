@@ -51,7 +51,7 @@ int is_stdtoken( token_head *th )
 		return( -1 );
 	}
 	
-	switch( tok-> )
+	switch( tok->toktype )
 	{
 		case TOKTYPE_INVALID:
 		case TOKTYPE_PARSEBREAK:

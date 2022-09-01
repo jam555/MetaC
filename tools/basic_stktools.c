@@ -298,6 +298,16 @@ retframe vm_push1( stackpair *stkp, void *v )
 	
 	RETFRAMEFUNC( stkp,  vm_push1 );
 }
+retframe vm_push2( stackpair *stkp, void *v )
+{
+	int scratch;
+	
+	STACKCHECK( stkp,  vm_push2 );
+	
+	STACKPUSH_UINT( stkp->data, 2,  vm_push2, scratch );
+	
+	RETFRAMEFUNC( stkp,  vm_push2 );
+}
 retframe vm_pushmax( stackpair *stkp, void *v )
 {
 	int scratch;
