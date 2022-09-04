@@ -53,6 +53,14 @@ eval.c:
 		paired tokens into a tokenbranch, so fix that.
 	pack_pardefclose() drops results when they are still needed: do something
 		to fix that.
+	tokens2macrocllaval_parr() has a '0' case handling is_stdtoken(): replace
+		the handler with something better.
+	token2char_parr() should be separated enough for it to be used outside of
+		the token2char_parr() system: I don't know thast it'll be useful, but
+		the void* arg will make it easy enough.
+	tokens2macrocllaval_parr_onerr_() should be modified to tolerate bad
+		inputs, but this can be left for sometime later, since that'll just
+		increase resilience against e.g. typos and bugs.
 
 echo_tokens.c: Both emit_C_stringifier() and *_concatenator() need to be
 	finished up. In particular, their token_head instances need some additional

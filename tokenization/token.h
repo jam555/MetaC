@@ -23,6 +23,7 @@
 		/*  (because null) characters. */
 		
 	} token_head;
+		/* -1: th was null; otherwise 0 for "fancy token" or 1 for standard token */
 	int is_stdtoken( token_head *th );
 	
 	retframe set_dealloctoken( retframe dealc_ );

@@ -29,9 +29,24 @@
 	STDMSG_BADNULL_WRAPPER( &errs, funcname, ( ptr ) )
 #define BADNULL2( funcname, ptr1, ptr2 ) \
 	STDMSG_BADNULL2_WRAPPER( &errs, funcname, ( ptr1 ), ( ptr2 ) )
+#define BADNONULL( caller, objaddr ) \
+	STDMSG_BADNONNULL_WRAPPER( &errs, ( caller ), ( objaddr ) )
+
+#define MONADICFAILURE( caller, msgstr, failval ) \
+	STDMSG_MONADICFAILURE_WRAPPER( &errs, ( caller ), ( msgstr ), ( failval ) )
+
+	#define NOTELINE() STDMSG_NOTELINE_WRAPPER( &errs )
+	
+	#define STRARG( msgstr ) STDMSG_STRARG_WRAPPER( &errs, ( msgstr ) )
 
 #define FAILEDINTFUNC( calleestr, callername, val ) \
 	STDMSG_FAILEDINTFUNC_WRAPPER( &errs, ( calleestr ), callername, ( val ) )
+
+#define BADUINT( caller, objaddr, expectedval ) \
+	STDMSG_BADUINT_WRAPPER( &errs, ( caller ), ( objaddr ), ( expectedval ) )
+
+#define TRESPASSPATH( caller, msgstr ) \
+	STDMSG_TRESPASSPATH_WRAPPER( &errs, ( caller ), ( msgstr ) )
 
 #define STACKCHECK( stack,  caller, endfunc ) \
 	STACK_CHECK( ( stack ),  &err, ( caller ), ( endfunc ) )
@@ -208,7 +223,8 @@ retframe token2char_parr( stackpair *stkp, void *v )
 	{
 		/* Error: the longjump route hasn't been set. */
 		
-		???
+		TRESPASSPATH( token2char_parr, "ERROR: token2char_parr() detected that the longjump bookmark was uninitialized!" );
+		stack_ENDRETFRAME();
 	}
 	
 	int scratch;
@@ -217,6 +233,7 @@ retframe token2char_parr( stackpair *stkp, void *v )
 	STACKPEEK_UINT( &( stkp->data ), 0, tmp,  token2char_parr, scratch )
 	token *tok = (token*)tmp;
 	
+		/* -1: th was null; otherwise 0 for "fancy token" or 1 for standard token */
 	scratch = is_stdtoken( &( tok->header ) );
 	switch( scratch )
 	{
@@ -228,7 +245,10 @@ retframe token2char_parr( stackpair *stkp, void *v )
 		case -1:
 		default:
 				/* Error, full break! */
-			???;
+			FAILEDINTFUNC( "is_stdtoken()", token2char_parr, scratch );
+				NOTELINE();
+				STRARG( "is_stdtoken() was somehow handed a null pointer." );
+			stack_ENDRETFRAME();
 			
 		case 0:
 				/* Error, so use longjump. */
@@ -240,7 +260,10 @@ retframe token2char_parr( stackpair *stkp, void *v )
 	char_parr *cparr = char_pascalarray_build( strlen( tok->text ) + 1 );
 	if( !cparr )
 	{
-		???
+		BADNULL( token2char_parr, &cparr );
+			NOTELINE();
+			STRARG( "char_pascalarray_build() failed." );
+		stack_ENDRETFRAME();
 	}
 	
 	strcpy( tok->text, cparr->body );
@@ -263,7 +286,11 @@ retframe tokens2macrocllaval_parr_continue( stackpair *stkp, void *v )
 	{
 		/* Error: the longjump route hasn't been set. */
 		
-		???
+		TRESPASSPATH(
+			tokens2macrocllaval_parr_continue,
+			"ERROR: tokens2macrocllaval_parr_continue() detected that the longjump bookmark was uninitialized!"
+		);
+		stack_ENDRETFRAME();
 	}
 	
 	int scratch;
@@ -273,25 +300,44 @@ retframe tokens2macrocllaval_parr_continue( stackpair *stkp, void *v )
 	char_parr *cparr = (char_parr*)tmp;
 	if( !cparr )
 	{
-		???
+		BADNULL( tokens2macrocllaval_parr_continue, &cparr );
+		TRESPASSPATH(
+			tokens2macrocllaval_parr_continue,
+			"tokens2macrocllaval_parr_continue() received a null char_parr pointer: this should never happen."
+		);
+		stack_ENDRETFRAME();
 	}
 	
 	STACKPOP_UINT( &( stkp->data ), tmp,  tokens2macrocllaval_parr_continue, scratch );
 	macrocllaval_parr *a = (macrocllaval_parr*)tmp; /* argnames grouping. */
 	if( !a )
 	{
-		???
+		BADNULL( tokens2macrocllaval_parr_continue, &a );
+		TRESPASSPATH(
+			tokens2macrocllaval_parr_continue,
+			"tokens2macrocllaval_parr_continue() received a null macrocllaval_parr pointer: this should never happen."
+		);
+		stack_ENDRETFRAME();
 	}
 		/* Grow the array. */
 	{
 		macrocallargval_pascalarray_result res =
 			macrocallargval_pascalarray_rebuild( a, a->len + 1 );
 #define tokens2macrocllaval_parr_continue_BUILDFAIL( err ) \
-	???
+	MONADICFAILURE( \
+		tokens2macrocllaval_parr_continue, \
+		"macrocallargval_pascalarray_rebuild() failed to resize an array.", \
+		( err ) \
+	);
 		LIB4_MONAD_EITHER_BODYMATCH( res, LIB4_OP_SETa, tokens2macrocllaval_parr_continue_BUILDFAIL );
 		if( !a )
 		{
-			???
+			TRESPASSPATH(
+				tokens2macrocllaval_parr_continue,
+				"tokens2macrocllaval_parr_continue() received a null macrocllaval_parr pointer from"
+				" macrocallargval_pascalarray_rebuild() via *_BODYMATCH(): this should never happen."
+			);
+			stack_ENDRETFRAME();
 		}
 	}
 	STACKPUSH_UINT( &( stkp->data ), (uintptr_t)a,  tokens2macrocllaval_parr_continue, scratch );
@@ -487,13 +533,17 @@ retframe tokens2macrocllaval_parr( stackpair *stkp, void *v )
 	{
 		/* Error: the longjump route hasn't been set. */
 		
-		???
+		TRESPASSPATH(
+			tokens2macrocllaval_parr,
+			"ERROR: tokens2macrocllaval_parr() detected that the longjump bookmark was uninitialized!"
+		);
+		stack_ENDRETFRAME();
 	}
 	
 	int scratch;
 	uintptr_t tmp;
 	
-	STACKPEEK_UINT( &( stkp->data ), 0, tmp,  tokens2macrocllaval_parr, scratch )
+	STACKPEEK_UINT( &( stkp->data ), 0, tmp,  tokens2macrocllaval_parr, scratch );
 	token *tok = (token*)tmp;
 	
 	scratch = is_stdtoken( &( tok->header ) );
@@ -506,22 +556,37 @@ retframe tokens2macrocllaval_parr( stackpair *stkp, void *v )
 		case -1:
 		default:
 				/* Error, full break! */
-			???;
+			FAILEDINTFUNC( "is_stdtoken()", tokens2macrocllaval_parr, scratch );
+				NOTELINE();
+				STRARG( "is_stdtoken() was somehow handed a null pointer." );
+			stack_ENDRETFRAME();
 			
 		case 0:
 				/* Error, use ... longjump isn't setup yet, what do we do? */
-			return( ??? );
+			FAILEDINTFUNC( "is_stdtoken()", tokens2macrocllaval_parr, scratch );
+				NOTELINE();
+				STRARG( "is_stdtoken() returned false: please replace this with a better handler." );
+			stack_ENDRETFRAME();
 	}
 	
 	macrocllaval_parr *a; /* argnames grouping. */
 	macrocallargval_pascalarray_result res =
 		macrocallargval_pascalarray_build( 0 );
 #define tokens2macrocllaval_parr_BUILDFAIL( err ) \
-		???
+	MONADICFAILURE( \
+		tokens2macrocllaval_parr, \
+		"macrocallargval_pascalarray_build() failed to create an array.", \
+		( err ) \
+	);
 	LIB4_MONAD_EITHER_BODYMATCH( res, LIB4_OP_SETa, tokens2macrocllaval_parr_BUILDFAIL );
 	if( !a )
 	{
-		???
+		TRESPASSPATH(
+			tokens2macrocllaval_parr,
+			"tokens2macrocllaval_parr() received a null macrocllaval_parr pointer from"
+			" macrocallargval_pascalarray_build() via *_BODYMATCH(): this should never happen."
+		);
+		stack_ENDRETFRAME();
 	}
 	STACKPUSH_UINT( &( stkp->data ), (uintptr_t)a,  tokens2macrocllaval_parr, scratch );
 	
@@ -562,7 +627,7 @@ retframe tokens2macrocllaval_parr_onerr_( stackpair *stkp, void *v )
 	STACKPOP_UINT( &( stkp->data ), setjump_flag,  tokens2macrocllaval_parr_onerr_, scratch );
 	
 	{
-		uintptr_t errfunc, errid;
+		uintptr_t errfunc, errid, tmp;
 		
 		STACKPOP_UINT( &( stkp->data ), errfunc,  tokens2macrocllaval_parr_onerr_, scratch );
 		STACKPOP_UINT( &( stkp->data ), errid,  tokens2macrocllaval_parr_onerr_, scratch );
@@ -572,15 +637,22 @@ retframe tokens2macrocllaval_parr_onerr_( stackpair *stkp, void *v )
 			case ( (uintptr_t)&token2char_parr ):
 				if( errid != 0 )
 				{
-					???
+					BADNONULL( tokens2macrocllaval_parr_onerr_, &errid );
+					TRESPASSPATH(
+						tokens2macrocllaval_parr_onerr_,
+						"token2char_parr() dispatched to tokens2macrocllaval_parr_onerr_() with a non-null error id."
+					);
+					stack_ENDRETFRAME();
 				}
 				
 					/* The top of the stack will point to a token: it */
 					/*  was supposed to be a normal one so that we could */
 					/*  convert it to a string, but it was one of the */
 					/*  fancy complex types instead. */
-				???
-				
+				TRESPASSPATH(
+					tokens2macrocllaval_parr_onerr_,
+					"token2char_parr() was given a non-stdtype token to convert to a character array: this is invalid."
+				);
 				stack_ENDRETFRAME();
 			case ( (uintptr_t)&tokens2macrocllaval_parr_continue ):
 				switch( errid )
@@ -589,14 +661,32 @@ retframe tokens2macrocllaval_parr_onerr_( stackpair *stkp, void *v )
 						/* ( macrocllaval_parr* tokenbranch* token* ) */
 						/* Expected a comma, got something else instead. */
 						
-						???
+						STACKPEEK_UINT(
+							&( stkp->data ), 0,
+							tmp,
+							
+							tokens2macrocllaval_parr_onerr_,
+							
+							scratch
+						);
+						BADUINT(
+							tokens2macrocllaval_parr_onerr_,
+							&( ( (token_head*)tmp )->toktype ),
+							TOKTYPE_SYM_COMMA
+						);
+						stack_ENDRETFRAME();
 						
 					case 1: /* on_loosecomma_ */
 						/* ( macrocllaval_parr* tokenbranch* ) */
 						/* Expected SOMETHING to follow the most recent */
 						/*  token, and yet nothing. */
 						
-						???
+						TRESPASSPATH(
+							tokens2macrocllaval_parr_onerr_,
+							"An additional token was required by tokens2macrocllaval_parr_continue()"
+							" following a comma, but none was found."
+						);
+						stack_ENDRETFRAME();
 						
 					case 2: /* on_notname_ */
 						/* ( macrocllaval_parr* tokenbranch* token* ) */
@@ -605,30 +695,60 @@ retframe tokens2macrocllaval_parr_onerr_( stackpair *stkp, void *v )
 						/*  encode at the moment...), but it was some */
 						/*  other type instead. */
 						
-						???
+						STACKPEEK_UINT(
+							&( stkp->data ), 0,
+							tmp,
+							
+							tokens2macrocllaval_parr_onerr_,
+							
+							scratch
+						);
+						BADUINT(
+							tokens2macrocllaval_parr_onerr_,
+							&( ( (token_head*)tmp )->toktype ),
+							TOKTYPE_NAME
+						);
+						stack_ENDRETFRAME();
 					
 					default:
-						???
+						TRESPASSPATH(
+							tokens2macrocllaval_parr_onerr_,
+							"tokens2macrocllaval_parr_continue() dispatched to"
+							" tokens2macrocllaval_parr_onerr_() with an unknown errid."
+						);
+						stack_ENDRETFRAME();
 				}
 				
 				stack_ENDRETFRAME();
 			case ( (uintptr_t)&tokens2macrocllaval_parr ):
 				/* Actually, this one should never be entered. */
 				
-				???;
-				
+				TRESPASSPATH(
+					tokens2macrocllaval_parr_onerr_,
+					"tokens2macrocllaval_parr_onerr_() was entered with an errfunc"
+					" value of tokens2macrocllaval_parr(): this should never happen."
+				);
 				stack_ENDRETFRAME();
 			
 			default:
-				???
+				
+				TRESPASSPATH(
+					tokens2macrocllaval_parr_onerr_,
+					"tokens2macrocllaval_parr_onerr_() was entered with an unknown"
+					" errfunc value: this should never happen."
+				);
 				stack_ENDRETFRAME();
 		}
-		
-		
-			/* Handle errors here! */
-		???
-		
 	}
+	
+	TRESPASSPATH(
+		tokens2macrocllaval_parr_onerr_,
+		"tokens2macrocllaval_parr_onerr_() passed through it's switches without returning: this should never happen."
+	);
+	stack_ENDRETFRAME();
+	
+	
+	/* These two macros should REALLY never be reached. */
 	
 		/* Restore value (because it needs to be there when it */
 		/*  gets popped by LOCALIZE_SETJUMP::prefix##_DISPATCH{} )... */
