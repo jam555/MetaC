@@ -147,7 +147,7 @@
 	/*************************************************************************/
 	retframe lexparse1_tokensearch
 	(
-			/* Was a stackframe*, but the revised retrn macro needs the */
+			/* Was a stackframe*, but the revised return macro needs the */
 			/*  pair. */
 		stackpair *stkp,
 		

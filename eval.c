@@ -38,6 +38,7 @@
 	#define NOTELINE() STDMSG_NOTELINE_WRAPPER( &errs )
 	
 	#define STRARG( msgstr ) STDMSG_STRARG_WRAPPER( &errs, ( msgstr ) )
+	#define DATAPTR( ptr ) STDMSG_DATAPTRARG_WRAPPER( &errs, ( ptr ) )
 
 #define FAILEDINTFUNC( calleestr, callername, val ) \
 	STDMSG_FAILEDINTFUNC_WRAPPER( &errs, ( calleestr ), callername, ( val ) )
@@ -48,8 +49,10 @@
 #define TRESPASSPATH( caller, msgstr ) \
 	STDMSG_TRESPASSPATH_WRAPPER( &errs, ( caller ), ( msgstr ) )
 
-#define STACKCHECK( stack,  caller, endfunc ) \
-	STACK_CHECK( ( stack ),  &err, ( caller ), ( endfunc ) )
+#define STACKCHECK( stack,  caller ) \
+	STACK_CHECK( ( stack ),  &err, ( caller ), stack_ENDRETFRAME )
+#define STACKCHECK2( stack, v,  caller ) \
+	STACK_CHECK2( ( stack ), ( v ),  &err, ( caller ), stack_ENDRETFRAME )
 
 #define STACKPEEK_UINT( stk, offset, dest,  caller, scratch ) \
 	STACK_PEEK_UINT( ( stk ), ( offset ), ( dest ),  &errs, ( caller ), ( scratch ), lexalike_ENDRETFRAME )
@@ -66,164 +69,19 @@
 
 
 
-
-
-retframe common_macrodispatch( stackpair *stkp, void *v )
+retframe token2char_parr( stackpair *stkp, void *v_ )
 {
-	STACKCHECK( stack,  caller, endfunc );
+	STACKCHECK2( stkp, v_,  token2char_parr );
 	
-	???
+	uintptr_t *errmark = (uintptr_t*)v_;
 	
-	genericnamed *gn = bsearch1_gennamearr( genname_parr *parr, token *tok );
-	if( gn )
-	{
-		switch( gn->reftype )
-		{
-			case GENNAMETYPE_RETFRAMEFUNC:
-				/* ->ref points to a retframe to be called/run. */
-
-					/* Maybe we need to setup additional returns as well? */
-				CALL_FFUNC(
-					stkp,
-					
-					rethand, (void*)0,
-					( (retframe*)( gn->ref ) )->handler, ( (retframe*)( gn->ref ) )->data,
-					
-					ommon_macrodispatch, scratch
-				);
-			case GENNAMETYPE_TABLEENTRY:
-				/* ->ref points to a token array. */
-				
-				???;
-			
-			case GENNAMETYPE_INVALID:
-				/* The default state, doesn't actually represent anything, invalid here. */
-			case GENNAMETYPE_NAMEONLY:
-				/* Used for tracking includes, invalid here. */
-			default:
-				/* Unknown ref type, invalid here. */
-		}
-		
-		???
-		
-		struct genericnamed
-		{
-			char_pascalarray *name;
-			void *ref;
-			uintptr_t reftype;
-		};
-		
-	} else {
-		
-		retframe echo_token( stackpair *stkp, void *v )
-	}
-	
-	???
-}
-{
-	STACKCHECK( stack,  caller, endfunc );
-	
-	???
-	
-		/* Use this instead of getANDassemble_token(). */
-	retframe token_queue_fetch( stackpair *stkp, void *v )
-	
-	if( ->toktype == TOKTYPE_NAME )
-	{
-			/* tok->text must point to an actual string of text. */
-		genericnamed* bsearch1_gennamearr( genname_parr *parr, token *tok );
-		
-	} else {
-	}
-	
-	???
-}
-retframe common_opdispatch( stackpair *stkp, void *v )
-{
-	STACKCHECK( stack,  caller, endfunc );
-	
-	token *tok;
-	uintptr_t a;
-	int scratch;
-	
-	STACKPEEK_UINT( stkp->data, 0, a,  common_opdispatch, scratch );
-	*t = (token*)a;
-	
-	if( tok->toktype != TOKTYPE_NAME )
-	{
-		generictyped *gt = gentyped_bsearch( stkp->ops, tok );
-		if( gt )
-		{
-			switch( gt->reftype )
-			{
-				case GENNAMETYPE_RETFRAMEFUNC:
-					/* ->ref points to a retframe to be called/run. */
-					
-						/* Maybe we need to setup additional returns as well? */
-					CALL_FFUNC(
-						stkp,
-						
-							/* The return route. */
-						rethand, retdat,
-							/* The immediate jump. */
-						( (retframe*)( gt->ref ) )->handler, ( (retframe*)( gt->ref ) )->data,
-						
-						common_opdispatch, scratch
-					);
-				case GENNAMETYPE_INVALID:
-					/* The default state, doesn't actually represent anything, invalid here. */
-				case GENNAMETYPE_NAMEONLY:
-					/* Used for tracking includes, invalid here. */
-				case GENNAMETYPE_TABLEENTRY:
-					/* ->ref points to a lookup table to be used for */
-					/*  further searches. Usually it gets pushed onto */
-					/*  a stack, but probably invalid here? */
-				default:
-					/* Unknown ref type, invalid here. */
-			}
-			
-			???
-			
-		} else {
-			
-				/* No match found, check for a macro. */
-			return( (retframe){ &common_macrodispatch, (void*)0 } );
-		}
-		
-	} else {
-		
-			/* It's a name, check for a macro. */
-		return( (retframe){ &common_macrodispatch, (void*)0 } );
-	}
-}
-
-
-	/* Gets a token onto the stack, often as a tokenbranch */
-	/*  with whitespace shoved wherever in it: only the */
-	/*  body member really matters. */
-retframe accumulate_token( stackpair *stkp, void *v )
-
-
-
-
-
-
-
-
-
-static uintptr_t token2char_parr_bookmark = UINTPTR_MAX;
-retframe tokens2macrocllaval_parr_onerr_( stackpair *stkp, void *v );
-static retframe tokens2macrocllaval_parr_onerr =
-	(retframe){ &tokens2macrocllaval_parr_onerr_, (void*)0 };
-retframe token2char_parr( stackpair *stkp, void *v )
-{
-	STACKCHECK( stkp,  token2char_parr );
-	
-	if( token2char_parr_bookmark == UINTPTR_MAX )
+	if( !errmark || ( *errmark ) == UINTPTR_MAX )
 	{
 		/* Error: the longjump route hasn't been set. */
 		
-		TRESPASSPATH( token2char_parr, "ERROR: token2char_parr() detected that the longjump bookmark was uninitialized!" );
+		TRESPASSPATH( token2char_parr, "ERROR: token2char_parr() detected that the error handler bookmark was uninitialized!" );
+			NOTELINE();
+			DATAPTR( errmark );
 		stack_ENDRETFRAME();
 	}
 	
@@ -254,7 +112,7 @@ retframe token2char_parr( stackpair *stkp, void *v )
 				/* Error, so use longjump. */
 			STACKPUSH_UINT( &( stkp->data ), (uintptr_t)0,  token2char_parr, scratch );
 			STACKPUSH_UINT( &( stkp->data ), (uintptr_t)&token2char_parr,  token2char_parr, scratch );
-			return( (retframe){ &longjump_callstack, (void*)&token2char_parr_bookmark } );
+			return( (retframe){ &longjump_callstack, (void*)errmark } );
 	}
 	
 	char_parr *cparr = char_pascalarray_build( strlen( tok->text ) + 1 );
@@ -275,14 +133,32 @@ retframe token2char_parr( stackpair *stkp, void *v )
 	STACKPUSH_UINT( &( stkp->data ), (uintptr_t)tok,  token2char_parr, scratch );
 	return( (retframe){ &invoke_dealloctoken, (void*)0 } );
 }
-	/* ( tokenbranch* macrocllaval_parr* char_parr* -- tokenbranch* macrocllaval_parr* ??? ) */
+
+
+
+static tokens2macrocllaval_parr_bookmark = UINTPTR_MAX;
+retframe tokens2macrocllaval_parr_onerr_( stackpair *stkp, void *v );
+static retframe tokens2macrocllaval_parr_onerr =
+	(retframe){ &tokens2macrocllaval_parr_onerr_, (void*)0 };
+
+retframe tokens2macrocllaval_parr_conclude( stackpair *stkp, void *v )
+{
+	STACKCHECK( stkp,  tokens2macrocllaval_parr_conclude );
+	
+		/* Deinit the longjump stuff. This is needed for some */
+		/*  error checking to work right. */
+	tokens2macrocllaval_parr_bookmark = UINTPTR_MAX;
+	
+	RETFRAMEFUNC( tokens2macrocllaval_parr_conclude );
+}
+	/* ( tokenbranch* macrocllaval_parr* char_parr* -- tokenbranch* macrocllaval_parr* ) */
 retframe tokens2macrocllaval_parr_continue( stackpair *stkp, void *v )
 {
 	static uintptr_t thisfuncptr = (uintptr_t)&tokens2macrocllaval_parr_continue;
 	
 	STACKCHECK( stkp,  tokens2macrocllaval_parr_continue );
 	
-	if( token2char_parr_bookmark == UINTPTR_MAX )
+	if( tokens2macrocllaval_parr_bookmark == UINTPTR_MAX )
 	{
 		/* Error: the longjump route hasn't been set. */
 		
@@ -358,6 +234,9 @@ retframe tokens2macrocllaval_parr_continue( stackpair *stkp, void *v )
 			(retframe_parr)
 			{
 				3,
+					/* ( macrocllaval_parr* tokenbranch* token* result
+						--
+						macrocllaval_parr* tokenbranch* 0 ) */
 				{
 					(retframe){ &drop, (void*)0 },
 						(retframe){ &invoke_dealloctoken, (void*)0 },
@@ -368,38 +247,47 @@ retframe tokens2macrocllaval_parr_continue( stackpair *stkp, void *v )
 			(retframe_parr)
 			{
 				4,
+					/* ( macrocllaval_parr* tokenbranch* token* result
+						--
+						exits via longjump ) */
 				{
 					(retframe){ &drop, (void*)0 },
 					
 					/* ( macrocllaval_parr* tokenbranch* token* ) */
 					
 					(retframe){ &vm_push0, (void*)0 },
-					(retframe){ &vm_pushdata, (void*)&thisfuncptr },
-					(retframe){ &longjump_callstack, (void*)&token2char_parr_bookmark }
+					(retframe){ &vm_pushdata, (void*)&tokens2macrocllaval_parr_continue },
+					(retframe){ &longjump_callstack, (void*)&tokens2macrocllaval_parr_bookmark }
 				}
 			},
 		on_loosecomma_ =
 			(retframe_parr)
 			{
 				4,
+					/* ( macrocllaval_parr* tokenbranch* length )
+						--
+						exits via longjump */
 				{
 					(retframe){ &drop, (void*)0 },
 					
 					/* ( macrocllaval_parr* tokenbranch* ) */
 					
 					(retframe){ &vm_push1, (void*)0 },
-					(retframe){ &vm_pushdata, (void*)&thisfuncptr },
-					(retframe){ &longjump_callstack, (void*)&token2char_parr_bookmark }
+					(retframe){ &vm_pushdata, (void*)&tokens2macrocllaval_parr_continue },
+					(retframe){ &longjump_callstack, (void*)&tokens2macrocllaval_parr_bookmark }
 				}
 			},
 		on_name_ =
 			(retframe_parr)
 			{
 				3,
+					/* ( macrocllaval_parr* tokenbranch* token* result
+						--
+						macrocllaval_parr* tokenbranch* char_parr* 0 ) */
 				{
 					(retframe){ &drop, (void*)0 },
 							/* ( macrocllaval_parr* tokenbranch* token* ) */
-						(retframe){ &token2char_parr, (void*)0 },
+						(retframe){ &token2char_parr, (void*)&tokens2macrocllaval_parr_bookmark },
 							/* ( macrocllaval_parr* tokenbranch* char_parr* ) */
 					(retframe){ &vm_push0, (void*)0 }
 				}
@@ -408,14 +296,17 @@ retframe tokens2macrocllaval_parr_continue( stackpair *stkp, void *v )
 			(retframe_parr)
 			{
 				4,
+					/* ( macrocllaval_parr* tokenbranch* token* result
+						--
+						exits via longjump ) */
 				{
 					(retframe){ &drop, (void*)0 },
 					
 					/* ( macrocllaval_parr* tokenbranch* token* ) */
 					
 					(retframe){ &vm_push2, (void*)0 },
-					(retframe){ &vm_pushdata, (void*)&thisfuncptr },
-					(retframe){ &longjump_callstack, (void*)&token2char_parr_bookmark }
+					(retframe){ &vm_pushdata, (void*)&tokens2macrocllaval_parr_continue },
+					(retframe){ &longjump_callstack, (void*)&tokens2macrocllaval_parr_bookmark }
 				}
 			};
 	static const retframe
@@ -430,6 +321,9 @@ retframe tokens2macrocllaval_parr_continue( stackpair *stkp, void *v )
 			(retframe_parr)
 			{
 				20,
+					/* ( tokenbranch* macrocllaval_parr* length
+						--
+						tokenbranch* macrocllaval_parr* char_parr* 0 ret:yes-loop ) */
 				{
 					/* ( tokenbranch* macrocllaval_parr* length ) */
 					
@@ -474,7 +368,8 @@ retframe tokens2macrocllaval_parr_continue( stackpair *stkp, void *v )
 		on_no_ =
 			(retframe_parr)
 			{
-				1,
+				3,
+					/* ( tokenbranch* macrocllaval_parr* length -- tokenbranch* macrocllaval_parr* 0 ret:no-loop ) */
 				{
 					(retframe){ &drop, (void*)0 },
 							/* All we need to do, is to do nothing at all. */
@@ -486,10 +381,12 @@ retframe tokens2macrocllaval_parr_continue( stackpair *stkp, void *v )
 	static const retframe
 		on_yes = (retframe){ &enqueue_returns, (void*)&on_yes_ },
 		on_no = (retframe){ &enqueue_returns, (void*)&on_no_ };
+	/* This function's stack delta: ( tokenbranch* macrocllaval_parr* char_parr* -- tokenbranch* macrocllaval_parr* ) */
 	static const retframe_parr entry =
 		(retframe_parr)
 		{
 			9,
+				/* ( tokenbranch* macrocllaval_parr* -- tokenbranch* macrocllaval_parr* ) */
 			{
 					/* ( tokenbranch* macrocllaval_parr* ) */
 				(retframe){ &swap2nd, (void*)0 },
@@ -508,7 +405,9 @@ retframe tokens2macrocllaval_parr_continue( stackpair *stkp, void *v )
 				
 					/* Loop via a retframe stored on the data stack... */
 					/*  unless we don't! *insert dramatic chipmunk* */
+					/* ( tokenbranch* macrocllaval_parr* ret:retframe ) */
 				(retframe){ &vm_datacall, (void*)0 }
+					/* ( tokenbranch* macrocllaval_parr* ) */
 			}
 		};
 	
@@ -529,13 +428,16 @@ retframe tokens2macrocllaval_parr( stackpair *stkp, void *v )
 {
 	STACKCHECK( stkp,  tokens2macrocllaval_parr );
 	
-	if( token2char_parr_bookmark == UINTPTR_MAX )
+	if( tokens2macrocllaval_parr_bookmark != UINTPTR_MAX )
 	{
-		/* Error: the longjump route hasn't been set. */
+		/* Error: the longjump route has been set, which means that we've */
+		/*  got an invalid loop. */
 		
 		TRESPASSPATH(
 			tokens2macrocllaval_parr,
-			"ERROR: tokens2macrocllaval_parr() detected that the longjump bookmark was uninitialized!"
+			"ERROR: tokens2macrocllaval_parr() detected that the longjump"
+			" bookmark was initialized, even though IT should be doing"
+			 "the initialization!"
 		);
 		stack_ENDRETFRAME();
 	}
@@ -600,7 +502,7 @@ retframe tokens2macrocllaval_parr( stackpair *stkp, void *v )
 					/* Move argnames below the token. */
 				(retframe){ &swap2nd, (void*)0 },
 					/* Convert token. */
-				(retframe){ &token2char_parr, (void*)0 },
+				(retframe){ &token2char_parr, (void*)&tokens2macrocllaval_parr_bookmark },
 					/* And now, we enter the loop... */
 				(retframe){ &tokens2macrocllaval_parr_continue, (void*)0 }
 			}
@@ -608,13 +510,30 @@ retframe tokens2macrocllaval_parr( stackpair *stkp, void *v )
 	retframe local_entry = (retframe){ &enqueue_returns, &seq };
 	
 	LOCALIZE_SETJUMP(
-		token2char_parrbookmark,
-		token2char_parr,
+		tokens2macrocllaval_parr_bookmark,
+		tokens2macrocllaval_parr,
 		local_setjump, /* Set this, then build an invocation function for it. */
 		
 		&local_entry,
 		&tokens2macrocllaval_parr_onerr
 	);
+		/* Queue up our deinitializer. */
+	scratch = push_retframe
+		(
+			&( stkp->ret ),
+			
+			(retframe){ &tokens2macrocllaval_parr_conclude, (void*)0 }
+		);
+	if( !scratch )
+	{
+		FAILEDINTFUNC(
+			"push_retframe( &conclude_func )",
+			
+			tokens2macrocllaval_parr,
+			scratch
+		);
+		stack_ENDRETFRAME();
+	}
 	return( (retframe){ &enqueue_returns, (void*)&local_setjump } );
 }
 retframe tokens2macrocllaval_parr_onerr_( stackpair *stkp, void *v )
@@ -756,6 +675,350 @@ retframe tokens2macrocllaval_parr_onerr_( stackpair *stkp, void *v )
 	
 	RETFRAMEFUNC( tokens2macrocllaval_parr_onerr_ );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+retframe parseheart_layer1_exit( stackpair *stkp, void *v )
+{
+	???
+}
+??? ???( ???, ??? )
+{
+	???
+	
+	if( tok->toktype == TOKTYPE_DEFERED_RETFRAME )
+	{
+		token_retframe *trf = (token_retframe*)tok;
+		
+		/* Run it! */
+		
+		???
+	}
+	
+	???
+}
+retframe parseheart_layer1_functionmacro( stackpair *stkp, void *v )
+{
+	???
+	
+				/* Somewhere in here, we build a token_retframe{} that we'll */
+				/*  push... into a tokengroup{}? With the retframe containing */
+				/*  the data for e.g. args? */
+				
+				if( src.length <= 0 )
+				{
+					error();
+				}
+				args = process_arglist( src.pop_front() );
+					retframe token_queue_fetch( stackpair *stkp, void *v );
+					while() { corefunc( stackpair *stkp, void *v ); }
+				if( macro.is_immediate )
+				{
+					src.push_front( macro( args ) );
+						int token_queue_push( token *tok );
+
+				} else {
+
+					dest.push_back( macro );
+						int pushto_tokengroup
+							(
+							tokengroup *tgrp,
+							token_head *thd
+						);
+					dest.push_back( args );
+						int pushto_tokengroup
+						(
+							tokengroup *tgrp,
+							token_head *thd
+						);
+				}
+				break;
+	
+	???
+}
+	/* Stick this in the name table as the handler function for '#'. */
+retframe parseheart_layer1_directiveoctothorpe( stackpair *stkp, void *v )
+{
+					/* Turn this into a vm func, and stick it into the search */
+					/*  table as associated with '#'. */
+				ignore = src.pop_front();
+					retframe invoke_dealloctoken( stackpair *stkp, void *v );
+					retframe token_queue_fetch( stackpair *stkp, void *v )
+				/* Directives & macros get handled identically, */
+				/*  so just discard the hash mark and */
+				/*  fall-through. */
+	
+	/* Fetch next token, do search, do another (custom) dispatch. Look at the */
+	/*  parseheart_layer1_functionmacro() note on token_retframe{}. */
+	
+	return( ??? );
+}
+retframe parseheart_layer1_valuemacro( stackpair *stkp, void *v )
+{
+				dest.push_back( process_macro( src.pop_front() ) );
+					int pushto_tokengroup
+					(
+						tokengroup *tgrp,
+						token_head *thd
+					);
+}
+retframe parseheart_layer1_search( stackpair *stkp, void *v )
+{
+	int scratch;
+	
+	STACKCHECK( stkp,  parseheart_layer1_search );
+	
+	???
+	
+	token_head *th = ;
+	tokengroup *dest = ???;
+	
+	genericnamed *found_entry = bsearch1_gennamearr( genname_parr *parr, token *tok );
+	
+	if( !found_entry )
+	{
+		/* It's just a token, pass it on unmolested. */
+		
+		scratch = pushto_tokengroup( dest, th );
+		if( !scratch )
+		{
+			FAILEDINTFUNC( "pushto_tokengroup", parseheart_layer1_search, res );
+			stack_ENDRETFRAME();
+		}
+		
+		???
+		
+		RETFRAMEFUNC( parseheart_layer1_search );
+		
+	} else if( found_entry->reftype != GENNAMETYPE_RETFRAMEFUNC )
+	{
+		???
+		
+		return( *( (retframe*)( found_entry->ref ) ) );
+		
+	} else {
+		
+		/* Error! Later, we'll add support for macro arrays here, by using double-hash and GENNAMETYPE_TABLEENTRY! */
+	}
+}
+retframe parseheart_layer1_enter( stackpair *stkp, void *v )
+{
+	int scratch;
+	
+	STACKCHECK( stkp,  parseheart_layer1_enter );
+	
+	???
+	
+		??? /* Push this onto the stack at some point. */
+	tokengroup *dest = build_tokengroup( 0 );
+	
+	???
+	
+	scratch = push_retframe
+		(
+			&( stkp->ret ),
+			
+			(retframe){ &token_queue_fetch, (void*)0 }
+		);
+	if( !scratch )
+	{
+		FAILEDINTFUNC(
+			"push_retframe( &fetch_token )",
+			
+			parseheart_layer1_enter,
+			scratch
+		);
+		stack_ENDRETFRAME();
+	}
+	return( (retframe){ &parseheart_layer1_search, (void*)0 } );
+}
+
+
+retframe corefunc( stackpair *stkp, void *v )
+{
+	/* The parseheart_layer1_*() stuff exists to implement what this was. */
+}
+retframe func( stackpair *stkp, void *v )
+{
+	???
+	
+		/* Loop. */
+	if( src.length )
+	{
+		pushframe( (retframe){ &func, (void*)0 } );
+		return( corefunc( stkp, v ) );
+	}
+	
+	???
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+retframe common_macrodispatch( stackpair *stkp, void *v )
+{
+	STACKCHECK( stack,  caller, endfunc );
+	
+	???
+	
+	genericnamed *gn = bsearch1_gennamearr( genname_parr *parr, token *tok );
+	if( gn )
+	{
+		switch( gn->reftype )
+		{
+			case GENNAMETYPE_RETFRAMEFUNC:
+				/* ->ref points to a retframe to be called/run. */
+
+					/* Maybe we need to setup additional returns as well? */
+				CALL_FFUNC(
+					stkp,
+					
+					rethand, (void*)0,
+					( (retframe*)( gn->ref ) )->handler, ( (retframe*)( gn->ref ) )->data,
+					
+					common_macrodispatch, scratch
+				);
+			case GENNAMETYPE_TABLEENTRY:
+				/* ->ref points to a token array. */
+				
+				???;
+			
+			case GENNAMETYPE_INVALID:
+				/* The default state, doesn't actually represent anything, invalid here. */
+			case GENNAMETYPE_NAMEONLY:
+				/* Used for tracking includes, invalid here. */
+			default:
+				/* Unknown ref type, invalid here. */
+		}
+		
+		???
+		
+		struct genericnamed
+		{
+			char_pascalarray *name;
+			void *ref;
+			uintptr_t reftype;
+		};
+		
+	} else {
+		
+		retframe echo_token( stackpair *stkp, void *v )
+	}
+	
+	???
+}
+{
+	STACKCHECK( stack,  caller, endfunc );
+	
+	???
+	
+		/* Use this instead of getANDassemble_token(). */
+	retframe token_queue_fetch( stackpair *stkp, void *v )
+	
+	if( ->toktype == TOKTYPE_NAME )
+	{
+			/* tok->text must point to an actual string of text. */
+		genericnamed* bsearch1_gennamearr( genname_parr *parr, token *tok );
+		
+	} else {
+	}
+	
+	???
+}
+retframe common_opdispatch( stackpair *stkp, void *v )
+{
+	STACKCHECK( stack,  caller, endfunc );
+	
+	token *tok;
+	uintptr_t a;
+	int scratch;
+	
+	STACKPEEK_UINT( stkp->data, 0, a,  common_opdispatch, scratch );
+	*t = (token*)a;
+	
+	if( tok->toktype != TOKTYPE_NAME )
+	{
+		generictyped *gt = gentyped_bsearch( stkp->ops, tok );
+		if( gt )
+		{
+			switch( gt->reftype )
+			{
+				case GENNAMETYPE_RETFRAMEFUNC:
+					/* ->ref points to a retframe to be called/run. */
+					
+						/* Maybe we need to setup additional returns as well? */
+					CALL_FFUNC(
+						stkp,
+						
+							/* The return route. */
+						rethand, retdat,
+							/* The immediate jump. */
+						( (retframe*)( gt->ref ) )->handler, ( (retframe*)( gt->ref ) )->data,
+						
+						common_opdispatch, scratch
+					);
+				case GENNAMETYPE_INVALID:
+					/* The default state, doesn't actually represent anything, invalid here. */
+				case GENNAMETYPE_NAMEONLY:
+					/* Used for tracking includes, invalid here. */
+				case GENNAMETYPE_TABLEENTRY:
+					/* ->ref points to a lookup table to be used for */
+					/*  further searches. Usually it gets pushed onto */
+					/*  a stack, but probably invalid here? */
+				default:
+					/* Unknown ref type, invalid here. */
+			}
+			
+			???
+			
+		} else {
+			
+				/* No match found, check for a macro. */
+			return( (retframe){ &common_macrodispatch, (void*)0 } );
+		}
+		
+	} else {
+		
+			/* It's a name, check for a macro. */
+		return( (retframe){ &common_macrodispatch, (void*)0 } );
+	}
+}
+
+
+	/* Gets a token onto the stack, often as a tokenbranch */
+	/*  with whitespace shoved wherever in it: only the */
+	/*  body member really matters. */
+retframe accumulate_token( stackpair *stkp, void *v )
+
+
+
+
+
+
+
+
+
 
 
 

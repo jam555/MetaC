@@ -77,6 +77,14 @@
 		
 	} token_uint;
 	
+		/* ->header.toktype should equal TOKTYPE_DEFERED_RETFRAME */
+	typedef struct token_retframe
+	{
+		token_head header;
+		retframe closure;
+		
+	} token_retframe;
+	
 	
 	#define token_ENDRETFRAME( ... ) return( (retframe){ &end_run, (void*)0 } )
 	
@@ -218,6 +226,8 @@
 		#define TOKTYPE_TOKENGROUP_MACRODIRECTIVE ( 0xB0A )
 		
 		#define TOKTYPE_TOKENGROUP_MACROCALL ( 0xB0B )
+		
+		#define TOKTYPE_DEFERED_RETFRAME ( 0xB0C )
 	
 	
 #endif
