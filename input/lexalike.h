@@ -70,6 +70,7 @@
 	intmax_t token_queue_fetchlock( intmax_t loc );
 	int token_queue_push( token *tok );
 	int token_queue_pop( token **tok );
+		/* ( -- token* ) */
 	retframe token_queue_fetch( stackpair *stkp, void *v );
 	
 		/* Provides a way to temporarily store tokens that WILL be going onto */

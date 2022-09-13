@@ -12,6 +12,8 @@
 		
 		/* "was_freshline" was previously here. Apply "!" to column, and you */
 		/*  get the old "was_freshline". */
+		/* Actually, this should be replaced with a flag container, with */
+		/*  delimited & freshline both being provided. */
 		int is_delimited;
 			/* These three vars (src, line, and column) are semi-late */
 			/*  changes, so there will be a lot of code not expecting them, */
@@ -25,6 +27,28 @@
 	} token_head;
 		/* -1: th was null; otherwise 0 for "fancy token" or 1 for standard token */
 	int is_stdtoken( token_head *th );
+	int is_delimited( token_head *th );
+	int was_freshline( token_head *th );
+	
+		/* toktype */
+			/* Choose any single TOKTYPE_* value macro from below: note that some */
+			/*  are actually NOT currently used/handled. */
+		/* len */
+			/* This is used for "plain" tokens that are just text, but might be */
+			/*  needed for some other stuff too. */
+		/* delim */
+			/* Flags. Only "delimited" is currently accomodated, but */
+			/*  "was freshline" should be distinguished in the future. */
+		/* sf_name */
+			/* The name of the source file. */
+		/* line & column */
+			/* The location within the source file where the token started. */
+	#define INIT_TOKENHEAD( toktype, len,  delim,  sf_name, line, column ) \
+		(token_head){ \
+			(uintptr_t)( toktype ), (int)( len ), \
+			(int)( delim ), \
+			(refed_pstr*)( sf_name ), (uintmax_t)( line ), (uintmax_t)( column ) \
+		}
 	
 	retframe set_dealloctoken( retframe dealc_ );
 	retframe invoke_dealloctoken( stackpair *stkp, void *v );
@@ -67,6 +91,14 @@
 		token_head header;
 		char text[];
 	};
+	#define INIT_TOKEN_GENERIC( toktype, text ) \
+		(token){ \
+			INIT_TOKENHEAD( \
+				( toktype ), \
+				sizeof( (char[]){ ( text ) } ) / sizeof( char ),  \
+				0,  0, 0, 0 ), \
+			(char[]){ ( text ) } \
+		}
 	
 		/* ->header.toktype should equal TOKTYPE_NUMBER_UINT */
 	typedef struct token_uint

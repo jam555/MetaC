@@ -367,6 +367,7 @@ int token_queue_pop( token **tok )
 	
 	return( -1 );
 }
+	/* ( -- token* ) */
 retframe token_queue_fetch( stackpair *stkp, void *v )
 {
 	int tmp;
@@ -901,16 +902,16 @@ int tokenize_char__accumulate( stackpair *stkp, void *v,  token_head *th, char *
 	/*  origin within a particular file HAS TO happen here. */
 int tokenize_char( stackpair *stkp, void *v )
 {
-	token_head th =
-		(token_head)
-		{
-			/* type */TOKTYPE_INVALID,
+	token_head th = 
+		INIT_TOKENHEAD
+		(
+			TOKTYPE_INVALID,
 			1,
 			
-			0,
-			
+			0, /* Not delimited. */
+
 			(refed_pstr*)0, 0, 0
-		};
+		);
 	char_result res = tokenize_char__charin( (int*)0 );
 	int res2;
 	char a, b;

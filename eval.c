@@ -689,10 +689,19 @@ retframe tokens2macrocllaval_parr_onerr_( stackpair *stkp, void *v )
 
 
 
+	/* ( tokengroup* -- tokengroup* ) */
 retframe parseheart_layer1_exit( stackpair *stkp, void *v )
 {
 	???
+	
+	RETFRAMEFUNC( parseheart_layer1_exit );
 }
+	typedef struct token_retframe
+	{
+		token_head header;
+		retframe closure;
+		
+	} token_retframe;
 ??? ???( ???, ??? )
 {
 	???
@@ -762,35 +771,25 @@ retframe parseheart_layer1_directiveoctothorpe( stackpair *stkp, void *v )
 	/* Fetch next token, do search, do another (custom) dispatch. Look at the */
 	/*  parseheart_layer1_functionmacro() note on token_retframe{}. */
 	
-	return( ??? );
-}
-retframe parseheart_layer1_valuemacro( stackpair *stkp, void *v )
-{
-				dest.push_back( process_macro( src.pop_front() ) );
-					int pushto_tokengroup
-					(
-						tokengroup *tgrp,
-						token_head *thd
-					);
-}
-retframe parseheart_layer1_search( stackpair *stkp, void *v )
-{
-	int scratch;
-	
-	STACKCHECK( stkp,  parseheart_layer1_search );
-	
 	???
 	
-	token_head *th = ;
-	tokengroup *dest = ???;
 	
-	genericnamed *found_entry = bsearch1_gennamearr( genname_parr *parr, token *tok );
+	
+	genname_parr * , *inline;
+	
+	
+	genericnamed *found_entry =
+		bsearch1_gennamearr
+		(
+			( was_freshline( (token_head*)tok ) ?  : inline ),
+			tok
+		);
 	
 	if( !found_entry )
 	{
 		/* It's just a token, pass it on unmolested. */
 		
-		scratch = pushto_tokengroup( dest, th );
+		scratch = pushto_tokengroup( dest, (token_head*)tok );
 		if( !scratch )
 		{
 			FAILEDINTFUNC( "pushto_tokengroup", parseheart_layer1_search, res );
@@ -811,37 +810,115 @@ retframe parseheart_layer1_search( stackpair *stkp, void *v )
 		
 		/* Error! Later, we'll add support for macro arrays here, by using double-hash and GENNAMETYPE_TABLEENTRY! */
 	}
+	
+	
+	
+	???
+	
+	return( ??? );
 }
+retframe parseheart_layer1_valuemacro( stackpair *stkp, void *v )
+{
+				dest.push_back( process_macro( src.pop_front() ) );
+					int pushto_tokengroup
+					(
+						tokengroup *tgrp,
+						token_head *thd
+					);
+}
+	/* ( tokengroup* token* -- ???  ) */
+retframe parseheart_layer1_search( stackpair *stkp, void *v )
+{
+	int scratch;
+	
+	STACKCHECK( stkp,  parseheart_layer1_search );
+	
+	???
+	
+	genname_parr *macrolist;
+	
+	???
+	
+	token *tok;
+	tokengroup *dest;
+	uintptr_t tmp;
+	STACKPEEK_UINT( &( stkp->data ), 0, tmp,  parseheart_layer1_search, scratch );
+	tok = (token*)tmp;
+	STACKPEEK_UINT( &( stkp->data ), sizeof( uintptr_t ), tmp,  parseheart_layer1_search, scratch );
+	dest = (tokengroup*)tmp;
+	
+	genericnamed *found_entry = bsearch1_gennamearr( macrolist, tok );
+	
+	if( !found_entry )
+	{
+		/* It's just a token, pass it on unmolested. */
+		
+		scratch = pushto_tokengroup( dest, (token_head*)tok );
+		if( !scratch )
+		{
+			FAILEDINTFUNC( "pushto_tokengroup", parseheart_layer1_search, res );
+			stack_ENDRETFRAME();
+		}
+			/* It's in the tokengroup, we don't need it on the stack anymore. */
+		STACKPOP_UINT( &( stkp->data ), tmp,  parseheart_layer1_search, scratch );
+		
+		RETFRAMEFUNC( parseheart_layer1_search );
+		
+	} else if( found_entry->reftype != GENNAMETYPE_RETFRAMEFUNC )
+	{
+		???
+		
+		return( *( (retframe*)( found_entry->ref ) ) );
+		
+	} else {
+		
+		/* Error! Later, we'll add support for macro arrays here, by using double-hash and GENNAMETYPE_TABLEENTRY! */
+	}
+}
+	/* ( -- ... -- tokengroup* ) */
 retframe parseheart_layer1_enter( stackpair *stkp, void *v )
 {
 	int scratch;
 	
 	STACKCHECK( stkp,  parseheart_layer1_enter );
 	
-	???
-	
-		??? /* Push this onto the stack at some point. */
 	tokengroup *dest = build_tokengroup( 0 );
-	
-	???
+	STACKPUSH_UINT( &( stkp->data ), (uintptr_t)dest,  parseheart_layer1_enter, scratch );
 	
 	scratch = push_retframe
 		(
 			&( stkp->ret ),
 			
-			(retframe){ &token_queue_fetch, (void*)0 }
+			(retframe){ &parseheart_layer1_exit, (void*)0 }
 		);
 	if( !scratch )
 	{
 		FAILEDINTFUNC(
-			"push_retframe( &fetch_token )",
+			"push_retframe( &exit parseheart )",
 			
 			parseheart_layer1_enter,
 			scratch
 		);
 		stack_ENDRETFRAME();
 	}
-	return( (retframe){ &parseheart_layer1_search, (void*)0 } );
+	scratch = push_retframe
+		(
+			&( stkp->ret ),
+			
+			(retframe){ &parseheart_layer1_search, (void*)0 }
+		);
+	if( !scratch )
+	{
+		FAILEDINTFUNC(
+			"push_retframe( &search )",
+			
+			parseheart_layer1_enter,
+			scratch
+		);
+		stack_ENDRETFRAME();
+	}
+		/* ( tokengroup* ret:retframe -- ... ) */
+	return( (retframe){ &token_queue_fetch, (void*)0 } );
 }
 
 

@@ -40,6 +40,16 @@ All sorts of stuff will need to be rechecked to ensure that e.g. line numbers
 NEEDED: a file to localize the preprocessor directives that are NOT freshline
 	directives.
 
+token.h:
+	Need some notes on *_INVALID vs *_OTHER
+	"was_freshline" has been dropped from token_head, and "src", "line", and
+		"column" have been added. I think I've fixed all of the references,
+		but check again at home.
+		Need to add "was freshline" back, but as a flag. Adding some
+		functions to test for the time being: just update them when
+		appropriate.
+	Add triple-ellipsis support here, then in simplelex.c, then in
+		pack_upparclose() inside eval.c.
 token.c:
 	Should is_stdtoken() return 0 on whitespace or not?
 
@@ -61,6 +71,10 @@ eval.c:
 	tokens2macrocllaval_parr_onerr_() should be modified to tolerate bad
 		inputs, but this can be left for sometime later, since that'll just
 		increase resilience against e.g. typos and bugs.
+	The "build tokengroup" part of parseheart_layer1_enter() should be pushed
+		back to a calling loop (or even better, the caller of the calling
+		loop), so that there won't be any "surviving state" to clean up, or
+		signal the existence of, or...
 
 echo_tokens.c: Both emit_C_stringifier() and *_concatenator() need to be
 	finished up. In particular, their token_head instances need some additional
@@ -207,14 +221,6 @@ simplelex.c:
 		involving the "a" variable is suspect.
 simplelex.h:
 	Need some note on unused vs other chars.
-
-token.h:
-	Need some notes on *_INVALID vs *_OTHER
-	"was_freshline" has been dropped from token_head, and "src", "line", and
-		"column" have been added. I think I've fixed all of the references,
-		but check again at home.
-	Add triple-ellipsis support here, then in simplelex.c, then in
-		pack_upparclose() inside eval.c.
 
 headers.h:
 	Need to verify that all the relevant headers are included. Maybe make

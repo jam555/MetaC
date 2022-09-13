@@ -46,12 +46,12 @@
 
 int is_stdtoken( token_head *th )
 {
-	if( !tok )
+	if( !th )
 	{
 		return( -1 );
 	}
 	
-	switch( tok->toktype )
+	switch( th->toktype )
 	{
 		case TOKTYPE_INVALID:
 		case TOKTYPE_PARSEBREAK:
@@ -73,6 +73,25 @@ int is_stdtoken( token_head *th )
 		default:
 			return( 1 );
 	}
+}
+int is_delimited( token_head *th )
+{
+	if( !th )
+	{
+		return( -1 );
+	}
+	
+	return( !!( th->is_delimited ) );
+}
+int was_freshline( token_head *th )
+{
+	if( !th )
+	{
+		return( -1 );
+	}
+	
+		/* This is a bad test, but it'll hold for now. */
+	return( !( th->column ) );
 }
 
 
