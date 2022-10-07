@@ -70,6 +70,8 @@
 	intmax_t token_queue_fetchlock( intmax_t loc );
 	int token_queue_push( token *tok );
 	int token_queue_pop( token **tok );
+		/* ( token* -- ) */
+	retframe token_queue_unfetch( stackpair *stkp, void *v );
 		/* ( -- token* ) */
 	retframe token_queue_fetch( stackpair *stkp, void *v );
 	

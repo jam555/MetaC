@@ -37,6 +37,7 @@
 		tokengroup *tgrp,
 		size_t newlen
 	);
+		/* Pushes thd to the end of tgrp. */
 	int pushto_tokengroup
 	(
 		tokengroup *tgrp,
@@ -55,6 +56,12 @@
 	);
 	int lengthof_tokengroup( tokengroup *tg );
 	
+		/* Note: the STANDARD deallocator will release */
+		/*  tokengroup{}, no need for anything special. */
+	retframe vm_buildempty_tokengroup( stackpair *stkp, void *v );
+		/* ( tokengroup* token_head* -- tokengroup* token_head* ) */
+	retframe vm_setsubtype_tokengroup( stackpair *stkp, void *v );
+			/* ( tokengroup* token_head* -- tokengroup* ) */
 	retframe vm_pushto_tokengroup( stackpair *stkp, void *v );
 	retframe vm_popfront_tokengroup( stackpair *stkp, void *v );
 	retframe vm_popfrom_tokengroup( stackpair *stkp, void *v );

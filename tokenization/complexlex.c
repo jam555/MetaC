@@ -387,6 +387,47 @@ int lengthof_tokengroup( tokengroup *tg )
 	return( tg->arr->len );
 }
 
+retframe vm_buildempty_tokengroup( stackpair *stkp, void *v )
+{
+	int res;
+	
+	STACKCHECK( stkp,  vm_buildempty_tokengroup, macroargs_ENDRETFRAME );
+	
+	tokengroup *tg = build_tokengroup( 0 );
+	if( !tg )
+	{
+		???
+	}
+	
+	STACKPUSH_UINT(
+		&( stkp->data ), (uintptr_t)&( tg->header ),
+		
+		vm_buildempty_tokengroup, res, macroargs_ENDRETFRAME
+	);
+	
+	RETFRAMEFUNC( vm_buildempty_tokengroup );
+}
+	/* ( tokengroup* token_head* -- tokengroup* token_head* ) */
+retframe vm_setsubtype_tokengroup( stackpair *stkp, void *v )
+{
+	STACKCHECK( stkp,  vm_setsubtype_tokengroup, macroargs_ENDRETFRAME );
+	
+	uintptr_t tok, grp;
+	
+	STACKPEEK_UINT(
+		&( stkp->data ), 0, &tok,
+		vm_setsubtype_tokengroup, res, macroargs_ENDRETFRAME
+	);
+	STACKPEEK_UINT(
+		&( stkp->data ), sizeof( uintptr_t ), &grp,
+		vm_setsubtype_tokengroup, res, macroargs_ENDRETFRAME
+	);
+	
+	( (tokengroup*)grp )->subtype = ( (token_head*)tok )->toktype;
+	
+	RETFRAMEFUNC( vm_setsubtype_tokengroup );
+}
+	/* ( tokengroup* token_head* -- tokengroup* ) */
 retframe vm_pushto_tokengroup( stackpair *stkp, void *v )
 {
 	STACKCHECK( stkp,  vm_pushto_tokengroup, macroargs_ENDRETFRAME );
@@ -414,7 +455,8 @@ retframe vm_pushto_tokengroup( stackpair *stkp, void *v )
 		???
 	}
 	
-	if( !pushto_tokengroup( tg, th ) )
+	res = pushto_tokengroup( tg, th );
+	if( !res )
 	{
 		???
 	}

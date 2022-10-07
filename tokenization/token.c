@@ -68,6 +68,7 @@ int is_stdtoken( token_head *th )
 		case TOKTYPE_TOKENGROUP_MACRORUN:
 		case TOKTYPE_TOKENGROUP_MACRODIRECTIVE:
 		case TOKTYPE_TOKENGROUP_MACROCALL:
+		case ???:
 			return( 0 );
 		
 		default:
@@ -92,6 +93,213 @@ int was_freshline( token_head *th )
 	
 		/* This is a bad test, but it'll hold for now. */
 	return( !( th->column ) );
+}
+deeptoktype_result get_deeptoktype( token_head *th )
+{
+	if( !th )
+	{
+		DEEPTOKTYPE_RESULT_RETURNFAILURE( TOKTYPE_INVALID );
+	}
+	
+	switch( th->toktype )
+	{
+		case TOKTYPE_TOKENGROUP_SAMEMERGE:
+			DEEPTOKTYPE_RESULT_RETURNSUCCESS(
+				(deep_toktype){ th->toktype, ( (tokengroup*)th )->subtype }
+			);
+		case TOKTYPE_TOKENGROUP_STRMERGE:
+		case TOKTYPE_TOKENGROUP_COMNTMERGE:
+		case TOKTYPE_TOKENGROUP_EQUIVMERGE:
+		case TOKTYPE_TOKENGROUP_DELIMITED:
+		case TOKTYPE_TOKENGROUP_WHITESPACE:
+				??? /* Does whitespace belong here, or with samemerge? */
+			DEEPTOKTYPE_RESULT_RETURNSUCCESS(
+				(deep_toktype){ TOKTYPE_TOKENBRANCH, ( (tokenbranch*)th )->subtype }
+			);
+		case TOKTYPE_TOKENGROUP_MACROTOKEN_INDIRECTION:
+			if( ( (macro_token*)th )->tok )
+			{
+				DEEPTOKTYPE_RESULT_RETURNFAILURE(
+					TOKTYPE_TOKENGROUP_MACROTOKEN_INDIRECTION
+				);
+			}
+			DEEPTOKTYPE_RESULT_RETURNSUCCESS(
+				(deep_toktype){ th->toktype, ( (macro_token*)th )->tok->toktype }
+			);
+		default:
+			DEEPTOKTYPE_RESULT_RETURNSUCCESS(
+				(deep_toktype){ th->toktype, TOKTYPE_INVALID }
+			);
+	}
+	
+	DEEPTOKTYPE_RESULT_RETURNFAILURE( TOKTYPE_SPACE );
+}
+int simplify_toktype( token_head *tok,  uintptr_t *dest )
+{
+#define simplify_toktype_BADRET( val ) return( -( val ) );
+	deep_toktype a;
+	
+	deeptoktype_result res = get_deeptoktype( tok );
+	DEEPTOKTYPE_RESULT_BODYMATCH( res, LIB4_OP_SETa, simplify_toktype_BADRET );
+	
+	switch( a.shallow_toktype )
+	{
+		case TOKTYPE_TOKENGROUP_SAMEMERGE:
+		case TOKTYPE_TOKENBRANCH:
+		case TOKTYPE_TOKENGROUP_MACROTOKEN_INDIRECTION:
+			*dest = a.virtual_toktype;
+			break;
+		default:
+			*dest = a.shallow_toktype;
+			break;
+	}
+	
+	return( 1 );
+}
+	/* ( token* -- token* char_parr* ) */
+	/* v_ must point to a retframe{} to handle "unrecognized token type" */
+	/*  errors. The stack will be ( token* char_parr* ). */
+retframe token2char_parr( stackpair *stkp, void *v_ )
+{
+	STACKCHECK2( stkp, v_,  token2char_parr );
+	
+	if( !( (retframe*)v_ )->handler )
+	{
+		TRESPASSPATH( token2char_parr, "ERROR: token2char_parr() wasn't given an error reporter!" );
+			NOTELINE();
+			DATAPTR( errmark );
+		stack_ENDRETFRAME();
+	}
+	
+	int scratch, res;
+	uintptr_t tmp;
+	
+	STACKPEEK_UINT( &( stkp->data ), 0, tmp,  token2char_parr, scratch )
+	token *tok = (token*)tmp;
+	
+		/* -1: th was null; otherwise 0 for "fancy token" or 1 for standard token */
+	scratch = is_stdtoken( &( tok->header ) );
+	switch( scratch )
+	{
+		case 0:
+			while( scratch == 0 )
+			{
+				switch( tok->header.->toktype )
+				{
+					case TOKTYPE_INVALID:
+					case TOKTYPE_PARSEBREAK:
+					case TOKTYPE_NUMBER_UINT:
+					case TOKTYPE_TOKENGROUP_MACROLINK:
+					case TOKTYPE_TOKENGROUP_MACRORUN:
+					case TOKTYPE_TOKENGROUP_MACRODIRECTIVE:
+					case TOKTYPE_TOKENGROUP_MACROCALL:
+							/* Error: none of these are stringifiable! */
+						return( 0 );
+						
+					case TOKTYPE_TOKENGROUP_SAMEMERGE:
+						if( ( (tokengroup*)&( tok->header ) )->used != 1 )
+						{
+							/* Error! Invalid token count! */
+							
+						} else {
+							
+							if( !( ( (tokengroup*)&( tok->header ) )->arr ) )
+							{
+								/* Error! Missing pascal array! */
+								???
+							}
+							
+							tok = ( (tokengroup*)&( tok->header ) )->arr->body[ 0 ];
+						}
+						
+						break;
+						
+					case TOKTYPE_TOKENGROUP_STRMERGE:
+					case TOKTYPE_TOKENGROUP_COMNTMERGE:
+					case TOKTYPE_TOKENGROUP_EQUIVMERGE:
+					case TOKTYPE_TOKENGROUP_WHITESPACE:
+					case TOKTYPE_TOKENGROUP_DELIMITED:
+						{
+							int acc =
+								( ( (tokenbranch*)&( tok->header ) )->lead ? 1 + 8 : 0 ) +
+								( ( (tokenbranch*)&( tok->header ) )->body ? 1 + 16 : 0 ) +
+								( ( (tokenbranch*)&( tok->header ) )->tail ? 1 + 32 : 0 );
+							
+							if( acc & 3 != 1 )
+							{
+								/* Error! Bad branch count! */
+								???
+							}
+							
+							switch( acc & 56 )
+							{
+								case 8:
+									tok = ( (tokenbranch*)&( tok->header ) )->lead;
+									break;
+									
+								case 16:
+									tok = ( (tokenbranch*)&( tok->header ) )->body;
+									break;
+									
+								case 32:
+									tok = ( (tokenbranch*)&( tok->header ) )->tail;
+									break;
+									
+								default:
+									/* Error! */
+									???
+							}
+						}
+						break;
+						
+					case TOKTYPE_TOKENGROUP_MACROTOKEN:
+					case TOKTYPE_TOKENGROUP_MACROTOKEN_INDIRECTION:
+						tok = ( (macro_token*)&( tok->header ) )->tok;
+						break;
+						
+					default:
+						break;
+				}
+				
+				scratch = is_stdtoken( &( tok->header ) );
+			}
+			if( scratch != 1 )
+			{
+				/* Error! Never settled to a stringifiable token! */
+			}
+			
+				/* Error, call the handler. */
+			STACKPUSH_UINT( &( stkp->data ), (uintptr_t)&token2char_parr,  token2char_parr, scratch );
+			return( *( (retframe*)v_ ) );
+			
+		case 1:
+				/* The one and only 'good' path. */
+			break;
+			
+		case -1:
+		default:
+				/* Error, full break! */
+			FAILEDINTFUNC( "is_stdtoken()", token2char_parr, scratch );
+				NOTELINE();
+				STRARG( "is_stdtoken() was somehow handed a null pointer." );
+			stack_ENDRETFRAME();
+	}
+	
+	char_parr *cparr = char_pascalarray_build( strlen( tok->text ) + 1 );
+	if( !cparr )
+	{
+		BADNULL( token2char_parr, &cparr );
+			NOTELINE();
+			STRARG( "char_pascalarray_build() failed." );
+		stack_ENDRETFRAME();
+	}
+	
+	strcpy( tok->text, cparr->body );
+	
+	
+	STACKPUSH_UINT( &( stkp->data ), (uintptr_t)cparr,  token2char_parr, scratch );
+	
+	RETFRAMEFUNC( token2char_parr );
 }
 
 

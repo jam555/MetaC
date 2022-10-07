@@ -69,73 +69,6 @@
 
 
 
-retframe token2char_parr( stackpair *stkp, void *v_ )
-{
-	STACKCHECK2( stkp, v_,  token2char_parr );
-	
-	uintptr_t *errmark = (uintptr_t*)v_;
-	
-	if( !errmark || ( *errmark ) == UINTPTR_MAX )
-	{
-		/* Error: the longjump route hasn't been set. */
-		
-		TRESPASSPATH( token2char_parr, "ERROR: token2char_parr() detected that the error handler bookmark was uninitialized!" );
-			NOTELINE();
-			DATAPTR( errmark );
-		stack_ENDRETFRAME();
-	}
-	
-	int scratch;
-	uintptr_t tmp;
-	
-	STACKPEEK_UINT( &( stkp->data ), 0, tmp,  token2char_parr, scratch )
-	token *tok = (token*)tmp;
-	
-		/* -1: th was null; otherwise 0 for "fancy token" or 1 for standard token */
-	scratch = is_stdtoken( &( tok->header ) );
-	switch( scratch )
-	{
-		case 1:
-				/* The one and only 'good' path. */
-			STACKPOP_UINT( &( stkp->data ), tmp,  token2char_parr, scratch );
-			break;
-			
-		case -1:
-		default:
-				/* Error, full break! */
-			FAILEDINTFUNC( "is_stdtoken()", token2char_parr, scratch );
-				NOTELINE();
-				STRARG( "is_stdtoken() was somehow handed a null pointer." );
-			stack_ENDRETFRAME();
-			
-		case 0:
-				/* Error, so use longjump. */
-			STACKPUSH_UINT( &( stkp->data ), (uintptr_t)0,  token2char_parr, scratch );
-			STACKPUSH_UINT( &( stkp->data ), (uintptr_t)&token2char_parr,  token2char_parr, scratch );
-			return( (retframe){ &longjump_callstack, (void*)errmark } );
-	}
-	
-	char_parr *cparr = char_pascalarray_build( strlen( tok->text ) + 1 );
-	if( !cparr )
-	{
-		BADNULL( token2char_parr, &cparr );
-			NOTELINE();
-			STRARG( "char_pascalarray_build() failed." );
-		stack_ENDRETFRAME();
-	}
-	
-	strcpy( tok->text, cparr->body );
-	
-	
-	STACKPUSH_UINT( &( stkp->data ), (uintptr_t)cparr,  token2char_parr, scratch );
-	
-		/* Drop the token, we don't want it anymore. */
-	STACKPUSH_UINT( &( stkp->data ), (uintptr_t)tok,  token2char_parr, scratch );
-	return( (retframe){ &invoke_dealloctoken, (void*)0 } );
-}
-
-
-
 static tokens2macrocllaval_parr_bookmark = UINTPTR_MAX;
 retframe tokens2macrocllaval_parr_onerr_( stackpair *stkp, void *v );
 static retframe tokens2macrocllaval_parr_onerr =
@@ -689,6 +622,107 @@ retframe tokens2macrocllaval_parr_onerr_( stackpair *stkp, void *v )
 
 
 
+typedef enum
+{
+	parseheart_legaltoken_overrides__no_override = 0,
+	
+	parseheart_legaltoken_overrides_allow_comma = 1,
+	parseheart_legaltoken_overrides_allow_parens = 2,
+	parseheart_legaltoken_overrides_allow_curly = 4,
+	parseheart_legaltoken_overrides_allow_square = 8
+	
+} parseheart_legaltoken_overrides;
+	/* ( token* -- token* ) */
+int parseheart_legaltoken( stackpair *stkp, void *v,  parseheart_legaltoken_overrides overrides )
+{
+	if( !stkp )
+	{
+		BADNULL( parseheart_layer1_call,  &stkp );
+		return( -1 );
+	}
+	if( !( stkp->data ) )
+	{
+		BADNULL( parseheart_layer1_call, &( stkp->data ) );
+		return( -2 );
+	}
+	
+	int scratch;
+	uintptr_t tmp;
+	scratch = peek_uintptr( &( stkp->data ),  0,  &tmp );
+	if( !scratch )
+	{
+		FAILEDINTFUNC( "peek_uintptr", parseheart_layer1_call, scratch );
+		return( -3 );
+	}
+	if( !tmp )
+	{
+		BADNULL( parseheart_layer1_call, &tmp );
+		return( -4 );
+	}
+	token *tok = (token*)tmp;
+	
+	switch( tok->toktype )
+	{
+		case TOKTYPE_SYM_COMMA:
+			if
+			(
+				overrides & parseheart_legaltoken_overrides_allow_comma ==
+					parseheart_legaltoken_overrides_allow_comma
+			)
+			{
+				return( 1 );
+			}
+			break;
+		case TOKTYPE_SYM_PREPARCL:
+			if
+			(
+				overrides & parseheart_legaltoken_overrides_allow_parens ==
+					parseheart_legaltoken_overrides_allow_parens
+			)
+			{
+				return( 1 );
+			}
+			break;
+		case TOKTYPE_SYM_PRECRLCL:
+			if
+			(
+				overrides & parseheart_legaltoken_overrides_allow_curly ==
+					parseheart_legaltoken_overrides_allow_curly
+			)
+			{
+				return( 1 );
+			}
+			break;
+		case TOKTYPE_SYM_PRESQRCL:
+			if
+			(
+				overrides & parseheart_legaltoken_overrides_allow_square ==
+					parseheart_legaltoken_overrides_allow_square
+			)
+			{
+				return( 1 );
+			}
+			break;
+			
+		default:
+			return( 1 );
+	}
+	
+	return( 0 );
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
 	/* ( tokengroup* -- tokengroup* ) */
 retframe parseheart_layer1_exit( stackpair *stkp, void *v )
 {
@@ -716,6 +750,88 @@ retframe parseheart_layer1_exit( stackpair *stkp, void *v )
 	}
 	
 	???
+}
+??? ???( ??? )
+{
+	int scratch;
+	uintptr_t tmp;
+	
+	STACKCHECK( stkp,  parseheart_layer1_directive_inline );
+	
+	
+	
+	
+	
+	
+	??? /* These are just markers, to identify the type and purpose of these values. */
+		genname_parr *freshline, *inline;
+	???
+	
+	if( !scratch )
+	{
+		FAILEDINTFUNC(
+			"push_retframe( &search )",
+			
+			parseheart_layer1_directive_freshline,
+			scratch
+		);
+		stack_ENDRETFRAME();
+	}
+		/* ( tokengroup* ret:retframe -- ... ) */
+	return( ( was_freshline( (token_head*)tok ) ? freshline : inline ) );
+	
+	
+	
+	
+	
+	
+					/* Turn this into a vm func, and stick it into the search */
+					/*  table as associated with '#'. */
+				ignore = src.pop_front();
+					retframe invoke_dealloctoken( stackpair *stkp, void *v );
+					retframe token_queue_fetch( stackpair *stkp, void *v )
+				/* Directives & macros get handled identically, */
+				/*  so just discard the hash mark and */
+				/*  fall-through. */
+	
+	/* Fetch next token, do search, do another (custom) dispatch. Look at the */
+	/*  parseheart_layer1_functionmacro() note on token_retframe{}. */
+	
+	???
+	
+	STACKPEEK_UINT( &( stkp->data ), 0, tmp,  parseheart_layer1_directive_freshline, scratch );
+	token *tok = (token*)tmp;
+	
+	genericnamed *found_entry = bsearch1_gennamearr( inline, tok );
+	
+	if( !found_entry )
+	{
+		/* It's just a token, it should never have gotten here. */
+		
+		TRESPASSPATH(
+			parseheart_layer1_directive_freshline,
+			"Error! parseheart_layer1_directive_freshline() encountered a non-directive token!"
+		);
+		stack_ENDRETFRAME();
+		
+	} else if( found_entry->reftype == GENNAMETYPE_RETFRAMEFUNC )
+	{
+		if( !( found_entry->ref ) )
+		{
+			BADNULL( parseheart_layer1_directive_freshline, ptr );
+			stack_ENDRETFRAME();
+		}
+		
+		return( *( (retframe*)( found_entry->ref ) ) );
+		
+	} else {
+		
+		/* Error! Later, we'll add support for macro arrays here, by using double-hash and GENNAMETYPE_TABLEENTRY! */
+		
+		TRESPASSPATH( parseheart_layer1_directive_freshline, "Error! Unknown found_entry->reftype value: " );
+			DECARG( ( found_entry->reftype ) );
+		stack_ENDRETFRAME();
+	}
 }
 retframe parseheart_layer1_functionmacro( stackpair *stkp, void *v )
 {
@@ -756,94 +872,222 @@ retframe parseheart_layer1_functionmacro( stackpair *stkp, void *v )
 	
 	???
 }
-	/* Stick this in the name table as the handler function for '#'. */
-retframe parseheart_layer1_directiveoctothorpe( stackpair *stkp, void *v )
+	/* ( tokengroup* token* -- tokengroup* token* -- ???  ) */
+retframe parseheart_layer1_directive_freshline( stackpair *stkp, void *v )
 {
-					/* Turn this into a vm func, and stick it into the search */
-					/*  table as associated with '#'. */
-				ignore = src.pop_front();
-					retframe invoke_dealloctoken( stackpair *stkp, void *v );
-					retframe token_queue_fetch( stackpair *stkp, void *v )
-				/* Directives & macros get handled identically, */
-				/*  so just discard the hash mark and */
-				/*  fall-through. */
+	int scratch;
+	uintptr_t tmp;
 	
-	/* Fetch next token, do search, do another (custom) dispatch. Look at the */
-	/*  parseheart_layer1_functionmacro() note on token_retframe{}. */
+	STACKCHECK( stkp,  parseheart_layer1_directive_freshline );
 	
-	???
+	STACKPEEK_UINT( &( stkp->data ), 0, tmp,  parseheart_layer1_directive_freshline, scratch );
+	token *tok = (token*)tmp;
+	scratch = parseheart_legaltoken( stkp, v,  parseheart_legaltoken_overrides__no_override );
+	switch( scratch )
+	{
+		case 1:
+				/* Valid token. */
+			break;
+		case 0:
+				/* Barred token: this is seriously NOT supposed to happen here, */
+				/*  so it's a syntax error. */
+			TRESPASSPATH(
+				parseheart_layer1_directive_freshline,
+				"Error: parseheart_layer1_directive_freshline() encountered a"
+				" non-directive-able token as a directive name."
+			);
+
+			stack_ENDRETFRAME();
+			
+		default:
+			/* Error! */
+			
+			FAILEDINTFUNC( "parseheart_legaltoken()", parseheart_layer1_directive_freshline, scratch );
+			stack_ENDRETFRAME();
+	}
 	
-	
-	
-	genname_parr * , *inline;
-	
-	
-	genericnamed *found_entry =
-		bsearch1_gennamearr
-		(
-			( was_freshline( (token_head*)tok ) ?  : inline ),
-			tok
-		);
+	genericnamed *found_entry = bsearch1_gennamearr( freshline, tok );
 	
 	if( !found_entry )
 	{
-		/* It's just a token, pass it on unmolested. */
+		/* It's just a token, it should never have gotten here. */
 		
-		scratch = pushto_tokengroup( dest, (token_head*)tok );
-		if( !scratch )
+		TRESPASSPATH(
+			parseheart_layer1_directive_freshline,
+			"Error! parseheart_layer1_directive_freshline() encountered a non-directive token!"
+		);
+		stack_ENDRETFRAME();
+		
+	} else if( found_entry->reftype == GENNAMETYPE_RETFRAMEFUNC )
+	{
+		if( !( found_entry->ref ) )
 		{
-			FAILEDINTFUNC( "pushto_tokengroup", parseheart_layer1_search, res );
+			BADNULL( parseheart_layer1_directive_freshline, ptr );
 			stack_ENDRETFRAME();
 		}
-		
-		???
-		
-		RETFRAMEFUNC( parseheart_layer1_search );
-		
-	} else if( found_entry->reftype != GENNAMETYPE_RETFRAMEFUNC )
-	{
-		???
 		
 		return( *( (retframe*)( found_entry->ref ) ) );
 		
 	} else {
 		
 		/* Error! Later, we'll add support for macro arrays here, by using double-hash and GENNAMETYPE_TABLEENTRY! */
+		
+		TRESPASSPATH( parseheart_layer1_directive_freshline, "Error! Unknown found_entry->reftype value: " );
+			DECARG( ( found_entry->reftype ) );
+		stack_ENDRETFRAME();
+	}
+}
+retframe parseheart_layer1_directive_inline( stackpair *stkp, void *v )
+{
+	int scratch;
+	uintptr_t tmp;
+	
+	STACKCHECK( stkp,  parseheart_layer1_directive_inline );
+	
+	STACKPEEK_UINT( &( stkp->data ), 0, tmp,  parseheart_layer1_directive_inline, scratch );
+	token *tok = (token*)tmp;
+	scratch = parseheart_legaltoken( stkp, v,  parseheart_legaltoken_overrides__no_override );
+	switch( scratch )
+	{
+		case 1:
+				/* Valid token. */
+			break;
+		case 0:
+				/* Barred token: this is seriously NOT supposed to happen here, */
+				/*  so it's a syntax error. */
+			TRESPASSPATH(
+				parseheart_layer1_directive_inline,
+				"Error: parseheart_layer1_directive_inline() encountered a"
+				" non-directive-able token as a directive name."
+			);
+
+			stack_ENDRETFRAME();
+			
+		default:
+			/* Error! */
+			
+			FAILEDINTFUNC( "parseheart_legaltoken()", parseheart_layer1_directive_inline, scratch );
+			stack_ENDRETFRAME();
 	}
 	
+	genericnamed *found_entry = bsearch1_gennamearr( inline, tok );
 	
-	
-	???
-	
-	return( ??? );
+	if( !found_entry )
+	{
+		/* It's just a token, it should never have gotten here. */
+		
+		TRESPASSPATH(
+			parseheart_layer1_directive_inline,
+			"Error! parseheart_layer1_directive_inline() encountered a non-directive token!"
+		);
+		stack_ENDRETFRAME();
+		
+	} else if( found_entry->reftype == GENNAMETYPE_RETFRAMEFUNC )
+	{
+		if( !( found_entry->ref ) )
+		{
+			BADNULL( parseheart_layer1_directive_inline, ptr );
+			stack_ENDRETFRAME();
+		}
+		
+		return( *( (retframe*)( found_entry->ref ) ) );
+		
+	} else {
+		
+		/* Error! Later, we'll add support for macro arrays here, by using double-hash and GENNAMETYPE_TABLEENTRY! */
+		
+		TRESPASSPATH( parseheart_layer1_directive_inline, "Error! Unknown found_entry->reftype value: " );
+			DECARG( ( found_entry->reftype ) );
+		stack_ENDRETFRAME();
+	}
 }
-retframe parseheart_layer1_valuemacro( stackpair *stkp, void *v )
-{
-				dest.push_back( process_macro( src.pop_front() ) );
-					int pushto_tokengroup
-					(
-						tokengroup *tgrp,
-						token_head *thd
-					);
-}
+	/* Stick this in the name table as the handler function for '#'. */
 	/* ( tokengroup* token* -- ???  ) */
+retframe parseheart_layer1_directive_octothorpe( stackpair *stkp, void *v )
+{
+	int scratch;
+	uintptr_t tok;
+	
+	STACKCHECK( stkp,  parseheart_layer1_directive_octothorpe );
+	
+	STACKPEEK_UINT( &( stkp->data ), 0, tok,  parseheart_layer1_directive_octothorpe, scratch );
+	
+	static const retframe_parr
+		fresh =
+			(retframe_parr)
+			{
+				3, /* Number of retframes  */
+				{
+						/* We don't actually want the hash symbol, so discard it, */
+						/*  it's done its job already. */
+					(retframe){ &invoke_dealloctoken, (void*)0 },
+						/* Fetch the next token: we presumably care about this one. */
+					(retframe){ &token_queue_fetch, (void*)0 },
+						/* And dispatch. */
+					(retframe){ &parseheart_layer1_directive_freshline, (void*)0 }
+				}
+			},
+		inline =
+			(retframe_parr)
+			{
+				3, /* Number of retframes  */
+				{
+						/* We don't actually want the hash symbol, so discard it, */
+						/*  it's done its job already. */
+					(retframe){ &invoke_dealloctoken, (void*)0 },
+						/* Fetch the next token: we presumably care about this one. */
+					(retframe){ &token_queue_fetch, (void*)0 },
+						/* And dispatch. */
+					(retframe){ &parseheart_layer1_directive_freshline, (void*)0 }
+				}
+			};
+	return( (retframe){ &enqueue_returns, ( was_freshline( (token_head*)tok ) ? &fresh : &inline ) } );
+}
+	/* ( tokengroup* token* -- tokengroup*  ) */
 retframe parseheart_layer1_search( stackpair *stkp, void *v )
 {
 	int scratch;
 	
 	STACKCHECK( stkp,  parseheart_layer1_search );
 	
-	???
-	
+	??? /* Replace this with the real variable! It's just to clarify the type & nature! */
 	genname_parr *macrolist;
-	
 	???
 	
 	token *tok;
 	tokengroup *dest;
 	uintptr_t tmp;
+	
 	STACKPEEK_UINT( &( stkp->data ), 0, tmp,  parseheart_layer1_search, scratch );
 	tok = (token*)tmp;
+	scratch = parseheart_legaltoken( stkp, v,  parseheart_legaltoken_overrides__no_override );
+	switch( scratch )
+	{
+		case 1:
+				/* Valid token. */
+			break;
+		case 0:
+				/* Barred token: push it back, and just return. */
+			scratch = token_queue_push( tok );
+			if( !scratch )
+			{
+				FAILEDINTFUNC( "token_queue_push()", parseheart_layer1_search, scratch );
+					DATAPTR( tok );
+				
+				stack_ENDRETFRAME();
+			}
+			
+			STACKPOP_UINT( &( stkp->data ), tmp,  parseheart_layer1_search, scratch );
+
+			RETFRAMEFUNC( parseheart_layer1_search );
+			
+		default:
+			/* Error! */
+			
+			FAILEDINTFUNC( "parseheart_legaltoken()", parseheart_layer1_search, scratch );
+			stack_ENDRETFRAME();
+	}
+	
 	STACKPEEK_UINT( &( stkp->data ), sizeof( uintptr_t ), tmp,  parseheart_layer1_search, scratch );
 	dest = (tokengroup*)tmp;
 	
@@ -864,61 +1108,73 @@ retframe parseheart_layer1_search( stackpair *stkp, void *v )
 		
 		RETFRAMEFUNC( parseheart_layer1_search );
 		
-	} else if( found_entry->reftype != GENNAMETYPE_RETFRAMEFUNC )
+	} else if( found_entry->reftype == GENNAMETYPE_RETFRAMEFUNC )
 	{
-		???
-		
+			/* ( tokengroup* token* -- ???  ) */
 		return( *( (retframe*)( found_entry->ref ) ) );
 		
 	} else {
 		
 		/* Error! Later, we'll add support for macro arrays here, by using double-hash and GENNAMETYPE_TABLEENTRY! */
+		
+		BADUINT( parseheart_layer1_search, &( found_entry->reftype ), GENNAMETYPE_RETFRAMEFUNC );
+		
+		stack_ENDRETFRAME();
 	}
 }
-	/* ( -- ... -- tokengroup* ) */
+	/* This passes non-matching tokens on unmolested (and */
+	/*  one at a time), everything else it tries to process. */
+	/* ( tokengroup* -- ... -- tokengroup* ) */
 retframe parseheart_layer1_enter( stackpair *stkp, void *v )
 {
 	int scratch;
 	
 	STACKCHECK( stkp,  parseheart_layer1_enter );
 	
-	tokengroup *dest = build_tokengroup( 0 );
-	STACKPUSH_UINT( &( stkp->data ), (uintptr_t)dest,  parseheart_layer1_enter, scratch );
-	
-	scratch = push_retframe
-		(
-			&( stkp->ret ),
-			
-			(retframe){ &parseheart_layer1_exit, (void*)0 }
-		);
-	if( !scratch )
-	{
-		FAILEDINTFUNC(
-			"push_retframe( &exit parseheart )",
-			
-			parseheart_layer1_enter,
-			scratch
-		);
-		stack_ENDRETFRAME();
-	}
-	scratch = push_retframe
-		(
-			&( stkp->ret ),
-			
-			(retframe){ &parseheart_layer1_search, (void*)0 }
-		);
-	if( !scratch )
-	{
-		FAILEDINTFUNC(
-			"push_retframe( &search )",
-			
-			parseheart_layer1_enter,
-			scratch
-		);
-		stack_ENDRETFRAME();
-	}
 		/* ( tokengroup* ret:retframe -- ... ) */
-	return( (retframe){ &token_queue_fetch, (void*)0 } );
+	static const retframe_parr seq =
+		(retframe_parr)
+		{
+			3, /* Number of retframes  */
+			{
+				(retframe){ &token_queue_fetch, (void*)0 },
+				(retframe){ &parseheart_layer1_search, (void*)0 },
+				(retframe){ &parseheart_layer1_exit, (void*)0 }
+			}
+		};
+	return( (retframe){ &enqueue_returns, &seq } );
+}
+
+retframe parseheart_layer1_conclude( stackpair *stkp, void *v )
+{
+	int scratch;
+	
+	STACKCHECK( stkp,  parseheart_layer1_conclude );
+	
+	/* I think this should just be passing stuff along to the next layer, or maybe echoing? */
+	
+	???
+}
+	/* ( -- tokengroup* ) */
+retframe parseheart_layer1_call( stackpair *stkp, void *v )
+{
+	int scratch;
+	
+	STACKCHECK( stkp,  parseheart_layer1_call );
+	
+	tokengroup *dest = build_tokengroup( 0 );
+	STACKPUSH_UINT( &( stkp->data ), (uintptr_t)dest,  parseheart_layer1_call, scratch );
+	
+	static const retframe_parr seq =
+		(retframe_parr)
+		{
+			2, /* Number of retframes  */
+			{
+				(retframe){ &parseheart_layer1_enter, (void*)0 },
+				(retframe){ &parseheart_layer1_conclude, (void*)0 }
+			}
+		};
+	return( (retframe){ &enqueue_returns, &seq } );
 }
 
 
@@ -938,6 +1194,220 @@ retframe func( stackpair *stkp, void *v )
 	}
 	
 	???
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* This parsecall_*() stuff seems similar to what components.c does- */
+/*  perhaps that file should be dropped, or these functions rewritten */
+/*  in terms of it? */
+
+/* To play well with exec.c, we'll eventually need to convert that */
+/*  lower tokengroup into a tokenheadptr_pascalarray{}. Probably */
+/*  should be donme here, but worth some thought. */
+	/* ( tokengroup* tokengroup* token* -- ... -- ??? ) */
+retframe parsecall_bodytail( stackpair *stkp, void *v )
+{
+	int scratch;
+	uintptr_t tmp;
+	
+	STACKCHECK( stkp,  parsecall_bodytail );
+	
+	
+	scratch =
+		parseheart_legaltoken
+		(
+			stkp, v,
+			
+			parseheart_legaltoken_overrides_allow_comma |
+				parseheart_legaltoken_overrides_allow_parens
+		);
+	if( !scratch )
+	{
+		/* Error! The encountered token is totally wrong for this context! */
+		
+		???
+	}
+	
+	
+	STACKPEEK_UINT( &( stkp->data ), 0, tmp,  parsecall_bodytail, scratch );
+	token *tok = (token*)tmp;
+	
+	
+	static const retframe_parr
+		discarder_epilogue =
+			(retframe_parr)
+			{
+				2, /* Number of retframes  */
+				{
+						/* Discard the toke, and push the top tokengroup */
+						/*  into the lower tokengroup. */
+					(retframe){ &invoke_dealloctoken, (void*)0 },
+					(retframe){ &vm_pushto_tokengroup, (void*)0 }
+				}
+			},
+		recursion_prologue =
+			(retframe_parr)
+			{
+				3, /* Number of retframes  */
+				{
+						/* Accumulate token (and any resulting tokens) */
+						/*  into the top tokengroup, then recurse. */
+					(retframe){ &parseheart_layer1_enter, (void*)0 },
+					(retframe){ &token_queue_fetch, (void*)0 },
+					(retframe){ &parsecall_bodytail, (void*)0 }
+				}
+			},
+		
+		on_comma =
+			(retframe_parr)
+			{
+				3, /* Number of retframes  */
+				{
+						/* Discard the token, store the upper */
+						/*  tokengroup, and proceed to the next */
+						/*  argument sequence. */
+					(retframe){ &enqueue_returns, &discarder_epilogue },
+					(retframe){ &vm_buildempty_tokengroup(), (void*)0 },
+					(retframe){ &enqueue_returns, &recursion_prologue }
+				}
+			},
+		on_normal =
+			(retframe_parr)
+			{
+				2, /* Number of retframes  */
+				{
+						/* Accumulate & recurse. */
+					(retframe){ &token_queue_unfetch, (void*)0 },
+					(retframe){ &enqueue_returns, &recursion_prologue }
+				}
+			};
+	
+	if( tok->toktype == TOKTYPE_SYM_PREPARCL )
+	{
+		/* We're done, time to drop out of the parsecall_*() */
+		/*  sequence. */
+		
+			/* Afterwards, this should transparently return to */
+			/*  caller of parsecall_enter(). */
+		return( (retframe){ &enqueue_returns, &discarder_epilogue } );
+		
+	} else if( tok->toktype == TOKTYPE_SYM_COMMA )
+	{
+			/* Finish up this argument sequence, and proceed */
+			/*  to the next. */
+		return( (retframe){ &enqueue_returns, &on_comma } );
+		
+	} else {
+		
+			/* Continue accumulating tokens. */
+		return( (retframe){ &enqueue_returns, &on_normal } );
+	}
+}
+	/* ( tokengroup* token* -- ??? ) */
+retframe parsecall_body( stackpair *stkp, void *v )
+{
+	int scratch;
+	
+	STACKCHECK( stkp,  parsecall_body );
+	
+	
+	if( tok->toktype == TOKTYPE_SYM_PREPARCL )
+	{
+		/* Closing symbol! */
+		
+		return( (retframe){ &invoke_dealloctoken, (void*)0 } );
+		
+	} else
+	if
+	(
+		tok->toktype == TOKTYPE_OPPARUP
+		tok->toktype == TOKTYPE_SYM_COMMA
+	)
+	{
+		tokengroup *dest = build_tokengroup( 0 );
+		STACKPUSH_UINT( &( stkp->data ), (uintptr_t)dest,  parsecall_body, scratch );
+		
+		
+		static const retframe_parr seq =
+			(retframe_parr)
+			{
+				5, /* Number of retframes  */
+				{
+					(retframe){ &swap2nd, (void*)0 },
+						/* Ditch the comma: it was passed to us by */
+						/*  parsecall_bodytail(), which has ALREADY */
+						/*  done everything it needs to in regards */
+						/*  to it... */
+						/* Note that the same is true of the opening */
+						/*  bracket. */
+					(retframe){ &invoke_dealloctoken, (void*)0 },
+					(retframe){ &parseheart_layer1_enter, (void*)0 },
+					(retframe){ &token_queue_fetch, (void*)0 },
+					(retframe){ &parsecall_bodytail, (void*)0 }
+				}
+			};
+		return( (retframe){ &enqueue_returns, &seq } );
+		
+	} else {
+		
+		/* Error! */
+		
+		???
+	}
+}
+	/* This function is the entry point to parse a macro or directive */
+	/*  call with the "(^" "^)" brackets. Note that a pointer to a */
+	/*  "(^" token MUST be on the stack when this function is entered. */
+	/* ( token* -- ... -- tokengroup* ) */
+retframe parsecall_enter( stackpair *stkp, void *v )
+{
+	int scratch;
+	uintptr_t tmp;
+	
+	STACKCHECK( stkp,  parsecall_enter );
+	
+	STACKPEEK_UINT( &( stkp->data ), 0, tmp,  parsecall_enter, scratch );
+	token *tok = (token*)tmp;
+	
+	if( tok->toktype != TOKTYPE_OPPARUP )
+	{
+		/* Error, wrong type. Except technically, we need to handle */
+		/*  tokenbranch but don't. Make a function for that. */
+		
+		???
+	}
+	
+	
+	tokengroup *dest = build_tokengroup( 0 );
+	STACKPUSH_UINT( &( stkp->data ), (uintptr_t)dest,  parseheart_layer1_call, scratch );
+	
+	
+		/* ( tokengroup* -- ... ) */
+	static const retframe_parr seq =
+		(retframe_parr)
+		{
+			4, /* Number of retframes  */
+			{
+				
+				(retframe){ &swap2nd, (void*)0 },
+					??? /* We probably want to shove the token into a tokenbranch holding the tokengroup, but we can do that later. */
+				(retframe){ &invoke_dealloctoken, (void*)0 },
+				(retframe){ &token_queue_fetch, (void*)0 },
+				(retframe){ &parsecall_body, (void*)0 }
+			}
+		};
+	return( (retframe){ &enqueue_returns, &seq } );
 }
 
 

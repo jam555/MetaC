@@ -367,10 +367,33 @@ int token_queue_pop( token **tok )
 	
 	return( -1 );
 }
+
+retframe token_queue_unfetch( stackpair *stkp, void *v )
+{
+	int scratch;
+	
+	STACKCHECK( stkp,  token_queue_unfetch );
+	
+	uintptr_t tmp;
+	STACKPOP_UINT( &( stk->data ), tmp,  token_queue_unfetch, scratch );
+	
+	scratch = token_queue_push( (token*)tmp );
+	if( !scratch )
+	{
+		/* Error! */
+		
+		???
+	}
+	
+	RETFRAMEFUNC( token_queue_unfetch );
+}
 	/* ( -- token* ) */
 retframe token_queue_fetch( stackpair *stkp, void *v )
 {
 	int tmp;
+	
+	STACKCHECK( stkp,  token_queue_fetch );
+	
 	if( token_queue.fetch_lock >= 0 && token_queue.fetch_lock => token_queue.used )
 	{
 		/* Signal that fetching cannot continue until the fetch */

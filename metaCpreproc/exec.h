@@ -14,7 +14,7 @@
 	/*  while you'll see a comment like this: ( x y -- z y h ); everywhere */
 	/*  it appears, it's a Forth-style notation of what the stack meant to */
 	/*  be on entry and exit of the relevant function. If you see more than */
-	/*  one set of double-dashes, then it's indicating the resuklt of some */
+	/*  one set of double-dashes, then it's indicating the result of some */
 	/*  final exit from a directly triggered call as well, maybe with */
 	/*  additional steps in between. */
 	
@@ -58,7 +58,7 @@
 			/* The handler will find it's arguments in the tokhdptr_parr* on the */
 			/*  top of the stkp->data stack, but by the time of it's return MUST */
 			/*  HAVE MOVED that pointer to the top of the macro_args stack- any */
-			/*  actual deallocation will be donme elsewhere. It also MUST push a */
+			/*  actual deallocation will be done elsewhere. It also MUST push a */
 			/*  uintptr_t to the stkp->data stack saying how many token_head* */
 			/*  instances it pushed onto the shuffle stack (whether it pushes */
 			/*  anything to the shuffle stack is optional, but the top of the */

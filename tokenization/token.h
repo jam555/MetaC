@@ -29,6 +29,50 @@
 	int is_stdtoken( token_head *th );
 	int is_delimited( token_head *th );
 	int was_freshline( token_head *th );
+		typedef struct deep_toktype
+		{
+			uintptr_t shallow_toktype, virtual_toktype;
+
+		} deep_toktype;
+		LIB4_MONAD_EITHER_BUILDTYPE_DEFINITION(
+			deeptoktype_result,
+
+			deep_toktype,
+			uintptr_t
+		);
+		#define DEEPTOKTYPE_RESULT_BUILDSUCCESS( val ) \
+			LIB4_MONAD_EITHER_BUILDLEFT( \
+				deeptoktype_result, deep_toktype, (val) \
+			)
+		#define DEEPTOKTYPE_RESULT_BUILDFAILURE( val ) \
+			LIB4_MONAD_EITHER_BUILDRIGHT( \
+				deeptoktype_result, uintptr_t, (val) \
+			)
+		#define DEEPTOKTYPE_RESULT_BODYMATCH( var, matcha, matchb ) \
+			LIB4_MONAD_EITHER_BODYMATCH( var, matcha, matchb )
+		#define DEEPTOKTYPE_RESULT_EXPRMATCH( var, matcha, matchb ) \
+			LIB4_MONAD_EITHER_EXPRMATCH( var, matcha, matchb )
+		#define DEEPTOKTYPE_RESULT_RETURNSUCCESS( val ) \
+			LIB4_MONAD_EITHER_RETURNLEFT( \
+				deeptoktype_result, deep_toktype, val )
+		#define DEEPTOKTYPE_RESULT_RETURNFAILURE( val ) \
+			LIB4_MONAD_EITHER_RETURNRIGHT( \
+				deeptoktype_result, uintptr_t, val )
+		/* Special values: */
+			/* shallow = TOKTYPE_TOKENGROUP_SAMEMERGE: tokengroup */
+			/* shallow = TOKTYPE_TOKENBRANCH: tokenbranch */
+			/* shallow = TOKTYPE_TOKENGROUP_MACROTOKEN_INDIRECTION: macro_token */
+			/* other shallow: ignore virtual, shallow says it all. */
+			/* err = TOKTYPE_INVALID: arg was null */
+			/* err = TOKTYPE_TOKENGROUP_MACROTOKEN_INDIRECTION: as shallow, but ->tok was null */
+			/* err = TOKTYPE_SPACE: somehow the switch didn't return, even though it always should. */
+	deeptoktype_result get_deeptoktype( token_head *th );
+	int simplify_toktype( token_head *tok,  uintptr_t *dest );
+		/* ( token* -- token* char_parr* ) */
+		/* v_ must point to a retframe{} to handle "unrecognized token type" */
+		/*  errors. The stack will be ( token* char_parr* ). */
+		/* Various things (e.g. delimited handling) need to be reexamined. */
+	retframe token2char_parr( stackpair *stkp, void *v_ );
 	
 		/* toktype */
 			/* Choose any single TOKTYPE_* value macro from below: note that some */
@@ -173,16 +217,16 @@
 		#define TOKTYPE_SYM_DIVIDE ( 0x70D )
 		#define TOKTYPE_SYM_ADDROF ( 0x70E )
 		#define TOKTYPE_SYM_DEREFERENCE ( 0x70F )
-		#define TOKTYPE_SYM_PRECRLCL ( 0x710 )
-		#define TOKTYPE_SYM_PRESQRCL ( 0x711 )
-		#define TOKTYPE_SYM_PREPARCL ( 0x712 )
-		#define TOKTYPE_SYM_PLACEDXOR ( 0x713 )
-		#define TOKTYPE_SYM_XOR ( 0x714 )
+		#define TOKTYPE_SYM_PRECRLCL ( 0x710 ) /* ^} */
+		#define TOKTYPE_SYM_PRESQRCL ( 0x711 ) /* ^] */
+		#define TOKTYPE_SYM_PREPARCL ( 0x712 ) /* ^) */
+		#define TOKTYPE_SYM_PLACEDXOR ( 0x713 ) /* ^= */
+		#define TOKTYPE_SYM_XOR ( 0x714 ) /* ^ */
 		#define TOKTYPE_SYM_COMPTCRLCL ( 0x715 )
 		#define TOKTYPE_SYM_COMPTSQRCL ( 0x716 )
 		#define TOKTYPE_SYM_COMPTPARCL ( 0x717 )
-		#define TOKTYPE_SYM_GREATEQUAL ( 0x718 )
-		#define TOKTYPE_SYM_GREATERTHAN ( 0x719 )
+		#define TOKTYPE_SYM_GREATEQUAL ( 0x718 ) /* >= */
+		#define TOKTYPE_SYM_GREATERTHAN ( 0x719 ) /* > */
 		#define TOKTYPE_SYM_DECLCRLCL ( 0x71A )
 		#define TOKTYPE_SYM_DECLSQRCL ( 0x71B )
 		#define TOKTYPE_SYM_DECLPARCL ( 0x71C )
@@ -192,13 +236,13 @@
 		#define TOKTYPE_SYM_PLACEDADD ( 0x720 )
 		#define TOKTYPE_SYM_ADDITION ( 0x721 )
 		#define TOKTYPE_SYM_PLACEDMODULO ( 0x722 )
-		#define TOKTYPE_SYM_MODULO ( 0x723 )
-		#define TOKTYPE_SYM_EQUALITY ( 0x724 )
-		#define TOKTYPE_SYM_SET ( 0x725 )
-		#define TOKTYPE_SYM_NOTEQUAL ( 0x726 )
-		#define TOKTYPE_SYM_NOT ( 0x727 )
-		#define TOKTYPE_SYM_LESSEREQUAL ( 0x728 )
-		#define TOKTYPE_SYM_LESSERTHAN ( 0x729 )
+		#define TOKTYPE_SYM_MODULO ( 0x723 ) /* % */
+		#define TOKTYPE_SYM_EQUALITY ( 0x724 ) /* == */
+		#define TOKTYPE_SYM_SET ( 0x725 ) /* = */
+		#define TOKTYPE_SYM_NOTEQUAL ( 0x726 ) /* != */
+		#define TOKTYPE_SYM_NOT ( 0x727 ) /* ! */
+		#define TOKTYPE_SYM_LESSEREQUAL ( 0x728 ) /* <= */
+		#define TOKTYPE_SYM_LESSERTHAN ( 0x729 ) /* < */
 		#define TOKTYPE_SYM_LOGICAND ( 0x72A )
 		#define TOKTYPE_SYM_PLACEDBINARYAND ( 0x72B )
 		#define TOKTYPE_SYM_BINARYAND ( 0x72C )
@@ -217,7 +261,7 @@
 		#define TOKTYPE_SYM_PARENCLOSE ( 0x739 )
 		#define TOKTYPE_SYM_TILDE ( 0x73A )
 		#define TOKTYPE_SYM_DOT ( 0x73B )
-		#define TOKTYPE_SYM_COMMA ( 0x73C )
+		#define TOKTYPE_SYM_COMMA ( 0x73C ) /* , */
 		#define TOKTYPE_SYM_BSLASH ( 0x73D )
 	
 	/* Unused: "8" block. */
@@ -233,33 +277,37 @@
 	
 	/* tokengroup: "12"/"B" block. */
 		#define TOKTYPE_TOKENGROUP_SAMEMERGE ( 0xB00 )
-		
+		#define TOKTYPE_TOKENBRANCH ( 0xB01 )
 			/* The "body" member of the merge is "real", the rest is */
 			/*  "imaginary". */
-		#define TOKTYPE_TOKENGROUP_STRMERGE ( 0xB01 )
-		#define TOKTYPE_TOKENGROUP_COMNTMERGE ( 0xB02 )
-		#define TOKTYPE_TOKENGROUP_EQUIVMERGE ( 0xB03 )
+		#define TOKTYPE_TOKENGROUP_STRMERGE ( 0xB02 )
+		#define TOKTYPE_TOKENGROUP_COMNTMERGE ( 0xB03 )
+		#define TOKTYPE_TOKENGROUP_EQUIVMERGE ( 0xB04 )
 		
-		#define TOKTYPE_TOKENGROUP_WHITESPACE ( 0xB04 )
+		#define TOKTYPE_TOKENGROUP_WHITESPACE ( 0xB05 )
 		
 			/* The "body" contains characters that should be treated differently */
 			/*  than normal. The details will have to be defined elsewhere. */
-		#define TOKTYPE_TOKENGROUP_DELIMITED ( 0xB05 )
+		#define TOKTYPE_TOKENGROUP_DELIMITED ( 0xB06 )
 		
 		
-		#define TOKTYPE_TOKENGROUP_MACROLINK ( 0xB06 )
-		#define TOKTYPE_TOKENGROUP_MACROTOKEN ( 0xB07 )
+		#define TOKTYPE_TOKENGROUP_MACROLINK ( 0xB07 )
+		#define TOKTYPE_TOKENGROUP_MACROTOKEN ( 0xB08 )
 				/* Same data structure as *_MACROTOKEN, but specifically */
 				/*  establishes a firewall against deallocation: it will only be */
 				/*  deallocated when it's parent is deallocated, and the things */
 				/*  it points at will be left untouched as well. */
-			#define TOKTYPE_TOKENGROUP_MACROTOKEN_INDIRECTION ( 0xB08 )
-		#define TOKTYPE_TOKENGROUP_MACRORUN ( 0xB09 )
-		#define TOKTYPE_TOKENGROUP_MACRODIRECTIVE ( 0xB0A )
+			#define TOKTYPE_TOKENGROUP_MACROTOKEN_INDIRECTION ( 0xB09 )
+		#define TOKTYPE_TOKENGROUP_MACRORUN ( 0xB0A )
+		#define TOKTYPE_TOKENGROUP_MACRODIRECTIVE ( 0xB0B )
 		
-		#define TOKTYPE_TOKENGROUP_MACROCALL ( 0xB0B )
+		#define TOKTYPE_TOKENGROUP_MACROCALL ( 0xB0C )
 		
-		#define TOKTYPE_DEFERED_RETFRAME ( 0xB0C )
+		#define TOKTYPE_DEFERED_RETFRAME ( 0xB0D )
+		
+		#define TOKTYPE_CONTEXTSPECIALS ( 0xB0E )
+			/* This is used mid-parse to mark sets of tokens that are arguments. */
+		#define TOKTYPE_GENERICGROUP ( 0xB0F )
 	
 	
 #endif
