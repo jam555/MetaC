@@ -100,6 +100,28 @@
 	
 	
 	
+		/* Note: neither src_tokhead nor destvar_uintp are pointers */
+		/*  in either of these two macros. The *_uintp is to be a */
+		/*  uintptr_t. */
+	#defint TOKEN_FETCH_SIMPLETYPE( src_tokhead, destvar_uintp,  stylesetptr, caller, scratch, endfunc ) \
+		if( 1 ) { \
+			( scratch ) = simplify_toktype( &( src_tokhead ),  &( destvar_uintp ) ); \
+			if( !( scratch ) ) { \
+				STDMSG_FAILEDINTFUNC_WRAPPER( ( stylesetptr ), "peek_uintptr", ( caller ), ( scratch ) ); \
+				( endfunc )(); } }
+	#defint TOKEN_CHECK_SIMPLETYPE( src_tokhead, desired_val, on_yes, on_no,  stylesetptr, caller, scratch, endfunc ) \
+		if( 1 ) { \
+			uintptr_t TOKEN_CHECK_SIMPLETYPE_type; \
+			TOKEN_FETCH_SIMPLETYPE( \
+				( src_tokhead ), TOKEN_CHECK_SIMPLETYPE_type, \
+				( stylesetptr ), ( caller ), ( scratch ), ( endfunc ) ); \
+			if( TOKEN_CHECK_SIMPLETYPE_type == ( desired_val ) ) { \
+				( on_yes )( TOKEN_CHECK_SIMPLETYPE_type ); } \
+			else { \
+				( on_no )( TOKEN_CHECK_SIMPLETYPE_type ); } }
+	
+	
+	
 	LIB4_DEFINE_PASCALARRAY_STDDEFINE( tokenheadptr_, token_head* );
 	typedef tokenheadptr_pascalarray tokhdptr_parr;
 	

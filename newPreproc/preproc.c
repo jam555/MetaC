@@ -63,8 +63,16 @@
 	RET_FRAMEFUNC( stkp,  &errs, ( caller ), ( scratch ), stack_ENDRETFRAME )
 
 
+#define FETCH_SIMPLETYPE( tokhead, destuintp,  caller, scratch ) \
+	TOKEN_FETCH_SIMPLETYPE( ( tokhead ), ( destuintp ),  &errs, ( caller ), ( scratch ), stack_ENDRETFRAME )
+#define CHECK_SIMPLETYPE( tokhead, testval, on_yes, on_no,  caller, scratch ) \
+	TOKEN_CHECK_SIMPLETYPE( ( tokhead ), ( testval ), ( on_yes ), ( on_no ),  &errs, ( caller ), ( scratch ), stack_ENDRETFRAME )
+
+
 lib4_intresult not_contextspecials( token_head *tok_, context_specials *ctx )
 {
+	int scratch;
+	
 	if( !tok || !ctx )
 	{
 		LIB4_INTRESULT_RETURNFAILURE(
@@ -85,40 +93,18 @@ lib4_intresult not_contextspecials( token_head *tok_, context_specials *ctx )
 	}
 	
 	uintptr_t tok, tmp;
-	if( !simplify_toktype( tok_,  &tok ) )
-	{
-		???
-		LIB4_INTRESULT_RETURNFAILURE(
-			(lib4_failure_uipresult){ LIB4_STDERRS__LAST_UNALLOC_ERR + 0 }
-		);
-	}
-	
-	if( !simplify_toktype( ctx->end,  &tmp ) )
-	{
-		???
-		LIB4_INTRESULT_RETURNFAILURE(
-			(lib4_failure_uipresult){ LIB4_STDERRS__LAST_UNALLOC_ERR + 1 }
-		);
-	}
-	if( tok == tmp )
-	{
-		LIB4_INTRESULT_RETURNSUCCESS( -1 );
-	}
+	FETCH_SIMPLETYPE( *tok_, tok,  not_contextspecials, scratch );
+#define not_contextspecials_ONYES( ... ) LIB4_INTRESULT_RETURNSUCCESS( -1 );
+	CHECK_SIMPLETYPE( *( ctx->end ), tmp, not_contextspecials_ONYES, LIB4_NULL_MACRO,  not_contextspecials, scratch );
 	
 	size_t loop = 0;
 	while( loop < ctx->breaks->len )
 	{
-		if( !simplify_toktype( ctx->breaks->body[ loop ],  &tmp ) )
-		{
-			???
-			LIB4_INTRESULT_RETURNFAILURE(
-				(lib4_failure_uipresult){ LIB4_STDERRS__LAST_UNALLOC_ERR + 2 }
-			);
-		}
-		if( tok == tmp )
-		{
-			LIB4_INTRESULT_RETURNSUCCESS( 0 );
-		}
+#define not_contextspecials_LOOPYES( ... ) LIB4_INTRESULT_RETURNSUCCESS( 0 );
+		CHECK_SIMPLETYPE(
+			*( ctx->breaks->body[ loop ] ), tmp, not_contextspecials_LOOPYES, LIB4_NULL_MACRO,
+			not_contextspecials, scratch
+		);
 		loop++;
 	}
 	
@@ -325,48 +311,33 @@ retframe bracketgather_check( stackpair *stkp, void *v_ )
 	
 	context_specials ctx = (context_specials*)v_;
 	
+	int scratch;
 	uintptr_t tok, tmp;
-	if( !simplify_toktype( ctx->start,  &tok ) )
-	{
-		???
-		stack_ENDRETFRAME();
-	}
+	FETCH_SIMPLETYPE( *( ctx->start ), tok,  bracketgather_check, scratch );
 	
 	STACKPEEK_UINT( &( stkp->data ), sizeof( uintptr_t ), tmp,  bracketgather_check, scratch );
-	if( !simplify_toktype( (token_head*)tmp,  &tmp ) )
-	{
-		???
-		stack_ENDRETFRAME();
-	}
-	
-	if( tok == tmp )
-	{
-		tokengroup *dest = build_tokengroup( 0 );
-		STACKPUSH_UINT( &( stkp->data ), (uintptr_t)dest,  bracketgather_check, scratch );
-		
-		static retframe_parr seq =
-			(retframe_parr)
-			{
-				5, /* Number of retframes  */
-				{
-					(retframe){ &swap2nd, (void*)0 },
-							/* ( tokengroup* token_head* -- tokengroup* token_head* ) */
-					(retframe){ &vm_setsubtype_tokengroup, (void*)0 },
-					(retframe){ &invoke_dealloctoken, (void*)0 },
-					(retframe){ &token_queue_fetch, (void*)0 },
-					(retframe){ &bracketgather_loop, (void*)0 }
-				}
-			};
-				/* And this is why seq{} isn't a const: we need to patch it at runtime. */
-			seq.body[ 4 ].data = v_;
+#define bracketgather_check_ONYES( ... ) \
+		tokengroup *dest = build_tokengroup( 0 ); \
+		STACKPUSH_UINT( &( stkp->data ), (uintptr_t)dest,  bracketgather_check, scratch ); \
+		static retframe_parr seq = \
+			(retframe_parr){ \
+				5, /* Number of retframes  */ { \
+					(retframe){ &swap2nd, (void*)0 }, \
+							/* ( tokengroup* token_head* -- tokengroup* token_head* ) */ \
+					(retframe){ &vm_setsubtype_tokengroup, (void*)0 }, \
+					(retframe){ &invoke_dealloctoken, (void*)0 }, \
+					(retframe){ &token_queue_fetch, (void*)0 }, \
+					(retframe){ &bracketgather_loop, (void*)0 } } }; \
+				/* And this is why seq{} isn't a const: we need to patch it at runtime. */ \
+			seq.body[ 4 ].data = v_; \
 		return( (retframe){ &enqueue_returns, &seq } );
-		
-	} else {
-		
-			/* Error, report and exit. */
-		???
+#define bracketgather_check_ONNO( ... ) \
+		??? ; \
 		stack_ENDRETFRAME();
-	}
+	CHECK_SIMPLETYPE(
+		*( (token_head*)tmp ), tok, bracketgather_check_ONYES, bracketgather_check_ONNO,
+		bracketgather_check, scratch
+	);
 }
 	/* ( token_head* -- ??? ) */
 retframe bracketgather_enter( stackpair *stkp, void *v_ )
@@ -441,12 +412,7 @@ retframe bracketgather_dispatcher???( stackpair *stkp, void *v )
 	uintptr_t tmp;
 	
 	STACKPEEK_UINT( &( stkp->data ), sizeof( uintptr_t ), tmp,  bracketgather_check, scratch );
-	if( !simplify_toktype( (token_head*)tmp,  &tmp ) )
-	{
-		???
-		stack_ENDRETFRAME();
-	}
-	
+	FETCH_SIMPLETYPE( *( (token_head*)tmp ), tmp,  bracketgather_check, scratch );
 	switch( tmp )
 	{
 		case TOKTYPE_OPCRLUP: /* {^ */
