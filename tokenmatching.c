@@ -1,3 +1,6 @@
+#include <ctype.h>
+
+
 #include "headers.h"
 
 #include "err/inner_err.h"
@@ -79,6 +82,58 @@ int match_token( token *tok,  unsigned char *str, size_t len )
 	}
 	
 	return( ret );
+}
+
+
+
+int charparr_isname( char_parr *cparr )
+{
+	if( !cparr )
+	{
+		/* Error. */
+		
+		???
+		
+		return( -1 );
+	}
+	if( cparr->len <= 0 )
+	{
+		/* Error. */
+		
+		???
+		
+		return( -1 );
+	}
+	
+	size_t iter = 0;
+	
+	if( cparr->body[ 0 ] != '_' && !isalpha( cparr->body[ 0 ] ) )
+	{
+		???
+		
+		return( 0 );
+	}
+	while( iter + 1 < cparr->len )
+	{
+		if( cparr->body[ 0 ] != '_' && !isalnum( cparr->body[ 0 ] ) )
+		{
+			???
+			
+			return( 0 );
+		}
+		
+		++iter;
+	}
+	if( cparr->body[ iter ] != '\0' )
+	{
+		/* Error. */
+		
+		???
+		
+		return( -1 );
+	}
+	
+	return( 1 );
 }
 
 

@@ -158,7 +158,7 @@ int simplify_toktype( token_head *tok,  uintptr_t *dest )
 }
 	/* ( token* -- token* char_parr* ) */
 	/* v_ must point to a retframe{} to handle "unrecognized token type" */
-	/*  errors. The stack will be ( token* char_parr* ). */
+	/*  errors. The stack will be ( token* &token2char_parr ). */
 retframe token2char_parr( stackpair *stkp, void *v_ )
 {
 	STACKCHECK2( stkp, v_,  token2char_parr );
@@ -184,7 +184,7 @@ retframe token2char_parr( stackpair *stkp, void *v_ )
 		case 0:
 			while( scratch == 0 )
 			{
-				switch( tok->header.->toktype )
+				switch( tok->header->toktype )
 				{
 					case TOKTYPE_INVALID:
 					case TOKTYPE_PARSEBREAK:
@@ -301,6 +301,56 @@ retframe token2char_parr( stackpair *stkp, void *v_ )
 	
 	RETFRAMEFUNC( token2char_parr );
 }
+	/* ( string-token* -- token* char_parr* ) */
+	/* v_ must point to a retframe{} to handle "unrecognized token type" */
+	/*  errors. The stack will be ( token* &stringtoken2char_parr ). */
+retframe stringtoken2char_parr( stackpair *stkp, void *v_ )
+{
+	STACKCHECK2( stkp, v_,  stringtoken2char_parr );
+	
+	if( !( (retframe*)v_ )->handler )
+	{
+		TRESPASSPATH( token2char_parr, "ERROR: stringtoken2char_parr() wasn't given an error reporter!" );
+			NOTELINE();
+			DATAPTR( errmark );
+		stack_ENDRETFRAME();
+	}
+	
+	int scratch, res;
+	uintptr_t tmp;
+	
+	STACKPEEK_UINT( &( stkp->data ), 0, tmp,  stringtoken2char_parr, scratch )
+	token *tok = (token*)tmp;
+	if
+	(
+		tok->toktype != TOKTYPE_SQSTR &&
+		tok->toktype != TOKTYPE_DQSTR
+	)
+	{
+			/* Error! Wrong type! */
+		???
+		
+		STACKPUSH_UINT( &( stkp->data ), (uintptr_t)&stringtoken2char_parr,  stringtoken2char_parr, scratch );
+		return( *( (retframe*)v_ ) );
+	}
+	
+		??? /* Verify this section to make sure it works right. */
+	char_parr *cparr = char_pascalarray_build( tok->text->len - 1 );
+	if( !cparr )
+	{
+		BADNULL( token2char_parr, &cparr );
+			NOTELINE();
+			STRARG( "char_pascalarray_build() failed." );
+		stack_ENDRETFRAME();
+	}
+	memcpy( (void*)cparr->body, (const void*)( tok->text + 1 ), tok->text->len - 2 );
+		/* Add the terminating null. */
+	cparr->body[ tok->text->len - 2 ] = '\0';
+	
+	STACKPUSH_UINT( &( stkp->data ), (uintptr_t)cparr,  stringtoken2char_parr, scratch );
+	
+	RETFRAMEFUNC( stringtoken2char_parr );
+}
 
 
 
@@ -410,6 +460,38 @@ retframe smart_dealloc_token( stackpair *stkp, void *v )
 			/*  got the current value of "ret" from, so it's time to return */
 			/*  to OUR caller (or at least the "designated return route")! */
 		RETFRAMEFUNC( smart_dealloc_token );
+	}
+}
+	/* ( token*[len] len -- ) */
+retframe bulk_dealloc_token( stackpair *stkp, void *v )
+{
+	STACKCHECK( stkp,  smart_dealloc_token, macroargs_ENDRETFRAME );
+	
+	int res;
+	uintptr_t len, tmp;
+	
+	STACKPOP_UINT( &( stk->data ), len,  bulk_dealloc_token, res, macroargs_ENDRETFRAME );
+	if( !len )
+	{
+			/* Done. */
+		RETFRAMEFUNC( bulk_dealloc_token );
+	}
+	
+	--len;
+	
+	if( len )
+	{
+		STACKPOP_UINT( &( stk->data ), tmp,  bulk_dealloc_token, res, macroargs_ENDRETFRAME );
+		STACKPUSH_UINT( &( stkp->data ), (uintptr_t)len,  token2char_parr, res );
+		STACKPUSH_UINT( &( stkp->data ), (uintptr_t)tmp,  token2char_parr, res );
+		
+			/* ( token*[len] len token* -- token*[len] len ) */
+		CALLFRAMEFUNC( bulk_dealloc_token, (void*)0, invoke_dealloctoken, (void*)0,  caller );
+		
+	} else {
+		
+			/* ( token* --  ) */
+		return( (retframe){ &invoke_dealloctoken, (void*)0 } );
 	}
 }
 

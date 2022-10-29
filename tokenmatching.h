@@ -90,6 +90,11 @@
 	
 	
 	
+		/* Returns -1 on error, 0 on "no", 1 on "yes". */
+	int charparr_isname( char_parr *cparr );
+	
+	
+	
 		/* For use with qsort & bsearch. */
 	int stdcompare_str( char *a_, char *b_, size_t len );
 	int stdcompare_token( const void *key_, const void *elem_ );

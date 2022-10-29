@@ -19,3 +19,7 @@ lib4_intresult not_contextspecials( token_head *tok_, context_specials *ctx );
 	/* (  -- tokengroup* ) */
 retframe bracketgather_enter( stackpair *stkp, void *v_ );
 
+	/* This calls bracketgather_enter(), use it instead. */
+	/* ( token* -- token* | tokengroup* ) */
+retframe bracketgather_dispatcher( stackpair *stkp, void *v )
+

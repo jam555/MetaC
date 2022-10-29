@@ -46,6 +46,8 @@ retframe require_comma( stackpair *stkp, void *v );
 retframe require_parenopener( stackpair *stkp, void *v );
 retframe require_parencloser( stackpair *stkp, void *v );
 retframe require_parsebreak( stackpair *stkp, void *v );
+retframe require_strmerge( stackpair *stkp, void *v );
+retframe require_anystring( stackpair *stkp, void *v );
 
 
 	/* token*(a) token*(b) -- tokenbranch* */
@@ -77,3 +79,7 @@ retframe tokenbranch_dealloc( stackpair *stkp, void *v );
 retframe tokengroup_build( stackpair *stkp, void *v );
 retframe tokengroup_pushtoken( stackpair *stkp, void *v );
 retframe tokengroup_dealloc( stackpair *stkp, void *v );
+
+
+	/* ( char_parr* token* -- char_parr* ( 1 )|( token* 0 ) ) */
+retframe grow_string( stackpair *stkp, void *v );

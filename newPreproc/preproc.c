@@ -22,6 +22,7 @@
 #include "headers.h"
 
 #include "err/inner_err.h"
+#include "token.h"
 #include "command_parse.h"
 #include "lexalike.h"
 #include "stack.h"
@@ -161,6 +162,7 @@ retframe bracketgather_loop_search( stackpair *stkp, void *v_ )
 	STACKPOP_UINT( &( stkp->data ), parr,  bracketgather_loop, scratch );
 	STACKPEEK_UINT( &( stkp->data ), 0, tok,  bracketgather_loop, scratch );
 	
+		??? /* Does this belong here? Aren't we searching for macros? */
 	genname_parr *searchbatch = ( was_freshline( (token_head*)tok ) ? freshline : inline );
 
 		/* genericnamed* bsearch1_gennamearr( genname_parr *parr, token *tok ); */
@@ -175,7 +177,7 @@ retframe bracketgather_loop_search( stackpair *stkp, void *v_ )
 	if( !found_entry )
 	{
 		/* It's just a token, so we'll push it. */
-
+		
 		static retframe_parr justtok =
 			(retframe_parr)
 			{
@@ -189,7 +191,7 @@ retframe bracketgather_loop_search( stackpair *stkp, void *v_ )
 			};
 			justtok.body[ 2 ].data = v_;
 		return( (retframe){ &enqueue_returns, &justtok } );
-
+		
 	} else if( found_entry->reftype == GENNAMETYPE_RETFRAMEFUNC )
 	{
 		if( !( found_entry->ref ) )
@@ -307,6 +309,10 @@ retframe bracketgather_loop( stackpair *stkp, void *v_ )
 	/* ( tokengroup* token* -- ... ) */
 retframe bracketgather_check( stackpair *stkp, void *v_ )
 {
+	???
+		/* I think this might force an IMMEDIATE exit of the bracketgather */
+		/*  subsystem- if so, then behavior needs to become more nuanced. */
+	
 	STACKCHECK2( stkp, v_,  bracketgather_check );
 	
 	context_specials ctx = (context_specials*)v_;
@@ -381,7 +387,7 @@ retframe bracketgather_enter( stackpair *stkp, void *v_ )
 
 
 	/* ( token* -- token* | tokengroup* ) */
-retframe bracketgather_dispatcher???( stackpair *stkp, void *v )
+retframe bracketgather_dispatcher( stackpair *stkp, void *v )
 {
 	static const context_specials
 		curly =
@@ -407,12 +413,12 @@ retframe bracketgather_dispatcher???( stackpair *stkp, void *v )
 			};
 	int scratch;
 	
-	STACKCHECK( stkp,  caller );
+	STACKCHECK( stkp,  bracketgather_dispatcher );
 	
 	uintptr_t tmp;
 	
-	STACKPEEK_UINT( &( stkp->data ), sizeof( uintptr_t ), tmp,  bracketgather_check, scratch );
-	FETCH_SIMPLETYPE( *( (token_head*)tmp ), tmp,  bracketgather_check, scratch );
+	STACKPEEK_UINT( &( stkp->data ), sizeof( uintptr_t ), tmp,  bracketgather_dispatcher, scratch );
+	FETCH_SIMPLETYPE( *( (token_head*)tmp ), tmp,  bracketgather_dispatcher, scratch );
 	switch( tmp )
 	{
 		case TOKTYPE_OPCRLUP: /* {^ */

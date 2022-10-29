@@ -73,6 +73,12 @@
 		/*  errors. The stack will be ( token* char_parr* ). */
 		/* Various things (e.g. delimited handling) need to be reexamined. */
 	retframe token2char_parr( stackpair *stkp, void *v_ );
+		/* ( string-token* -- token* char_parr* ) */
+		/* v_ must point to a retframe{} to handle "unrecognized token type" */
+		/*  errors. The stack will be ( token* &stringtoken2char_parr ). */
+		/* This ultimately just exists to discard the wrapping quotes for */
+		/*  cases where those are in the way. */
+	retframe stringtoken2char_parr( stackpair *stkp, void *v_ )
 	
 		/* toktype */
 			/* Choose any single TOKTYPE_* value macro from below: note that some */
@@ -97,6 +103,8 @@
 	retframe set_dealloctoken( retframe dealc_ );
 	retframe invoke_dealloctoken( stackpair *stkp, void *v );
 	retframe smart_dealloc_token( stackpair *stkp, void *v );
+		/* ( token*[len] len -- ) */
+	retframe bulk_dealloc_token( stackpair *stkp, void *v );
 	
 	
 	

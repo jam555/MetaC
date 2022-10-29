@@ -140,7 +140,7 @@ static const token
 
 	/* ( token* -- token* ( 0 | 1 ) ) */
 	/* This function MUST be given a token pointer via it's */
-	/*  void argument: that's used to comunicatre WHAT is */
+	/*  void argument: that's used to comunicate WHAT is */
 	/*  required. */
 retframe require_match( stackpair *stkp, void *v )
 {
@@ -465,6 +465,49 @@ retframe require_parsebreak( stackpair *stkp, void *v )
 		};
 	return( (retframe){ &require_match, (void*)( &tok ) } );
 }
+retframe require_strmerge( stackpair *stkp, void *v )
+{
+		/* Our reference token. */
+	static token
+		tok =
+		{
+			{
+				TOKTYPE_TOKENGROUP_STRMERGE,
+				0,
+				
+				0, 0, 0, 0
+			},
+			""
+		};
+	return( (retframe){ &require_match, (void*)( &tok ) } );
+}
+	/* ( token* -- token* boolean ) */
+	/* Place 1 on the data stack if the token pointer */
+	/*  points to a preprocessor opening token, else */
+	/*  place 0 on the data stack. */
+retframe require_anystring( stackpair *stkp, void *v )
+{
+	STACKCHECK( stkp,  require_string );
+	
+	token *tok;
+	uintptr_t a, ret = 0;
+	int scratch;
+	
+	STACKPEEK_UINT( stkp->data, 0, a,  require_string, scratch );
+	*tok = (token*)a;
+	
+	if
+	(
+		tok->header.toktype == TOKTYPE_SQSTR ||
+		tok->header.toktype == TOKTYPE_DQSTR
+	)
+	{
+		ret = 1;
+	}
+	
+	STACKPUSH_UINT( stkp->data, ret,  require_string, scratch );
+	RETFRAMEFUNC( stkp,  require_string );
+}
 
 
 
@@ -759,16 +802,8 @@ retframe tokengroup_pushtoken( stackpair *stkp, void *v )
 		/* Peek BENEATH the top of the stack, so that an */
 		/*  error here will leave things least molested. */
 	STACKPEEK_UINT( stkp->data, sizeof( uintptr_t ), grp,  tokengroup_pushtoken, scratch );
-	if( !grp )
-	{
-		???
-	}
 	
 	STACKPOP_UINT( stkp->data, tok,  tokengroup_pushtoken, scratch );
-	if( !tok )
-	{
-		???
-	}
 	
 	
 	tmp = pushto_tokengroup( (tokengroup*)grp, (token_head*)tok );
@@ -793,6 +828,106 @@ retframe tokengroup_dealloc( stackpair *stkp, void *v )
 
 
 
+	/* ( char_parr* char_parr* -- char_parr* 1 ) */
+retframe grow_string_conclude( stackpair *stkp, void *v )
+{
+	STACKCHECK( stkp,  grow_string_conclude );
+	
+	int scratch;
+	uintptr_t tmp;
+	char_parr *tail, *head;
+	
+	
+	
+	STACKPEEK_UINT( stkp->data, 0, tmp,  grow_string_conclude, scratch );
+	tail = (char_parr*)tmp;
+	
+	STACKPEEK_UINT( stkp->data, sizeof( uintptr_t ), tmp,  grow_string_conclude, scratch );
+	head = (char_parr*)tmp;
+	
+	
+	
+		/* We only need one of the terminating nulls, not both. */
+	char_pascalarray_result res = char_pascalarray_build( head->len + tail->len - 1 );
+	char_parr *a;
+#define grow_string_conclude_ONERR1( err ) \
+		???
+	LIB4_MONAD_EITHER_BODYMATCH( res, LIB4_OP_SETa, grow_string_conclude_ONERR1 );
+		/* Copy the two strings together. */
+	memcpy
+		(
+		(void*)( a->body ),
+		(const void*)( head->body ),
+		
+		head->len - 1
+	);
+	memcpy
+		(
+		(void*)( (char*)( a->body ) + ( head->len - 1 ) ),
+		(const void*)( tail->body ),
+		
+		tail->len
+	);
+	
+	
+	
+	lib4_success_result b;
+	
+	STACKPOP_UINT( stkp->data, tmp,  grow_string_conclude, scratch );
+	STACKPOP_UINT( stkp->data, tmp,  grow_string_conclude, scratch );
+	
+	lib4_result res = char_pascalarray_destroy( head );
+#define grow_string_conclude_ONERR2( err ) \
+		???
+	LIB4_MONAD_EITHER_BODYMATCH( res, LIB4_OP_SETb, grow_string_conclude_ONERR2 );
+	
+	res = char_pascalarray_destroy( tail );
+#define grow_string_conclude_ONERR3( err ) \
+		???
+	LIB4_MONAD_EITHER_BODYMATCH( res, LIB4_OP_SETb, grow_string_conclude_ONERR3 );
+	
+	
+	
+	STACKPUSH_UINT( stkp->data, (uintptr_t)a,  grow_string_conclude, scratch );
+	STACKPUSH_UINT( stkp->data, (uintptr_t)1,  grow_string_conclude, scratch );
+	
+	RETFRAMEFUNC( stkp,  grow_string );
+}
+	/* ( char_parr* token* -- char_parr* ( 1 )|( token* 0 ) ) */
+retframe grow_string( stackpair *stkp, void *v )
+{
+	STACKCHECK( stkp,  grow_string );
+	
+	uintptr_t tok;
+	int scratch;
+	
+	STACKPEEK_UINT( stkp->data, 0, tok,  grow_string, scratch );
+	
+	if
+	(
+		( (token*)tok )->toktype != TOKTYPE_SQSTR &&
+		( (token*)tok )->toktype != TOKTYPE_DQSTR
+	)
+	{
+		STACKPUSH_UINT( stkp->data, (uintptr_t)0,  grow_string, scratch );
+		
+		RETFRAMEFUNC( stkp,  grow_string );
+	}
+	
+	static const retframe_parr seq =
+		(retframe_parr)
+		{
+			4, /* Number of retframes  */
+			{
+					/* ( string-token* -- token* char_parr* ) */
+				(retframe){ &stringtoken2char_parr, (void*)0 },
+				(retframe){ &swap2nd, (void*)0 },
+				(retframe){ &invoke_dealloctoken, (void*)0 },
+				(retframe){ &grow_string_conclude, (void*)0 }
+			}
+		};
+	return( (retframe){ &enqueue_returns, &seq } );
+}
 
 
 
