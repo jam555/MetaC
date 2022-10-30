@@ -1,0 +1,3 @@
+This is a project to create a reimagined version of the common C and C++ preprocessors.
+It is run solely by Jared A. Maddox <absinthdraco@gmail.com>, and is not yet in a
+usable state.
