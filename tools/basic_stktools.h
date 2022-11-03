@@ -88,29 +88,48 @@ retframe vm_datacall( stackpair *stkp, void *v );
 	/* Note that setjump_*() DOES NOT pop the return retframe{} from the */
 	/*  stack, but instead peeks it: use just_run() (or a custom function) */
 	/*  for that retframe, so that you can properly handle that. */
+		/* ( -- 0 ); the next function will be the next retframe on stkp->ret, but */
+		/*  as an exception to the norm it WILL NOT be popped, so that it can later */
+		/*  be executed by longjump(). */
 retframe setjump_callstack( stackpair *stkp, void *v_ );
+		/* (  -- 1 ); additionally, stkp->ret will be rewound to the location */
+		/*  indicated by *( (uintptr_t*)v_ ), before the usual */
+		/*  pop-retstack-for-next-instruction behavior (which is why setjump() */
+		/*  doesn't pop: longjump() will execute the same code as the corresponding */
+		/*  setjump() did, but with a 1 on top of the data stack). */
 retframe longjump_callstack( stackpair *stkp, void *v_ );
 	/* bookmark needs to be the name for a uintptr_t, localname will be the name for */
 	/*  a retframe_parr that can be used with enqueue_returns(). onset_ptr and */
 	/*  onjump_ptr need to be pointers to retframe instances: you should be able to */
 	/*  figure out the purpose yourself. Several names will be constructed with */
 	/*  prefix at the start, and upper-case text continuing afterwards. */
+	/* Note that the user-provided onset and onjump retframes will have to contend */
+	/*  with a uintptr_t on top of the data stack: THEY MUST NOT SCREW AROUND WITH */
+	/*  THIS (ther than to VERY CAREFULLY move stuff underneath it), lest the entire */
+	/*  system break, IT MUST BE ON TOP OF THE STACK UPON BOTH onset{} AND */
+	/*  onjump{}'s RETURNS. Seriously, here there be dragons. */
+	/* Effectively: */
+		/* (retframe){ ???, (void*)&localname } : */
+		/*  (  -- uintptr_t-bookmark ) -> onset ->  ( uintptr_t-bookmark --  ) */
 #define LOCALIZE_SETJUMP( bookmark, prefix, localname,  onset_ptr, onjump_ptr ) \
 	static const retframe_parr \
-		prefix##_ONTRUE = \
+		prefix##_ONJUMP = \
+			(retframe_parr){ 3, { \
+				(retframe){ &drop, (void*)0 }, \
+				(retframe){ &just_run, (void*)( onjump_ptr ) } \
+				(retframe){ &vm_push1, (void*)0 } \
+			} }, \
+		prefix##_ONSET = \
 			(retframe_parr){ 3, { \
 				(retframe){ &drop, (void*)0 }, \
 				(retframe){ &just_run, (void*)( onset_ptr ) }, \
 				(retframe){ &vm_push0, (void*)0 } \
 			} }, \
-		prefix##_ONFALSE = \
-			(retframe_parr){ 1, { \
-				(retframe){ &just_run, (void*)( onjump_ptr ) } \
-			} }, \
 		prefix##_DISPATCH = \
 			(retframe_parr){ 3, { \
-				(retframe){ &run_if, (void*)&( prefix##_ONTRUE ) }, \
-				(retframe){ &run_else, (void*)&( prefix##_ONFALSE ) }, \
+					/* This odd order is to preserve the normal if-else order. */ \
+				(retframe){ &run_if, (void*)&( prefix##_ONJUMP ) }, \
+				(retframe){ &run_else, (void*)&( prefix##_ONSET ) }, \
 				(retframe){ &drop, (void*)0 } \
 			} }, \
 		localname = \

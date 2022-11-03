@@ -49,6 +49,10 @@ with this program; if not, write to the:
 	int is_stdtoken( token_head *th );
 	int is_delimited( token_head *th );
 	int was_freshline( token_head *th );
+		/* ( dest-token_head* src-token_head* -- dest-token_head* src-token_head* ) */
+	retframe vm_tokenhead_setflags( stackpair *stkp, void *v_ );
+		/* ( dest-token_head* src-token_head* -- dest-token_head* src-token_head* ) */
+	retframe vm_tokenhead_setsource( stackpair *stkp, void *v_ );
 		typedef struct deep_toktype
 		{
 			uintptr_t shallow_toktype, virtual_toktype;
@@ -226,6 +230,7 @@ with this program; if not, write to the:
 		#define TOKTYPE_PARSEBREAK ( 0x200 )
 	
 	#define TOKTYPE_NAME ( 3 )
+		#define TOKTYPE_ARGVAL ( 0x300 )
 	#define TOKTYPE_NUMBER ( 4 )
 		#define TOKTYPE_NUMBER_UINT ( 0x400 )
 	

@@ -66,8 +66,16 @@ with this program; if not, write to the:
 		}
 	
 	
+		/* Marks a stack as ready to run. */
 	int enable_loop( stackpair* );
+		/* Executes a stack context. The retframe provided will be */
+		/*  the first function run, and will be altered as execution */
+		/*  proceeds to indicate the next function to run. At the end */
+		/*  of an execution run, it SHOULD already be nulled, but make */
+		/*  sure to check, as this may change in the future. */
 	int run_loop( retframe*,  stackpair* );
+		/* Marks the stack to end execution of run_loop. This is what */
+		/*  sets the run_loop() retframe to null. */
 	retframe end_run( stackpair*, void* );
 	
 		/* Seriously, all it does is return. For when you want */
@@ -78,7 +86,9 @@ with this program; if not, write to the:
 	
 	int init_stack( stackframe *stk );
 	int resize_stack( stackframe *stk,  int deltaChars );
+			/* *res will be set equal to stk->used. */
 		int tellmark_stack( stackframe *stk,  size_t *res );
+			/* stk->used will be set equal to targ. */
 		int rewind_stack( stackframe *stk,  size_t targ );
 	int clear_stack( stackframe *stk );
 	

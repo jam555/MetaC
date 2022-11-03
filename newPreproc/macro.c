@@ -779,6 +779,18 @@ retframe accumulate_string( stackpair *stkp, void *v_ )
 
 
 
+	/* Accumulate the contents of a bracket pair. */
+retframe accumulate_inactivebracketblock( stackpair *stkp, void *v_ )
+{
+	int scratch;
+	
+	STACKCHECK2( stkp, v_,  bracketgather_enter );
+	
+	???
+}
+
+
+
 #if defined( __cplusplus ) && __cplusplus >= 199711L
 	namespace
 	{

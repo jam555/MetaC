@@ -82,6 +82,30 @@ with this program; if not, write to the:
 
 
 
+int validate_tokengroup( tokengroup *tg )
+{
+	if( tg )
+	{
+		if( tg->header.toktype != TOKTYPE_TOKENGROUP_SAMEMERGE )
+		{
+			return( -2 );
+		}
+		
+		if( !( tg->arr ) )
+		{
+			return( -3 );
+		}
+		
+		if( tg->arr->len < tg->used )
+		{
+			return( -4 );
+		}
+		
+		return( 1 );
+	}
+	
+	return( -1 );
+}
 tokengroup* build_tokengroup( size_t elems )
 {
 	tokengroup *ret;

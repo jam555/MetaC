@@ -114,6 +114,67 @@ int was_freshline( token_head *th )
 		/* This is a bad test, but it'll hold for now. */
 	return( !( th->column ) );
 }
+	/* ( dest-token_head* src-token_head* -- dest-token_head* src-token_head* ) */
+retframe vm_tokenhead_setflags( stackpair *stkp, void *v_ )
+{
+	int scratch;
+	
+	STACKCHECK( stkp,  vm_tokenhead_setflags );
+	
+	uintptr_t tmp;
+	
+	STACKPEEK_UINT( &( stkp->data ), 0, tmp,  vm_tokenhead_setflags, scratch );
+	token_head *dest, *src = (token_head*)tmp;
+	if( !src )
+	{
+		???
+	}
+	
+	STACKPEEK_UINT( &( stkp->data ), sizeof( uintptr_t ), tmp,  vm_tokenhead_setflags, scratch );
+	dest = (token_head*)tmp;
+	if( !dest )
+	{
+		???
+	}
+	
+	dest->is_delimited = src->is_delimited;
+	
+	RETFRAMEFUNC( vm_tokenhead_setflags );
+}
+	/* ( dest-token_head* src-token_head* -- dest-token_head* src-token_head* ) */
+retframe vm_tokenhead_setsource( stackpair *stkp, void *v_ )
+{
+	int scratch;
+	
+	STACKCHECK( stkp,  vm_tokenhead_setsource );
+	
+	uintptr_t tmp;
+	
+	STACKPEEK_UINT( &( stkp->data ), 0, tmp,  vm_tokenhead_setsource, scratch );
+	token_head *dest, *src = (token_head*)tmp;
+	if( !src )
+	{
+		???
+	}
+	if( !( src->src ) )
+	{
+		???
+	}
+	
+	STACKPEEK_UINT( &( stkp->data ), sizeof( uintptr_t ), tmp,  vm_tokenhead_setsource, scratch );
+	dest = (token_head*)tmp;
+	if( !dest )
+	{
+		???
+	}
+	
+	++( src->src->refs );
+	dest->src = src->src;
+	dest->line = src->line;
+	dest->column = src->column;
+	
+	RETFRAMEFUNC( vm_tokenhead_setsource );
+}
 deeptoktype_result get_deeptoktype( token_head *th )
 {
 	if( !th )
@@ -194,7 +255,7 @@ retframe token2char_parr( stackpair *stkp, void *v_ )
 	int scratch, res;
 	uintptr_t tmp;
 	
-	STACKPEEK_UINT( &( stkp->data ), 0, tmp,  token2char_parr, scratch )
+	STACKPEEK_UINT( &( stkp->data ), 0, tmp,  token2char_parr, scratch );
 	token *tok = (token*)tmp;
 	
 		/* -1: th was null; otherwise 0 for "fancy token" or 1 for standard token */

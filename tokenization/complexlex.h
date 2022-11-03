@@ -50,6 +50,7 @@ with this program; if not, write to the:
 	
 	
 	
+	int validate_tokengroup( tokengroup *tg );
 	tokengroup* build_tokengroup( size_t elems );
 	int regrow_tokengroup
 	(

@@ -100,16 +100,16 @@ lib4_intresult not_contextspecials( token_head *tok_, context_specials *ctx )
 			(lib4_failure_uipresult){ LIB4_STDERRS_BADARGS_SIMPLE }
 		);
 	}
-	if( !( ctx->breaks ) || !( ctx->end ) )
-	{
-		LIB4_INTRESULT_RETURNFAILURE(
-			(lib4_failure_uipresult){ LIB4_STDERRS_BADARGS_DEEP }
-		);
-	}
 	if( !( ctx->th.toktype == TOKTYPE_CONTEXTSPECIALS ) )
 	{
 		LIB4_INTRESULT_RETURNFAILURE(
 			(lib4_failure_uipresult){ LIB4_STDERRS_BADARGS_COMPLEX }
+		);
+	}
+	if( !( ctx->breaks ) || !( ctx->end ) )
+	{
+		LIB4_INTRESULT_RETURNFAILURE(
+			(lib4_failure_uipresult){ LIB4_STDERRS_BADARGS_DEEP }
 		);
 	}
 	
