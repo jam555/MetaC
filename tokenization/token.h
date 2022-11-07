@@ -256,20 +256,20 @@ with this program; if not, write to the:
 		#define TOKTYPE_DQSTR ( 0x601 )
 	
 	/* Symbols: "7" block. */
-		#define TOKTYPE_SYM_DECREMENT ( 0X700 )
-		#define TOKTYPE_SYM_PLACEDSUB ( 0X701 )
-		#define TOKTYPE_SYM_ELEMEDDEREF ( 0X702 )
-		#define TOKTYPE_SYM_SUBTRACT ( 0x703 )
-		#define TOKTYPE_SYM_COMMENTCL ( 0x704 )
+		#define TOKTYPE_SYM_DECREMENT ( 0X700 ) /* -- */
+		#define TOKTYPE_SYM_PLACEDSUB ( 0X701 ) /* -= */
+		#define TOKTYPE_SYM_ELEMEDDEREF ( 0X702 ) /* -> */
+		#define TOKTYPE_SYM_SUBTRACT ( 0x703 ) /* - */
+		#define TOKTYPE_SYM_COMMENTCL ( 0x704 ) /* It's * / but without the space. */
 		#define TOKTYPE_SYM_DECLCASTCLOSE ( 0x705 )
 		#define TOKTYPE_SYM_ARRCASTCLOSE ( 0x706 )
 		#define TOKTYPE_SYM_CASTCLOSE ( 0x707 )
-		#define TOKTYPE_SYM_PLACEDMULT ( 0x708 )
-		#define TOKTYPE_SYM_MULTIPLY ( 0x709 )
-		#define TOKTYPE_SYM_COMMENTOP ( 0x70A )
-		#define TOKTYPE_SYM_COMMENTLINE ( 0x70B )
-		#define TOKTYPE_SYM_PLACEDDIV ( 0x70C )
-		#define TOKTYPE_SYM_DIVIDE ( 0x70D )
+		#define TOKTYPE_SYM_PLACEDMULT ( 0x708 ) /* *= */
+		#define TOKTYPE_SYM_MULTIPLY ( 0x709 ) /* * */
+		#define TOKTYPE_SYM_COMMENTOP ( 0x70A ) /* It's / * but without the space. */
+		#define TOKTYPE_SYM_COMMENTLINE ( 0x70B ) /* It's / / but without the space. */
+		#define TOKTYPE_SYM_PLACEDDIV ( 0x70C ) /* /= */
+		#define TOKTYPE_SYM_DIVIDE ( 0x70D ) /* / */
 		#define TOKTYPE_SYM_ADDROF ( 0x70E )
 		#define TOKTYPE_SYM_DEREFERENCE ( 0x70F )
 		#define TOKTYPE_SYM_PRECRLCL ( 0x710 ) /* ^} */
@@ -285,12 +285,12 @@ with this program; if not, write to the:
 		#define TOKTYPE_SYM_DECLCRLCL ( 0x71A )
 		#define TOKTYPE_SYM_DECLSQRCL ( 0x71B )
 		#define TOKTYPE_SYM_DECLPARCL ( 0x71C )
-		#define TOKTYPE_SYM_SCOPE ( 0x71D )
-		#define TOKTYPE_SYM_COLON ( 0x71E )
-		#define TOKTYPE_SYM_INCREMENT ( 0x71F )
-		#define TOKTYPE_SYM_PLACEDADD ( 0x720 )
-		#define TOKTYPE_SYM_ADDITION ( 0x721 )
-		#define TOKTYPE_SYM_PLACEDMODULO ( 0x722 )
+		#define TOKTYPE_SYM_SCOPE ( 0x71D ) /* :: */
+		#define TOKTYPE_SYM_COLON ( 0x71E ) /* : */
+		#define TOKTYPE_SYM_INCREMENT ( 0x71F ) /* ++ */
+		#define TOKTYPE_SYM_PLACEDADD ( 0x720 ) /* += */
+		#define TOKTYPE_SYM_ADDITION ( 0x721 ) /* + */
+		#define TOKTYPE_SYM_PLACEDMODULO ( 0x722 ) /* %= */
 		#define TOKTYPE_SYM_MODULO ( 0x723 ) /* % */
 		#define TOKTYPE_SYM_EQUALITY ( 0x724 ) /* == */
 		#define TOKTYPE_SYM_SET ( 0x725 ) /* = */
@@ -298,23 +298,23 @@ with this program; if not, write to the:
 		#define TOKTYPE_SYM_NOT ( 0x727 ) /* ! */
 		#define TOKTYPE_SYM_LESSEREQUAL ( 0x728 ) /* <= */
 		#define TOKTYPE_SYM_LESSERTHAN ( 0x729 ) /* < */
-		#define TOKTYPE_SYM_LOGICAND ( 0x72A )
-		#define TOKTYPE_SYM_PLACEDBINARYAND ( 0x72B )
-		#define TOKTYPE_SYM_BINARYAND ( 0x72C )
-		#define TOKTYPE_SYM_LOGICIOR ( 0x72D )
-		#define TOKTYPE_SYM_PLACEDBINARYIOR ( 0x72E )
-		#define TOKTYPE_SYM_BINARYIOR ( 0x72F )
-		#define TOKTYPE_SYM_QUERY ( 0x730 )
+		#define TOKTYPE_SYM_LOGICAND ( 0x72A ) /* && */
+		#define TOKTYPE_SYM_PLACEDBINARYAND ( 0x72B ) /* &= */
+		#define TOKTYPE_SYM_BINARYAND ( 0x72C ) /* & */
+		#define TOKTYPE_SYM_LOGICIOR ( 0x72D ) /* || */
+		#define TOKTYPE_SYM_PLACEDBINARYIOR ( 0x72E ) /* |= */
+		#define TOKTYPE_SYM_BINARYIOR ( 0x72F ) /* | */
+		#define TOKTYPE_SYM_QUERY ( 0x730 ) /* ? */
 		#define TOKTYPE_SYM_DIVISIVSHIFT ( 0x731 )
 		#define TOKTYPE_SYM_PLACEDDIVISIVSHIFT ( 0x732 )
 		#define TOKTYPE_SYM_MULTIPYSHIFT ( 0x733 )
 		#define TOKTYPE_SYM_PLACEDMULTIPLYSHIFT ( 0x734 )
-		#define TOKTYPE_SYM_CONFUSION ( 0x735 )
-		#define TOKTYPE_SYM_UNKNOWN ( 0x736 )
-		#define TOKTYPE_SYM_CURLYCLOSE ( 0x737 )
-		#define TOKTYPE_SYM_SQUARECLOSE ( 0x738 )
-		#define TOKTYPE_SYM_PARENCLOSE ( 0x739 )
-		#define TOKTYPE_SYM_TILDE ( 0x73A )
+		#define TOKTYPE_SYM_CONFUSION ( 0x735 ) /* ??? */
+		#define TOKTYPE_SYM_UNKNOWN ( 0x736 ) /* I think this is supposed to NOT correspond to a token. */
+		#define TOKTYPE_SYM_CURLYCLOSE ( 0x737 ) /* } */
+		#define TOKTYPE_SYM_SQUARECLOSE ( 0x738 ) /* ] */
+		#define TOKTYPE_SYM_PARENCLOSE ( 0x739 ) /* ) */
+		#define TOKTYPE_SYM_TILDE ( 0x73A ) /* ~ */
 		#define TOKTYPE_SYM_DOT ( 0x73B )
 		#define TOKTYPE_SYM_COMMA ( 0x73C ) /* , */
 		#define TOKTYPE_SYM_BSLASH ( 0x73D )
