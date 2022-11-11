@@ -87,19 +87,27 @@ with this program; if not, write to the:
 	int init_stack( stackframe *stk );
 	int resize_stack( stackframe *stk,  int deltaChars );
 			/* *res will be set equal to stk->used. */
+			/* Otherwise, (  --  ) */
 		int tellmark_stack( stackframe *stk,  size_t *res );
 			/* stk->used will be set equal to targ. */
+			/* Otherwise, (  --  ) */
 		int rewind_stack( stackframe *stk,  size_t targ );
 	int clear_stack( stackframe *stk );
 	
 	
+		/* ( -- 8bit-val ) */
 	int push_char( stackframe *stk,  char val );
+		/* ( 8bit-val -- ) */
 	int pop_char( stackframe *stk,  char *dest );
+		/* ( 8bit-val -- 8bit-val ) */
 	int peek_char( stackframe *stk,  size_t off,  char *dest );
 	
 	
+		/* ( -- int-val ) */
 	int push_int( stackframe *stk,  int val );
+		/* ( int-val -- ) */
 	int pop_int( stackframe *stk,  int *dest );
+		/* ( int-val -- int-val ) */
 	int peek_int( stackframe *stk,  size_t off,  int *dest );
 	
 	int push_uintptr( stackframe *stk,  uintptr_t val );

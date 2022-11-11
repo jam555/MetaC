@@ -512,6 +512,7 @@ retframe vm_datacall( stackpair *stkp, void *v )
 }
 
 
+	/* ( -- 0 ) */
 retframe setjump_callstack( stackpair *stkp, void *v_ )
 {
 	STACKCHECK2( stkp, v,  bookmark_stack );
@@ -542,6 +543,7 @@ retframe setjump_callstack( stackpair *stkp, void *v_ )
 	}
 	return( ret );
 }
+	/* ( -- 1 ) */
 retframe longjump_callstack( stackpair *stkp, void *v_ )
 {
 	STACKCHECK2( stkp, v,  longjump_callstack );

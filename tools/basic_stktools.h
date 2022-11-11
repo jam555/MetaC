@@ -115,27 +115,39 @@ retframe longjump_callstack( stackpair *stkp, void *v_ );
 	/* Effectively: */
 		/* (retframe){ ???, (void*)&localname } : */
 		/*  (  -- uintptr_t-bookmark ) -> onset ->  ( uintptr_t-bookmark --  ) */
-	??? /* I'm not convinced this is finished, what happens upon a NON-longjump() */
-	/*  return? */
 #define LOCALIZE_SETJUMP( bookmark, prefix, localname,  onset_ptr, onjump_ptr ) \
 	static const retframe_parr \
 		prefix##_ONSET = \
-			(retframe_parr){ 3, { \
+			(retframe_parr){ 4, { \
 				(retframe){ &drop, (void*)0 }, \
 				(retframe){ &just_run, (void*)( onset_ptr ) }, \
-				(retframe){ &vm_push0, (void*)0 } \
+				(retframe){ &vm_push2, (void*)0 }, \
+					/* We've exited onset_ptr successfully, so we'll be seeing a */ \
+					/*  SECOND pass through prefix##_DISPATCH, thus we'll need */ \
+					/*  TWO "surpress" values/flags instead of just one. */ \
+					/*  prefix##_ONJUMP doesn't deal with this, because it */ \
+					/*  forcefully drops back through the first pass and only */ \
+					/*  deals with the second pass. */ \
+				(retframe){ &vm_push2, (void*)0 } \
 			} }, \
 		prefix##_ONJUMP = \
 			(retframe_parr){ 3, { \
 				(retframe){ &drop, (void*)0 }, \
-				(retframe){ &just_run, (void*)( onjump_ptr ) } \
+				(retframe){ &just_run, (void*)( onjump_ptr ) }, \
+					/* This push is just here because the drop at the end of */ \
+					/*  prefix##_DISPATCH is gonna delete something, so we need a */ \
+					/*  sacrificial value. */ \
 				(retframe){ &vm_push1, (void*)0 } \
 			} }, \
 		prefix##_DISPATCH = \
 			(retframe_parr){ 3, { \
 				(retframe){ &run_on0, (void*)&( prefix##_ONSET ) }, \
 				(retframe){ &run_on1, (void*)&( prefix##_ONJUMP ) }, \
-					??? /* Insert the "normal exit" case here! */ \
+					/* If setjump() was just run, then on0() will run. If */ \
+					/*  longjump() kicked us back to here, then on1() will run. */ \
+					/*  If onset_ptr returned normally, then the two instances */ \
+					/*  of "2" on the stack will allow the current run and the */ \
+					/*  non-removed run of this script to both be surpressed. */ \
 				(retframe){ &drop, (void*)0 } \
 			} }, \
 		localname = \
@@ -146,7 +158,3 @@ retframe longjump_callstack( stackpair *stkp, void *v_ );
 				(retframe){ &just_run, (void*)&( prefix##_DISPATCH ) }, \
 				(retframe){ &vm_popdata, &( bookmark ) } \
 			} };
-retframe run_on0( stackpair *stkp, void *v );
-retframe run_on1( stackpair *stkp, void *v );
-retframe run_on2( stackpair *stkp, void *v );
-retframe run_on3( stackpair *stkp, void *v );

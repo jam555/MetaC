@@ -145,6 +145,7 @@ genname_parr *freshline, *inline;
 	/* (  --  ) */
 retframe phase1_comonexec( stackpair *stkp, void *v_ )
 {
+	int scratch;
 	STACKCHECK2( stkp, v_,  phase1_comonexec );
 	
 	???

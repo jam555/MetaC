@@ -1,0 +1,220 @@
+
+	
+typedef struct _errorhooks
+{
+	retframe plainerr, parenerr, curlerr, sqarerr;
+	
+} _errorhooks;
+static _errorhooks hooks;
+int _errorhooks_swapdefaults( _errorhooks *alt )
+{
+	if( alt )
+	{
+		retframe swap;
+		
+		swap = hooks.plainerr;
+		hooks.plainerr = alt->plainerr;
+		alt->plainerr = swap;
+		
+		swap = hooks.parenerr;
+		hooks.parenerr = alt->parenerr;
+		alt->plainerr = swap;
+		
+		swap = hooks.curlerr;
+		hooks.curlerr = alt->curlerr;
+		alt->curlerr = swap;
+		
+		swap = hooks.sqarerr;
+		hooks.sqarerr = alt->sqarerr;
+		alt->sqarerr = swap;
+		
+		return( 1 );
+	}
+	
+	return( -1 );
+}
+
+typedef struct _specials
+{
+	token_head th;
+	
+	tokhdptr_parr *breaks, *bads, *starts;
+	token_head *start, *end;
+	
+	uintptr_t bookmark;
+	
+} _specials;
+#define INIT__SPECIALS( tokhead,  brkparr, badparr, strtparr,  strtthead, endthead ) \
+	(_specials){ (tokhead),  &(brkparr), &(badparr), &(strtparr),  &(strtthead), &(endthead),  0 }
+retframe _exit( stackpair *stkp, void *v_ )
+{
+	???
+	
+	if( !_errorhooks_swapdefaults( (_errorhooks*)v_ ) )
+	{
+		???
+	}
+	
+	???
+}
+	/* ( token* -- ( token* 0 ) | ( tokengroup* 1 ) | ( tokengroup* 2 ) ) */
+	/* v_ must point to an _errorhooks instance, and that instance MUST be */
+	/*  allocated on the stack. If it's statically allocated, then things */
+	/*  will irrevocably break. */
+retframe _entry( stackpair *stkp, void *v_ )
+{
+	static token_head
+		parenplain = INIT_TOKENHEAD( TOKTYPE_OPPAR, 0,  0,  0, 0, 0 ), /* ( */
+		parenup = INIT_TOKENHEAD( TOKTYPE_OPPARUP, 0,  0,  0, 0, 0 ), /* (^ */
+		curlup = INIT_TOKENHEAD( TOKTYPE_OPCRLUP, 0,  0,  0, 0, 0 ), /* {^ */
+		sqarup = INIT_TOKENHEAD( TOKTYPE_OPSQRUP, 0,  0,  0, 0, 0 ), /* [^ */
+		
+		plainparen = INIT_TOKENHEAD( TOKTYPE_SYM_PARENCLOSE, 0,  0,  0, 0, 0 ), /* ) */
+		upparen = INIT_TOKENHEAD( TOKTYPE_SYM_PREPARCL, 0,  0,  0, 0, 0 ), /* ^) */
+		upcurl = INIT_TOKENHEAD( TOKTYPE_SYM_PRECRLCL, 0,  0,  0, 0, 0 ), /* ^} */
+		upsqar = INIT_TOKENHEAD( TOKTYPE_SYM_PRESQRCL, 0,  0,  0, 0, 0 ), /* ^] */
+		
+		comma = INIT_TOKENHEAD( TOKTYPE_SYM_COMMA, 0,  0,  0, 0, 0 ); /* , */
+	
+#define _entry_DEF_tokhdptr_parr( ... ) \
+		LIB4_DEFINE_PASCALARRAY_LITERAL2( tokenheadptr_, token_head*, __VA_ARGS__ )
+	static tokhdptr_parr
+		nobreaks = _entry_DEF_tokhdptr_parr(  ),
+		commabreaks = _entry_DEF_tokhdptr_parr( &comma ),
+		
+		plainbads = _entry_DEF_tokhdptr_parr( upparen, upcurl, upsqar ),
+		parenbads = _entry_DEF_tokhdptr_parr( plainparen, upcurl, upsqar ),
+		curlbads = _entry_DEF_tokhdptr_parr( plainparen, upparen, upsqar ),
+		sqarbads = _entry_DEF_tokhdptr_parr( plainparen, upparen, upcurl ),
+		
+		starters = _entry_DEF_tokhdptr_parr( parenplain, parenup, curlup, sqarup );
+	
+	
+	
+	
+	???
+	
+	
+	
+	
+	
+	
+	
+	static _specials
+		plainspecs = INIT__SPECIALS( tokhead ???,  nobreaks, plainbads, starters,  parenplain, plainparen ),
+		parenspecs = INIT__SPECIALS( tokhead ???,  commabreaks, parenbads, starters,  parenup, upparen ),
+		curlspecs = INIT__SPECIALS( tokhead ???,  commabreaks, curlbads, starters,  curlup, upcurl ),
+		sqarspecs = INIT__SPECIALS( tokhead ???,  commabreaks, sqarbads, starters,  sqarup, upsqar );
+	
+	
+	static retframe_parr
+			/* (
+				token* bookmark --
+					bookmark token* --
+					... --
+				( token* 0 ) | ( tokengroup* 1 ) | ( tokengroup* tokengroup* token* 2 )
+			) */
+		onset_ =
+			(retframe_parr)
+			{
+				3, /* Number of retframes  */
+				{
+						/* ( token* bookmark -- bookmark token* ) */
+					(retframe){ &swap2nd, (void*)0 },
+						(retframe){ &just_run, (void*)0 },
+					(retframe){ &_exit, (void*)0 }
+				}
+			},
+		
+			/* ( tokengroup* tokengroup* token* ( 2 ??? ) bookmark -- tokengroup* 2 bookmark ) */
+		onerr_ =
+			(retframe_parr)
+			{
+				???, /* Number of retframes  */
+				{
+					/* The file-static named "hooks" should hold */
+					/*  all of the hooks that we need for this. */
+					/*  SHOULD. Maybe review it to make certain */
+					/*  that it actually does. */
+					
+					???
+				}
+			};
+	
+		/* Remember, the adjusted stuff will get handed directly to */
+		/*  enqueue_returns(): it'll be dealt with before there's a */
+		/*  chance of the value getting changed again. */
+#fefine _entry_RETURN_ONSET( hookname, localname ) \
+		onset_.body[ 1 ].data = (void*)&( hookname ); \
+		onset_.body[ 2 ].data = v_; \
+		return( (retframe){ &enqueue_returns, (void*)&localname } );
+	
+	retframe
+		onset = { &enqueue_returns, (void*)&onset_ },
+		
+		plain_onerr = { &, (void*)0 },
+		paren_onerr = { &, (void*)0 },
+		curl_onerr = { &, (void*)0 },
+		sqar_onerr = { &, (void*)0 },
+		
+		??? ;
+	
+	
+		/* bookmark needs to be the name for a uintptr_t, localname will be the name for */
+		/*  a retframe_parr that can be used with enqueue_returns(). onset_ptr and */
+		/*  onjump_ptr need to be pointers to retframe instances: you should be able to */
+		/*  figure out the purpose yourself. Several names will be constructed with */
+		/*  prefix at the start, and upper-case text continuing afterwards. */
+		/* Note that the user-provided onset and onjump retframes will have to contend */
+		/*  with a uintptr_t on top of the data stack: THEY MUST NOT SCREW AROUND WITH */
+		/*  THIS (other than to VERY CAREFULLY move stuff underneath it), lest the */
+		/*  entire system break, IT MUST BE ON TOP OF THE STACK UPON BOTH onset{} AND */
+		/*  onjump{}'s RETURNS. Seriously, here there be dragons. */
+		/* Effectively: */
+			/* (retframe){ &enqueue_returns, (void*)&localname } : */
+			/*  (  -- uintptr_t-bookmark ) -> onset ->  ( uintptr_t-bookmark --  ) */
+	LOCALIZE_SETJUMP( plainspecs.bookmark, plaincallable, plainspace,  &onset, &plain_onerr );
+	LOCALIZE_SETJUMP( parenspecs.bookmark, parencallable, parenspace,  &onset, &paren_onerr );
+	LOCALIZE_SETJUMP( curlspecs.bookmark, curlcallable, curlspace,  &onset, &curl_onerr );
+	LOCALIZE_SETJUMP( sqarspecs.bookmark, sqarcallable, sqarspace,  &onset, &sqar_onerr );
+	
+	
+	int scratch;
+	STACKCHECK2( stkp, v_,  _entry );
+	
+	
+	if( ( (*_errorhooks)v_ )->th.toktype != ??? )
+	{
+		???
+	}
+	if( !_errorhooks_swapdefaults( (_errorhooks*)v_ ) )
+	{
+		???
+	}
+	
+	
+	uintptr_t tok;
+	STACKPEEK_UINT( &( stkp->data ), 0, tok,  _entry, scratch );
+	token_head *th = (token_head*)tok;
+	if( !th )
+	{
+		???
+	}
+	
+	switch( th->toktype )
+	{
+		case TOKTYPE_OPPAR: /* ( */
+			_entry_RETURN_ONSET( plainspecs, plaincallable );
+			
+		case TOKTYPE_OPPARUP: /* (^ */
+			_entry_RETURN_ONSET( parenspecs, parencallable );
+		case TOKTYPE_OPCRLUP: /* {^ */
+			_entry_RETURN_ONSET( curlspecs, curlcallable );
+		case TOKTYPE_OPSQRUP: /* [^ */
+			_entry_RETURN_ONSET( sqarspecs, sqarcallable );
+			
+			
+		default:
+			???
+	}
+}
