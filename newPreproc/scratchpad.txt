@@ -61,6 +61,8 @@ retframe _exit( stackpair *stkp, void *v_ )
 	/* v_ must point to an _errorhooks instance, and that instance MUST be */
 	/*  allocated on the stack. If it's statically allocated, then things */
 	/*  will irrevocably break. */
+	/* Actually, no, it CAN'T be on the stack because of how the runloop */
+	/*  will call THIS function... */
 retframe _entry( stackpair *stkp, void *v_ )
 {
 	static token_head
@@ -217,4 +219,457 @@ retframe _entry( stackpair *stkp, void *v_ )
 		default:
 			???
 	}
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+typedef struct vm_divertthread_info vm_divertthread_info;
+typedef retframe (*vm_divertthread_earlyexit_ptr)( stackpair*, vm_divertthread_info*, unsigned );
+typedef struct vm_divertthread_callerinfo
+{
+		/* The user deals with this, the system doesn't actually care. */
+	uintptr_t user_typeid;
+	
+		/* Acts as vm_divertthread_exit(), but for when using longjump() to */
+		/*  jump past EARLIER setjump() instances. */
+	struct
+	{
+		vm_divertthread_earlyexit_ptr handle;
+		vm_divertthread_info *data;
+		
+	} earlyexit;
+	
+	retframe longjump;
+	
+} vm_divertthread_callerinfo;
+int push_vm_divertthread_callerinfo( stackframe *stk, vm_divertthread_callerinfo val )
+{
+	if( !stk )
+	{
+		return( LIB4_STDERRS_BADARGS_SIMPLE );
+	}
+	
+	
+	int res = push_retframe( stk,  val.longjump );
+	if( !res )
+	{
+			/* Yes, we're numbering errors in reverse. */
+		return( res - 3 );
+	}
+	
+	if( !push_uintptr( stk,  (uintptr_t)( val.earlyexit.data ) ) )
+	{
+		return( LIB4_STDERRS_BADARGS_SIMPLE - 3 );
+	}
+	if( !push_uintptr( stk,  (uintptr_t)( val.earlyexit.handle ) ) )
+	{
+		return( LIB4_STDERRS_BADARGS_SIMPLE - 2 );
+	}
+	if( !push_uintptr( stk,  val.user_typeid ) )
+	{
+		return( LIB4_STDERRS_BADARGS_SIMPLE - 1 );
+	}
+	
+	
+	return( 1 );
+}
+int peek_vm_divertthread_callerinfo( stackframe *stk,  size_t off,  vm_divertthread_callerinfo *val, uintptr_t *user_typeid )
+{
+	if( val || user_typeid )
+	{
+		uintptr_t tmp;
+		
+		int res = peek_uintptr( stk,  off,  &tmp );
+		if( !res )
+		{
+			return( res );
+		}
+		if( user_typeid )
+		{
+			*user_typeid = tmp;
+		}
+		if( val )
+		{
+			val->user_typeid = tmp;
+			
+			res = peek_uintptr( stk,  off + sizeof( uintptr_t ),  &tmp );
+			if( res == LIB4_STDERRS_BADARGS_SIMPLE )
+			{
+					/* How?!? */
+				return( -sizeof( uintptr_t ) * 1 );
+			}
+			if( !res )
+			{
+				return( res - ( sizeof( uintptr_t ) * 1 + 1 ) );
+			}
+			val->earlyexit.handle = (vm_divertthread_earlyexit_ptr)tmp;
+			
+			res = peek_uintptr( stk,  off + sizeof( uintptr_t ) * 2,  &tmp );
+			if( res == LIB4_STDERRS_BADARGS_SIMPLE )
+			{
+					/* How?!? */
+				return( -sizeof( uintptr_t ) * 2 );
+			}
+			if( !res )
+			{
+				return( res - ( sizeof( uintptr_t ) * 2 + 1 ) );
+			}
+			val->earlyexit.data = (vm_divertthread_info*)tmp;
+			
+			res = peek_retframe( stk,  off + sizeof( uintptr_t ) * 3,  &( val->longjump ) );
+			if( !res )
+			{
+				return( res - sizeof( uintptr_t ) * 3 );
+			}
+		}
+		
+		return( 1 );
+	}
+	
+	return( LIB4_STDERRS_BADARGS_SIMPLE );
+}
+int pop_vm_divertthread_callerinfo( stackframe *stk,  vm_divertthread_callerinfo *val )
+{
+	if( val )
+	{
+		uintptr_t tmp;
+		
+		
+		int res = pop_uintptr( stk,  &tmp );
+		if( !res )
+		{
+			return( res );
+		}
+		val->user_typeid = tmp;
+		
+		res = pop_uintptr( stk,  &tmp );
+		if( res == LIB4_STDERRS_BADARGS_SIMPLE )
+		{
+				/* How?!? */
+			return( -sizeof( uintptr_t ) * 1 );
+		}
+		if( !res )
+		{
+			return( res - ( sizeof( uintptr_t ) * 1 + 1 ) );
+		}
+		val->earlyexit.handle = (vm_divertthread_earlyexit_ptr)tmp;
+		
+		res = pop_uintptr( stk,  &tmp );
+		if( res == LIB4_STDERRS_BADARGS_SIMPLE )
+		{
+				/* How?!? */
+			return( -sizeof( uintptr_t ) * 2 );
+		}
+		if( !res )
+		{
+			return( res - ( sizeof( uintptr_t ) * 2 + 1 ) );
+		}
+		val->earlyexit.data = (vm_divertthread_info*)tmp;
+		
+		res = pop_retframe( stk,  &( val->longjump ) );
+		if( !res )
+		{
+			return( res - sizeof( uintptr_t ) * 3 );
+		}
+		
+		
+		return( 1 );
+	}
+	
+	return( LIB4_STDERRS_BADARGS_SIMPLE );
+}
+
+	/* Build some push()/peek()/pop() functions for this. */
+struct vm_divertthread_info
+{
+	uintptr_t bookmark;
+		/* Both of these functions MUST comply with the following function */
+		/*  signature: */
+			/* ( ???1 bookmark -- ???2 bookmark ) */
+		/*  What is under "bookmark" DOES NOT matter, but "bookmark" WILL */
+		/*  BE on top upon entry, and MUST BE on top AND UNALTERED upon */
+		/*  exit, lest the entire system break. This is NOT a small thing, */
+		/*  it can completely screw up the stack. */
+	framefunc setfunc, jumpfunc;
+	vm_divertthread_callerinfo *recepdata;
+};
+int push_vm_divertthread_info( stackframe *stk, vm_divertthread_info val )
+{
+	if( !stk )
+	{
+		return( LIB4_STDERRS_BADARGS_SIMPLE );
+	}
+	
+	
+	if( !push_uintptr( stk,  (uintptr_t)( val.recepdata ) ) )
+	{
+		return( LIB4_STDERRS_BADARGS_SIMPLE - sizeof( uintptr_t ) * 3 );
+	}
+	
+	int res = push_retframe( stk,  val.setfunc );
+	if( !res )
+	{
+			/* Yes, we're numbering errors in reverse. */
+		return( res - sizeof( uintptr_t ) * 2 );
+	}
+	res = push_retframe( stk,  val.jumpfunc );
+	if( !res )
+	{
+			/* Yes, we're numbering errors in reverse. */
+		return( res - sizeof( uintptr_t ) * 1 );
+	}
+	
+	if( !push_uintptr( stk,  val.bookmark ) )
+	{
+		return( LIB4_STDERRS_BADARGS_SIMPLE - 1 );
+	}
+	
+	
+	return( 1 );
+}
+int peek_vm_divertthread_info( stackframe *stk,  size_t off,  vm_divertthread_info *val )
+{
+	if( val )
+	{
+		int res = peek_uintptr( stk,  off,  &( val->bookmark ) );
+		if( !res )
+		{
+			return( res );
+		}
+		
+		res = peek_retframe( stk,  off + sizeof( uintptr_t ) * 1,  &( val->jumpfunc ) );
+		if( !res )
+		{
+			return( res - sizeof( uintptr_t ) * 1 );
+		}
+		
+		res = peek_retframe( stk,  off + sizeof( uintptr_t ) * 3,  &( val->setfunc ) );
+		if( !res )
+		{
+			return( res - sizeof( uintptr_t ) * 2 );
+		}
+		
+		uintptr_t tmp;
+		res = peek_uintptr( stk,  off + sizeof( uintptr_t ) * 5,  &tmp );
+		if( !res )
+		{
+			return( res - sizeof( uintptr_t ) * 3 );
+		}
+		val->recepdata = (vm_divertthread_callerinfo*)tmp;
+		
+		
+		return( 1 );
+	}
+	
+	return( LIB4_STDERRS_BADARGS_SIMPLE );
+}
+int pop_vm_divertthread_info( stackframe *stk,  vm_divertthread_info *val )
+{
+	if( val )
+	{
+		int res = pop_uintptr( stk,  &( val->bookmark ) );
+		if( !res )
+		{
+			return( res );
+		}
+		
+		res = pop_retframe( stk,  &( val->jumpfunc ) );
+		if( !res )
+		{
+			return( res - sizeof( uintptr_t ) * 1 );
+		}
+		
+		res = pop_retframe( stk,  &( val->setfunc ) );
+		if( !res )
+		{
+			return( res - sizeof( uintptr_t ) * 2 );
+		}
+		
+		uintptr_t tmp;
+		res = pop_uintptr( stk,  &tmp );
+		if( !res )
+		{
+			return( res - sizeof( uintptr_t ) * 3 );
+		}
+		val->recepdata = (vm_divertthread_callerinfo*)tmp;
+		
+		
+		return( 1 );
+	}
+	
+	return( LIB4_STDERRS_BADARGS_SIMPLE );
+}
+
+static vm_divertthread_info hooks;
+int vm_divertthread_adjust( vm_divertthread_info *alt )
+{
+	if( alt )
+	{
+		framefunc swap;
+		
+		swap = alt->setfunc;
+		alt->setfunc = hooks.setfunc;
+		hooks.setfunc = swap;
+		
+		swap = alt->jumpfunc;
+		alt->jumpfunc = hooks.jumpfunc;
+		hooks.jumpfunc = swap;
+		
+		
+		vm_divertthread_callerinfo *recepdata = alt->recepdata;
+		alt->recepdata = hooks.recepdata;
+		hooks.recepdata = recepdata;
+		
+		return( 1 );
+	}
+	
+	return( -1 );
+}
+	/* ( bookmark data -- data bookmark ) */
+retframe vm_divertthread_exit( stackpair *stkp, void *v_ )
+{
+	int scratch;
+	STACKCHECK2( stkp, v_,  vm_divertthread_exit );
+	
+	
+		/* ( bookmark data[count] count -- ... ) */
+	uintptr_t count;
+	STACKPOP_UINT( &( stkp->data ), count,  vm_divertthread_exit, scratch );
+	
+	return( vm_divertthread_earlyexit( stkp, (vm_divertthread_info*)v_, count ) );
+}
+		/* Acts as vm_divertthread_exit(), but for when using */
+		/*  longjump() to jump past EARLIER setjump() instances. */
+		/*  Provided as a retframe in caller???->earlyexit */
+		/* ( bookmark data[count] -- data[count] bookmark ) */
+	retframe vm_divertthread_earlyexit( stackpair *stkp, vm_divertthread_info *v, unsigned count )
+	{
+		int scratch;
+		STACKCHECK2( stkp, v,  vm_divertthread_earlyexit );
+		
+		
+			/* Transfer loop. */
+		uintptr_t iter;
+			iter = 0;
+			while( iter < count )
+			{
+					/* Move from normal stack to shuffle stack. */
+				???
+				
+				++iter;
+			}
+				uintptr_t bookmark;
+				STACKPOP_UINT( &( stkp->data ), bookmark,  vm_divertthread_earlyexit, scratch );
+			iter = 0;
+			while( iter < count )
+			{
+					/* Move from shuffle stack to normal stack. */
+				???
+				
+				++iter;
+			}
+		STACKPUSH_UINT( &( stkp->data ), (uintptr_t)bookmark,  vm_divertthread_earlyexit, scratch );
+		
+		
+		if( !vm_divertthread_adjust( v ) )
+		{
+			???
+		}
+		
+		
+		RETFRAMEFUNC( vm_divertthread_earlyexit );
+	}
+retframe vm_divertthread( stackpair *stkp, void *v_ )
+{
+			/* (
+				token* bookmark --
+					bookmark token* --
+					... --
+				( token* 0 ) | ( tokengroup* 1 ) | ( tokengroup* tokengroup* token* 2 )
+			) */
+	static retframe_parr
+		onset_ =
+			(retframe_parr)
+			{
+				3, /* Number of retframes  */
+				{
+						/* ( uintptr_t bookmark -- bookmark uintptr_t ) */
+					(retframe){ &swap2nd, (void*)0 },
+						(retframe){ &just_run, (void*)0 },
+					(retframe){ &vm_divertthread_exit, (void*)0 }
+				}
+			};
+	
+		/* Remember, the adjusted stuff will get handed directly to */
+		/*  enqueue_returns(): it'll be dealt with before there's a */
+		/*  chance of the value getting changed again. */
+#fefine vm_divertthread_ADJUST_ONSET() \
+		onset_.body[ 1 ].data = (void*)&( v->setfunc ); \
+		onset_.body[ 2 ].data = v_;
+	
+	static retframe
+		onset = { &enqueue_returns, (void*)&onset_ },
+		onjump = { &just_run, (void*)&( hooks.jumpfunc ) };
+	
+	
+		/* The bookmark gets used to store the value of the return stack size. */
+		/* "callable" gets used as follows: */
+			/* (retframe){ &enqueue_returns, (void*)&localname } : */
+			/*  (  -- uintptr_t-bookmark ) -> onset ->  ( uintptr_t-bookmark --  ) */
+		/* "space" gets prefixed to the start of several variables that */
+		/*  LOCALIZE_SETJUMP() creates: you don't directly use ANY of these. */
+		/* onset and onjump are pointers to retframe instances with obvious purposes. */
+		/* Note that the onset and onjump retframes have to contend with a uintptr_t */
+		/*  on top of the data stack: THEY MUST NOT SCREW AROUND WITH THIS (other than */
+		/*  to VERY CAREFULLY move stuff underneath it), lest the entire system break, */
+		/*  IT MUST BE ON TOP OF THE STACK UPON BOTH onset{} AND onjump{}'s RETURNS. */
+		/*  Seriously, here there be dragons. */
+	LOCALIZE_SETJUMP( v->bookmark, callable, space,  &onset, &onjump );
+	
+	
+	int scratch;
+	STACKCHECK2( stkp, v_,  vm_divertthread );
+	
+	if( !v_ )
+	{
+		???
+	}
+	vm_divertthread_info *v = (vm_divertthread_info*)v_;
+	if( v->recepdata )
+	{
+		v->recepdata->earlyexit.handle = &vm_divertthread_earlyexit;
+			/* Yes, the vm_divertthread_info pointer submitted as our v_ IS */
+			/*  correct, because it's needed so that it's values can be swapped */
+			/*  with hook's values... */
+		v->recepdata->earlyexit.data = v;
+	}
+	
+		/* Swap hook's values with *v's values: this will be reversed by either */
+		/*  vm_divertthread_exit() or vm_divertthread_earlyexit() at a later date, */
+		/*  to preserve a sort of longjump() stack. */
+	if( !vm_divertthread_adjust( v ) )
+	{
+		???
+	}
+	
+	vm_divertthread_ADJUST_ONSET();
+	return( (retframe){ &enqueue_returns, (void*)&callable } );
 }
