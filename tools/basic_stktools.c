@@ -833,9 +833,9 @@ int divertthread_adjust( divertthread_info *alt )
 	
 	return( -1 );
 }
-		/* Acts as vm_divertthread_exit(), but for when using */
+		/* Acts as divertthread_exit(), but for when using */
 		/*  longjump() to jump past EARLIER setjump() instances. */
-		/*  Provided as a retframe in caller???->earlyexit */
+		/*  Provided as a retframe in divertthread_callerinfo->earlyexit */
 		/* ( bookmark data[count] -- data[count] bookmark ) */
 	retframe divertthread_earlyexit( stackpair *stkp, divertthread_info *v, unsigned count )
 	{
@@ -889,6 +889,8 @@ retframe divertthread_exit( stackpair *stkp, void *v_ )
 }
 retframe divertthread( stackpair *stkp, void *v_ )
 {
+				/* This commenmt should be replaced- this code is no longer */
+				/*  tied to a bracket accumulator. */
 			/* (
 				token* bookmark --
 					bookmark token* --
@@ -915,6 +917,8 @@ retframe divertthread( stackpair *stkp, void *v_ )
 		onset_.body[ 1 ].data = (void*)&( v->setfunc ); \
 		onset_.body[ 2 ].data = v_;
 	
+		/* These two should only be tied to statically allocated objects, so I */
+		/*  expect them to both be fine. */
 	static retframe
 		onset = { &enqueue_returns, (void*)&onset_ },
 		onjump = { &just_run, (void*)&( hooks.jumpfunc ) };
@@ -946,15 +950,15 @@ retframe divertthread( stackpair *stkp, void *v_ )
 	if( v->recepdata )
 	{
 		v->recepdata->earlyexit.handle = &divertthread_earlyexit;
-			/* Yes, the vm_divertthread_info pointer submitted as our v_ IS */
+			/* Yes, the divertthread_info pointer submitted as our v_ IS */
 			/*  correct, because it's needed so that it's values can be swapped */
 			/*  with hook's values... */
 		v->recepdata->earlyexit.data = v;
 	}
 	
 		/* Swap hook's values with *v's values: this will be reversed by either */
-		/*  vm_divertthread_exit() or vm_divertthread_earlyexit() at a later date, */
-		/*  to preserve a sort of longjump() stack. */
+		/*  divertthread_exit() or divertthread_earlyexit() at a later date, to */
+		/*  preserve a sort of longjump() stack. */
 	if( !divertthread_adjust( v ) )
 	{
 		???
