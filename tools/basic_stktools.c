@@ -564,7 +564,7 @@ retframe longjump_callstack( stackpair *stkp, void *v_ )
 
 
 
-int push_vm_divertthread_callerinfo( stackframe *stk, vm_divertthread_callerinfo val )
+int push_divertthread_callerinfo( stackframe *stk, divertthread_callerinfo val )
 {
 	if( !stk )
 	{
@@ -595,7 +595,7 @@ int push_vm_divertthread_callerinfo( stackframe *stk, vm_divertthread_callerinfo
 	
 	return( 1 );
 }
-int peek_vm_divertthread_callerinfo( stackframe *stk,  size_t off,  vm_divertthread_callerinfo *val, uintptr_t *user_typeid )
+int peek_divertthread_callerinfo( stackframe *stk,  size_t off,  divertthread_callerinfo *val, uintptr_t *user_typeid )
 {
 	if( val || user_typeid )
 	{
@@ -624,7 +624,7 @@ int peek_vm_divertthread_callerinfo( stackframe *stk,  size_t off,  vm_divertthr
 			{
 				return( res - ( sizeof( uintptr_t ) * 1 + 1 ) );
 			}
-			val->earlyexit.handle = (vm_divertthread_earlyexit_ptr)tmp;
+			val->earlyexit.handle = (divertthread_earlyexit_ptr)tmp;
 			
 			res = peek_uintptr( stk,  off + sizeof( uintptr_t ) * 2,  &tmp );
 			if( res == LIB4_STDERRS_BADARGS_SIMPLE )
@@ -636,7 +636,7 @@ int peek_vm_divertthread_callerinfo( stackframe *stk,  size_t off,  vm_divertthr
 			{
 				return( res - ( sizeof( uintptr_t ) * 2 + 1 ) );
 			}
-			val->earlyexit.data = (vm_divertthread_info*)tmp;
+			val->earlyexit.data = (divertthread_info*)tmp;
 			
 			res = peek_retframe( stk,  off + sizeof( uintptr_t ) * 3,  &( val->longjump ) );
 			if( !res )
@@ -650,7 +650,7 @@ int peek_vm_divertthread_callerinfo( stackframe *stk,  size_t off,  vm_divertthr
 	
 	return( LIB4_STDERRS_BADARGS_SIMPLE );
 }
-int pop_vm_divertthread_callerinfo( stackframe *stk,  vm_divertthread_callerinfo *val )
+int pop_divertthread_callerinfo( stackframe *stk,  divertthread_callerinfo *val )
 {
 	if( val )
 	{
@@ -674,7 +674,7 @@ int pop_vm_divertthread_callerinfo( stackframe *stk,  vm_divertthread_callerinfo
 		{
 			return( res - ( sizeof( uintptr_t ) * 1 + 1 ) );
 		}
-		val->earlyexit.handle = (vm_divertthread_earlyexit_ptr)tmp;
+		val->earlyexit.handle = (divertthread_earlyexit_ptr)tmp;
 		
 		res = pop_uintptr( stk,  &tmp );
 		if( res == LIB4_STDERRS_BADARGS_SIMPLE )
@@ -686,7 +686,7 @@ int pop_vm_divertthread_callerinfo( stackframe *stk,  vm_divertthread_callerinfo
 		{
 			return( res - ( sizeof( uintptr_t ) * 2 + 1 ) );
 		}
-		val->earlyexit.data = (vm_divertthread_info*)tmp;
+		val->earlyexit.data = (divertthread_info*)tmp;
 		
 		res = pop_retframe( stk,  &( val->longjump ) );
 		if( !res )
@@ -701,7 +701,7 @@ int pop_vm_divertthread_callerinfo( stackframe *stk,  vm_divertthread_callerinfo
 	return( LIB4_STDERRS_BADARGS_SIMPLE );
 }
 
-int push_vm_divertthread_info( stackframe *stk, vm_divertthread_info val )
+int push_divertthread_info( stackframe *stk, divertthread_info val )
 {
 	if( !stk )
 	{
@@ -735,7 +735,7 @@ int push_vm_divertthread_info( stackframe *stk, vm_divertthread_info val )
 	
 	return( 1 );
 }
-int peek_vm_divertthread_info( stackframe *stk,  size_t off,  vm_divertthread_info *val )
+int peek_divertthread_info( stackframe *stk,  size_t off,  divertthread_info *val )
 {
 	if( val )
 	{
@@ -763,7 +763,7 @@ int peek_vm_divertthread_info( stackframe *stk,  size_t off,  vm_divertthread_in
 		{
 			return( res - sizeof( uintptr_t ) * 3 );
 		}
-		val->recepdata = (vm_divertthread_callerinfo*)tmp;
+		val->recepdata = (divertthread_callerinfo*)tmp;
 		
 		
 		return( 1 );
@@ -771,7 +771,7 @@ int peek_vm_divertthread_info( stackframe *stk,  size_t off,  vm_divertthread_in
 	
 	return( LIB4_STDERRS_BADARGS_SIMPLE );
 }
-int pop_vm_divertthread_info( stackframe *stk,  vm_divertthread_info *val )
+int pop_divertthread_info( stackframe *stk,  divertthread_info *val )
 {
 	if( val )
 	{
@@ -799,7 +799,7 @@ int pop_vm_divertthread_info( stackframe *stk,  vm_divertthread_info *val )
 		{
 			return( res - sizeof( uintptr_t ) * 3 );
 		}
-		val->recepdata = (vm_divertthread_callerinfo*)tmp;
+		val->recepdata = (divertthread_callerinfo*)tmp;
 		
 		
 		return( 1 );
@@ -808,8 +808,8 @@ int pop_vm_divertthread_info( stackframe *stk,  vm_divertthread_info *val )
 	return( LIB4_STDERRS_BADARGS_SIMPLE );
 }
 
-static vm_divertthread_info hooks;
-int vm_divertthread_adjust( vm_divertthread_info *alt )
+static divertthread_info hooks;
+int divertthread_adjust( divertthread_info *alt )
 {
 	if( alt )
 	{
@@ -824,7 +824,7 @@ int vm_divertthread_adjust( vm_divertthread_info *alt )
 		hooks.jumpfunc = swap;
 		
 		
-		vm_divertthread_callerinfo *recepdata = alt->recepdata;
+		divertthread_callerinfo *recepdata = alt->recepdata;
 		alt->recepdata = hooks.recepdata;
 		hooks.recepdata = recepdata;
 		
@@ -834,26 +834,26 @@ int vm_divertthread_adjust( vm_divertthread_info *alt )
 	return( -1 );
 }
 	/* ( bookmark data -- data bookmark ) */
-retframe vm_divertthread_exit( stackpair *stkp, void *v_ )
+retframe divertthread_exit( stackpair *stkp, void *v_ )
 {
 	int scratch;
-	STACKCHECK2( stkp, v_,  vm_divertthread_exit );
+	STACKCHECK2( stkp, v_,  divertthread_exit );
 	
 	
 		/* ( bookmark data[count] count -- ... ) */
 	uintptr_t count;
-	STACKPOP_UINT( &( stkp->data ), count,  vm_divertthread_exit, scratch );
+	STACKPOP_UINT( &( stkp->data ), count,  divertthread_exit, scratch );
 	
-	return( vm_divertthread_earlyexit( stkp, (vm_divertthread_info*)v_, count ) );
+	return( divertthread_earlyexit( stkp, (divertthread_info*)v_, count ) );
 }
 		/* Acts as vm_divertthread_exit(), but for when using */
 		/*  longjump() to jump past EARLIER setjump() instances. */
 		/*  Provided as a retframe in caller???->earlyexit */
 		/* ( bookmark data[count] -- data[count] bookmark ) */
-	retframe vm_divertthread_earlyexit( stackpair *stkp, vm_divertthread_info *v, unsigned count )
+	retframe divertthread_earlyexit( stackpair *stkp, divertthread_info *v, unsigned count )
 	{
 		int scratch;
-		STACKCHECK2( stkp, v,  vm_divertthread_earlyexit );
+		STACKCHECK2( stkp, v,  divertthread_earlyexit );
 		
 		
 			/* Transfer loop. */
@@ -867,7 +867,7 @@ retframe vm_divertthread_exit( stackpair *stkp, void *v_ )
 				++iter;
 			}
 				uintptr_t bookmark;
-				STACKPOP_UINT( &( stkp->data ), bookmark,  vm_divertthread_earlyexit, scratch );
+				STACKPOP_UINT( &( stkp->data ), bookmark,  divertthread_earlyexit, scratch );
 			iter = 0;
 			while( iter < count )
 			{
@@ -876,18 +876,18 @@ retframe vm_divertthread_exit( stackpair *stkp, void *v_ )
 				
 				++iter;
 			}
-		STACKPUSH_UINT( &( stkp->data ), (uintptr_t)bookmark,  vm_divertthread_earlyexit, scratch );
+		STACKPUSH_UINT( &( stkp->data ), (uintptr_t)bookmark,  divertthread_earlyexit, scratch );
 		
 		
-		if( !vm_divertthread_adjust( v ) )
+		if( !divertthread_adjust( v ) )
 		{
 			???
 		}
 		
 		
-		RETFRAMEFUNC( vm_divertthread_earlyexit );
+		RETFRAMEFUNC( divertthread_earlyexit );
 	}
-retframe vm_divertthread( stackpair *stkp, void *v_ )
+retframe divertthread( stackpair *stkp, void *v_ )
 {
 			/* (
 				token* bookmark --
@@ -904,14 +904,14 @@ retframe vm_divertthread( stackpair *stkp, void *v_ )
 						/* ( uintptr_t bookmark -- bookmark uintptr_t ) */
 					(retframe){ &swap2nd, (void*)0 },
 						(retframe){ &just_run, (void*)0 },
-					(retframe){ &vm_divertthread_exit, (void*)0 }
+					(retframe){ &divertthread_exit, (void*)0 }
 				}
 			};
 	
 		/* Remember, the adjusted stuff will get handed directly to */
 		/*  enqueue_returns(): it'll be dealt with before there's a */
 		/*  chance of the value getting changed again. */
-#define vm_divertthread_ADJUST_ONSET() \
+#define divertthread_ADJUST_ONSET() \
 		onset_.body[ 1 ].data = (void*)&( v->setfunc ); \
 		onset_.body[ 2 ].data = v_;
 	
@@ -936,16 +936,16 @@ retframe vm_divertthread( stackpair *stkp, void *v_ )
 	
 	
 	int scratch;
-	STACKCHECK2( stkp, v_,  vm_divertthread );
+	STACKCHECK2( stkp, v_,  divertthread );
 	
 	if( !v_ )
 	{
 		???
 	}
-	vm_divertthread_info *v = (vm_divertthread_info*)v_;
+	divertthread_info *v = (divertthread_info*)v_;
 	if( v->recepdata )
 	{
-		v->recepdata->earlyexit.handle = &vm_divertthread_earlyexit;
+		v->recepdata->earlyexit.handle = &divertthread_earlyexit;
 			/* Yes, the vm_divertthread_info pointer submitted as our v_ IS */
 			/*  correct, because it's needed so that it's values can be swapped */
 			/*  with hook's values... */
@@ -955,12 +955,12 @@ retframe vm_divertthread( stackpair *stkp, void *v_ )
 		/* Swap hook's values with *v's values: this will be reversed by either */
 		/*  vm_divertthread_exit() or vm_divertthread_earlyexit() at a later date, */
 		/*  to preserve a sort of longjump() stack. */
-	if( !vm_divertthread_adjust( v ) )
+	if( !divertthread_adjust( v ) )
 	{
 		???
 	}
 	
-	vm_divertthread_ADJUST_ONSET();
+	divertthread_ADJUST_ONSET();
 	return( (retframe){ &enqueue_returns, (void*)&callable } );
 }
 

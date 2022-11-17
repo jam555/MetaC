@@ -89,31 +89,31 @@ retframe vm_datacall( stackpair *stkp, void *v );
 
 
 
-typedef struct vm_divertthread_info vm_divertthread_info;
-typedef retframe (*vm_divertthread_earlyexit_ptr)( stackpair*, vm_divertthread_info*, unsigned );
+typedef struct divertthread_info divertthread_info;
+typedef retframe (*divertthread_earlyexit_ptr)( stackpair*, divertthread_info*, unsigned );
 
-typedef struct vm_divertthread_callerinfo
+typedef struct divertthread_callerinfo
 {
 		/* The user deals with this, the system doesn't actually care. */
 	uintptr_t user_typeid;
 	
-		/* Acts as vm_divertthread_exit(), but for when using longjump() to */
+		/* Acts as divertthread_exit(), but for when using longjump() to */
 		/*  jump past EARLIER setjump() instances. */
 	struct
 	{
-		vm_divertthread_earlyexit_ptr handle;
-		vm_divertthread_info *data;
+		divertthread_earlyexit_ptr handle;
+		divertthread_info *data;
 		
 	} earlyexit;
 	
 	retframe longjump;
 	
-} vm_divertthread_callerinfo;
-int push_vm_divertthread_callerinfo( stackframe *stk, vm_divertthread_callerinfo val );
-int peek_vm_divertthread_callerinfo( stackframe *stk,  size_t off,  vm_divertthread_callerinfo *val, uintptr_t *user_typeid );
-int pop_vm_divertthread_callerinfo( stackframe *stk,  vm_divertthread_callerinfo *val );
+} divertthread_callerinfo;
+int push_divertthread_callerinfo( stackframe *stk, divertthread_callerinfo val );
+int peek_divertthread_callerinfo( stackframe *stk,  size_t off,  divertthread_callerinfo *val, uintptr_t *user_typeid );
+int pop_divertthread_callerinfo( stackframe *stk,  divertthread_callerinfo *val );
 
-struct vm_divertthread_info
+struct divertthread_info
 {
 	uintptr_t bookmark;
 		/* Both of these functions MUST comply with the following function */
@@ -124,13 +124,13 @@ struct vm_divertthread_info
 		/*  exit, lest the entire system break. This is NOT a small thing, */
 		/*  it can completely screw up the stack. */
 	framefunc setfunc, jumpfunc;
-	vm_divertthread_callerinfo *recepdata;
+	divertthread_callerinfo *recepdata;
 };
-int push_vm_divertthread_info( stackframe *stk, vm_divertthread_info val );
-int peek_vm_divertthread_info( stackframe *stk,  size_t off,  vm_divertthread_info *val );
-int pop_vm_divertthread_info( stackframe *stk,  vm_divertthread_info *val );
+int push_divertthread_info( stackframe *stk, divertthread_info val );
+int peek_divertthread_info( stackframe *stk,  size_t off,  divertthread_info *val );
+int pop_divertthread_info( stackframe *stk,  divertthread_info *val );
 
-retframe vm_divertthread( stackpair *stkp, void *v_ );
+retframe divertthread( stackpair *stkp, void *v_ );
 
 
 /* All of the setjump()/longjump() stuff below is used to implement the */
