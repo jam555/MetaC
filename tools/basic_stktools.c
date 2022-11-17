@@ -833,19 +833,6 @@ int divertthread_adjust( divertthread_info *alt )
 	
 	return( -1 );
 }
-	/* ( bookmark data -- data bookmark ) */
-retframe divertthread_exit( stackpair *stkp, void *v_ )
-{
-	int scratch;
-	STACKCHECK2( stkp, v_,  divertthread_exit );
-	
-	
-		/* ( bookmark data[count] count -- ... ) */
-	uintptr_t count;
-	STACKPOP_UINT( &( stkp->data ), count,  divertthread_exit, scratch );
-	
-	return( divertthread_earlyexit( stkp, (divertthread_info*)v_, count ) );
-}
 		/* Acts as vm_divertthread_exit(), but for when using */
 		/*  longjump() to jump past EARLIER setjump() instances. */
 		/*  Provided as a retframe in caller???->earlyexit */
@@ -887,6 +874,19 @@ retframe divertthread_exit( stackpair *stkp, void *v_ )
 		
 		RETFRAMEFUNC( divertthread_earlyexit );
 	}
+	/* ( bookmark data -- data bookmark ) */
+retframe divertthread_exit( stackpair *stkp, void *v_ )
+{
+	int scratch;
+	STACKCHECK2( stkp, v_,  divertthread_exit );
+	
+	
+		/* ( bookmark data[count] count -- ... ) */
+	uintptr_t count;
+	STACKPOP_UINT( &( stkp->data ), count,  divertthread_exit, scratch );
+	
+	return( divertthread_earlyexit( stkp, (divertthread_info*)v_, count ) );
+}
 retframe divertthread( stackpair *stkp, void *v_ )
 {
 			/* (
