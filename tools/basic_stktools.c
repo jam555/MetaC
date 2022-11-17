@@ -905,7 +905,7 @@ retframe divertthread( stackpair *stkp, void *v_ )
 				{
 						/* ( uintptr_t bookmark -- bookmark uintptr_t ) */
 					(retframe){ &swap2nd, (void*)0 },
-						(retframe){ &just_run, (void*)0 },
+						(retframe){ &just_run, (void*)&( hooks.setfunc ) },
 					(retframe){ &divertthread_exit, (void*)0 }
 				}
 			};
@@ -914,7 +914,6 @@ retframe divertthread( stackpair *stkp, void *v_ )
 		/*  enqueue_returns(): it'll be dealt with before there's a */
 		/*  chance of the value getting changed again. */
 #define divertthread_ADJUST_ONSET() \
-		onset_.body[ 1 ].data = (void*)&( v->setfunc ); \
 		onset_.body[ 2 ].data = v_;
 	
 		/* These two should only be tied to statically allocated objects, so I */
@@ -954,6 +953,9 @@ retframe divertthread( stackpair *stkp, void *v_ )
 			/*  correct, because it's needed so that it's values can be swapped */
 			/*  with hook's values... */
 		v->recepdata->earlyexit.data = v;
+		
+		v->recepdata->longjump.handle = &longjump_callstack;
+		v->recepdata->longjump.data = &( v->bookmark );
 	}
 	
 		/* Swap hook's values with *v's values: this will be reversed by either */

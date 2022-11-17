@@ -98,7 +98,27 @@ typedef struct divertthread_callerinfo
 	uintptr_t user_typeid;
 	
 		/* Acts as divertthread_exit(), but for when using longjump() to */
-		/*  jump past EARLIER setjump() instances. */
+		/*  jump past LATER setjump() instances. This is for user code */
+		/*  to call if that user code needs to jump COMPLETELY OUT of */
+		/*  the current divertthread() context instead of just exiting */
+		/*  it early. In particular, this MUST be called before the */
+		/*  "outer scope" longjump() is called, AND before divertthread() */
+		/*  is called again, AND before the divertthread_info{} submitted */
+		/*  in the current call context is released, WHICHEVER HAPPENS */
+		/*  FIRST: the best bet is to just call it immediately before the */
+		/*  related longjump(). It specifically runs cleanup code that is */
+		/*  otherwise automatically inlined by divertthread() itself. If */
+		/*  the outer longjump() is itself part of a divertthread() */
+		/*  context, then that longjump() WON'T WORK CORRECTLY until */
+		/*  AFTER this (and any other preceding equivalents) are called. */
+		/* Note: You DON'T need to call this when nesting another layer */
+		/*  of divertthread(), just when you're trying to bypass the exit */
+		/*  code of the associated enclosing layer. */
+		/* Also note: This DOES NOT execute the jumpfunc() associated */
+		/*  with this divertthread() context, as the assumptions of that */
+		/*  function are expected to no longer be valid in any situation */
+		/*  where this is needed- if that's wrong, then the user should */
+		/*  be able to compensate themselves. */
 	struct
 	{
 		divertthread_earlyexit_ptr handle;
@@ -106,6 +126,10 @@ typedef struct divertthread_callerinfo
 		
 	} earlyexit;
 	
+		/* If you want to exit out of the current divertthread() context */
+		/*  using the normal route, then just execute this. It'll be */
+		/*  initialized with a correctly formatted longjump() by */
+		/*  divertthread() itself. */
 	retframe longjump;
 	
 } divertthread_callerinfo;
@@ -124,12 +148,29 @@ struct divertthread_info
 		/*  exit, lest the entire system break. This is NOT a small thing, */
 		/*  it can completely screw up the stack. */
 	framefunc setfunc, jumpfunc;
+		/* Optional, but valuable. */
 	divertthread_callerinfo *recepdata;
 };
 int push_divertthread_info( stackframe *stk, divertthread_info val );
 int peek_divertthread_info( stackframe *stk,  size_t off,  divertthread_info *val );
 int pop_divertthread_info( stackframe *stk,  divertthread_info *val );
 
+	/* v_ must be a pointer to a divertthread_info{}. The values of the */
+	/*  elements in the provided instance will be swapped with "foreign" */
+	/*  values during the longevity of the provided setfunc and jumpfunc */
+	/*  framefunc{}s, DON'T SCREW WITH THOSE VALUES. The CONTENTS of */
+	/*  ->recepdata won't be touched, with the exception of ->earlyexit, */
+	/*  which (IF ->recepdata is non-null) will be initialized so that */
+	/*  user code can actually use it. */
+	/* Note that this is intentionally named in reference to */
+	/*  multi-threading (and e.g. ITC threaded code), and Unix's fork() */
+	/*  function- I considered naming it branch() or similar, but */
+	/*  decided that sounded too much like fork- it doesn't produce a */
+	/*  new process, thread, fiber, or anything else, it just diverts */
+	/*  execution of the current thread while providing a special exit */
+	/*  mechanism to preemptively get back out of that diversion. */
+	/* ( uintptr_t -- ??? ) */
+		??? /* Note: I need to verify the func sig. */
 retframe divertthread( stackpair *stkp, void *v_ );
 
 
