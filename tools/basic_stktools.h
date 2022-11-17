@@ -88,6 +88,53 @@ retframe run_on3( stackpair *stkp, void *v );
 retframe vm_datacall( stackpair *stkp, void *v );
 
 
+
+typedef struct vm_divertthread_info vm_divertthread_info;
+typedef retframe (*vm_divertthread_earlyexit_ptr)( stackpair*, vm_divertthread_info*, unsigned );
+
+typedef struct vm_divertthread_callerinfo
+{
+		/* The user deals with this, the system doesn't actually care. */
+	uintptr_t user_typeid;
+	
+		/* Acts as vm_divertthread_exit(), but for when using longjump() to */
+		/*  jump past EARLIER setjump() instances. */
+	struct
+	{
+		vm_divertthread_earlyexit_ptr handle;
+		vm_divertthread_info *data;
+		
+	} earlyexit;
+	
+	retframe longjump;
+	
+} vm_divertthread_callerinfo;
+int push_vm_divertthread_callerinfo( stackframe *stk, vm_divertthread_callerinfo val );
+int peek_vm_divertthread_callerinfo( stackframe *stk,  size_t off,  vm_divertthread_callerinfo *val, uintptr_t *user_typeid );
+int pop_vm_divertthread_callerinfo( stackframe *stk,  vm_divertthread_callerinfo *val );
+
+struct vm_divertthread_info
+{
+	uintptr_t bookmark;
+		/* Both of these functions MUST comply with the following function */
+		/*  signature: */
+			/* ( ???1 bookmark -- ???2 bookmark ) */
+		/*  What is under "bookmark" DOES NOT matter, but "bookmark" WILL */
+		/*  BE on top upon entry, and MUST BE on top AND UNALTERED upon */
+		/*  exit, lest the entire system break. This is NOT a small thing, */
+		/*  it can completely screw up the stack. */
+	framefunc setfunc, jumpfunc;
+	vm_divertthread_callerinfo *recepdata;
+};
+int push_vm_divertthread_info( stackframe *stk, vm_divertthread_info val );
+int peek_vm_divertthread_info( stackframe *stk,  size_t off,  vm_divertthread_info *val );
+int pop_vm_divertthread_info( stackframe *stk,  vm_divertthread_info *val );
+
+retframe vm_divertthread( stackpair *stkp, void *v_ );
+
+
+/* All of the setjump()/longjump() stuff below is used to implement the */
+/*  divertthread() stuff. */
 	/* v_ MUST point to a uintptr_t in both funcs: it will be treated as a bookmark. */
 	/* Note that setjump_*() DOES NOT pop the return retframe{} from the */
 	/*  stack, but instead peeks it: use just_run() (or a custom function) */
