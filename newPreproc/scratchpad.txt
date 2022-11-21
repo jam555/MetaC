@@ -261,6 +261,12 @@ retframe _entry( stackpair *stkp, void *v_ )
 
 
 
+#define VALUE_subordinateinfo \
+	(divertthread_info){  ???, &escapeinfo  }
+static uintptr_t callerinfo_typeid;
+static divertthread_callerinfo escapeinfo = { (uintptr_t)&callerinfo_typeid, ??? };
+static divertthread_info subordinateinfo = VALUE_subordinateinfo;
+
 typedef struct specials
 {
 	token_head th;
@@ -276,10 +282,26 @@ typedef struct specials
 
 retframe exit( stkp, v_ )
 {
-	uintptr_t tmp;
-	peek( 0, tmp );
+	int scratch;
 	
-	if( ( (token_head*)tmp )->toktype != ( (specials*)v_ )-> ??? ->toktype )
+	uintptr_t tok;
+		/* This is in the way, move it. */
+	STACKPOP_UINT( &( stkp->data ), tok,  entry, scratch );
+	
+		/* First things first, restore the divertthread info! */
+	int peek_divertthread_callerinfo( stackframe *stk,  size_t off,  divertthread_callerinfo *val, uintptr_t *user_typeid );
+	if( user_typeid != ??? )
+	{
+		/* Massive error! Not recoverable! */
+	}
+	int pop_divertthread_callerinfo( stackframe *stk,  divertthread_callerinfo *val );
+	int pop_divertthread_info( stackframe *stk,  divertthread_info *val );
+	
+		/* And now move the "token" back onto the stack. */
+	STACKPUSH_UINT( &( stkp->data ), tok,  entry, scratch );
+	
+	
+	if( ( (token_head*)tok )->toktype != ( (specials*)v_ )-> ??? ->toktype )
 	{
 		/* Error: bracket mismatch! */
 	}
@@ -363,6 +385,11 @@ reframe entry( stkp, v_ )
 				??? , /* Number of retframes  */
 				{
 					???
+					
+						/* v_ must be a pointer to a divertthread_info{}. */
+					(retframe){ &divertthread, (void*)& },
+					
+					???
 				}
 			},
 		parenscript =
@@ -401,14 +428,29 @@ reframe entry( stkp, v_ )
 	retframe ret;
 	
 	uintptr_t tok;
-	STACKPEEK_UINT( &( stkp->data ), 0, tok,  entry, scratch );
+	STACKPOP_UINT( &( stkp->data ), tok,  entry, scratch );
+	
+		/* Save the old divertthread info- we'll be needing it if this was nested. */
+	int push_divertthread_info( stackframe *stk, divertthread_info val );
+		/* Yes, this MUST come last, because it'll ensure that *_callerinfo type id */
+		/*  is on TOP of the stack. */
+	int push_divertthread_callerinfo( stackframe *stk, divertthread_callerinfo val );
+	
+		/* Restored! And it's on top of the stuff that we won't need till exit! */
+	STACKPUSH_UINT( &( stkp->data ), tok,  entry, scratch );
+	
+	
+		/* Reset the divertthread_info to a nice, safe default. */
+	subordinateinfo = VALUE_subordinateinfo;
+		subordinateinfo.setfunc = ??? ;
+		subordinateinfo.jumpfunc = ??? ;
+	
 	
 	scratch = simplify_toktype( (token_head*)tok,  &tok );
 	if( !scratch )
 	{
 		???
 	}
-	
 	switch( tok )
 	{
 		case TOKTYPE_OPPAR:
@@ -429,3 +471,4 @@ reframe entry( stkp, v_ )
 	
 	return( ret );
 }
+uintptr_t callerinfo_typeid = &callerinfo_typeid;
