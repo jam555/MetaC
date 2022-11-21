@@ -155,6 +155,14 @@ int push_divertthread_info( stackframe *stk, divertthread_info val );
 int peek_divertthread_info( stackframe *stk,  size_t off,  divertthread_info *val );
 int pop_divertthread_info( stackframe *stk,  divertthread_info *val );
 
+typedef struct divertthread_pairedinfo
+{
+	divertthread_info info;
+	divertthread_callerinfo callerinfo;
+} divertthread_pairedinfo;
+#define INIT_divertthread_pairedinfo( varptr ) \
+	( varptr )->info.recepdata = &( ( varptr )->callerinfo );
+
 	/* v_ must be a pointer to a divertthread_info{}. The values of the */
 	/*  elements in the provided instance will be swapped with "foreign" */
 	/*  values during the longevity of the provided setfunc and jumpfunc */
