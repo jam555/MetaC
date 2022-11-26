@@ -262,7 +262,7 @@ retframe _entry( stackpair *stkp, void *v_ )
 
 
 #define VALUE_subordinateinfo \
-	(divertthread_info){  ???, &escapeinfo  }
+	(divertthread_info){  ???, &escapeinfo }
 static uintptr_t callerinfo_typeid;
 static divertthread_callerinfo escapeinfo = { (uintptr_t)&callerinfo_typeid, ??? };
 static divertthread_info subordinateinfo = VALUE_subordinateinfo;
@@ -278,24 +278,39 @@ typedef struct specials
 	
 } specials;
 #define INIT__SPECIALS( tokhead,  brkparr, badparr, strtparr,  strtthead, endthead ) \
-	(_specials){ (tokhead),  &(brkparr), &(badparr), &(strtparr),  &(strtthead), &(endthead),  0 }
+	(specials){ (tokhead),  &(brkparr), &(badparr), &(strtparr),  &(strtthead), &(endthead),  0 }
 
 retframe exit( stkp, v_ )
 {
 	int scratch;
 	
-	uintptr_t tok;
+	uintptr_t tok, tmp;
 		/* This is in the way, move it. */
 	STACKPOP_UINT( &( stkp->data ), tok,  entry, scratch );
 	
 		/* First things first, restore the divertthread info! */
-	int peek_divertthread_callerinfo( stackframe *stk,  size_t off,  divertthread_callerinfo *val, uintptr_t *user_typeid );
-	if( user_typeid != ??? )
+		/* TODO: You know, if offset wasn't set to 0, we could move */
+		/*  this before pop( tok ) and reuse that instead of adding */
+		/*  a second var... */
+	scratch = peek_divertthread_callerinfo( &( stkp->data ),  0,  (divertthread_callerinfo*)0, &tmp );
+	if( !scratch )
+	{
+		???
+	}
+	if( tmp != (uintptr_t)&callerinfo_typeid )
 	{
 		/* Massive error! Not recoverable! */
 	}
-	int pop_divertthread_callerinfo( stackframe *stk,  divertthread_callerinfo *val );
-	int pop_divertthread_info( stackframe *stk,  divertthread_info *val );
+	scratch = pop_divertthread_callerinfo( &( stkp->data ),  &escapeinfo );
+	if( !scratch )
+	{
+		???
+	}
+	scratch = pop_divertthread_info( &( stkp->data ),  &subordinateinfo );
+	if( !scratch )
+	{
+		???
+	}
 	
 		/* And now move the "token" back onto the stack. */
 	STACKPUSH_UINT( &( stkp->data ), tok,  entry, scratch );
@@ -306,7 +321,7 @@ retframe exit( stkp, v_ )
 		/* Error: bracket mismatch! */
 	}
 	
-	returnframe;
+	RETFRAMEFUNC( entry, scratch );
 }
 	retframe accumulate_argrecep( stkp, v_ )
 	{
@@ -420,7 +435,7 @@ reframe entry( stkp, v_ )
 	???
 	
 	
-	???
+	
 	
 	
 	int scratch;
@@ -431,19 +446,30 @@ reframe entry( stkp, v_ )
 	STACKPOP_UINT( &( stkp->data ), tok,  entry, scratch );
 	
 		/* Save the old divertthread info- we'll be needing it if this was nested. */
-	int push_divertthread_info( stackframe *stk, divertthread_info val );
+	scratch = push_divertthread_info( &( stkp->data ), subordinateinfo );
+	if( !scratch )
+	{
+		???
+	}
 		/* Yes, this MUST come last, because it'll ensure that *_callerinfo type id */
 		/*  is on TOP of the stack. */
-	int push_divertthread_callerinfo( stackframe *stk, divertthread_callerinfo val );
+	scratch = push_divertthread_callerinfo( &( stkp->data ), escapeinfo );
+	if( !scratch )
+	{
+		???
+	}
 	
 		/* Restored! And it's on top of the stuff that we won't need till exit! */
 	STACKPUSH_UINT( &( stkp->data ), tok,  entry, scratch );
 	
 	
+	
 		/* Reset the divertthread_info to a nice, safe default. */
 	subordinateinfo = VALUE_subordinateinfo;
+			/* Should these be set in the switch? */
 		subordinateinfo.setfunc = ??? ;
 		subordinateinfo.jumpfunc = ??? ;
+	
 	
 	
 	scratch = simplify_toktype( (token_head*)tok,  &tok );
@@ -467,8 +493,317 @@ reframe entry( stkp, v_ )
 			break;
 		default:
 			/* Throw error: this should never have happened. */
+struct divertthread_info
+{
+	uintptr_t bookmark;
+		/* Both of these functions MUST comply with the following function */
+		/*  signature: */
+			/* ( ???1 bookmark -- ???2 bookmark ) */
+		/*  What is under "bookmark" DOES NOT matter, but "bookmark" WILL */
+		/*  BE on top upon entry, and MUST BE on top AND UNALTERED upon */
+		/*  exit, lest the entire system break. This is NOT a small thing, */
+		/*  it can completely screw up the stack. */
+	framefunc setfunc, jumpfunc;
+		/* Optional, but valuable. */
+	divertthread_callerinfo *recepdata;
+};
 	}
 	
-	return( ret );
+		/* v_ must be a pointer to a divertthread_info{}. The values of the */
+		/*  elements in the provided instance will be swapped with "foreign" */
+		/*  values during the longevity of the provided setfunc and jumpfunc */
+		/*  framefunc{}s, DON'T SCREW WITH THOSE VALUES. The CONTENTS of */
+		/*  ->recepdata won't be touched, with the exception of ->earlyexit, */
+		/*  which (IF ->recepdata is non-null) will be initialized so that */
+		/*  user code can actually use it. */
+		/* Note that this is intentionally named in reference to */
+		/*  multi-threading (and e.g. ITC threaded code), and Unix's fork() */
+		/*  function- I considered naming it branch() or similar, but */
+		/*  decided that sounded too much like fork- it doesn't produce a */
+		/*  new process, thread, fiber, or anything else, it just diverts */
+		/*  execution of the current thread while providing a special exit */
+		/*  mechanism to preemptively get back out of that diversion. */
+		/* ( uintptr_t -- ??? ) : The uintptr_t is an argument to ->setfunc, */
+		/*  but divertthread() assumes it's presence. */
+	return( (retframe){ &divertthread, (void*)&subordinateinfo } );
 }
 uintptr_t callerinfo_typeid = &callerinfo_typeid;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+retframe bracketgather_invalidcall( stackpair *stkp, void *v_ )
+{
+	/* This should never be entered, it exists to alert when */
+	/*  something fails to get set correctly. */
+	
+	???
+}
+	/* ( token* char_parr* -- ) */
+retframe bracketgather_badtoken( stackpair *stkp, void *v_ )
+{
+	/* This should never be entered, it exists to alert when */
+	/*  something fails to get set correctly. */
+	
+	???
+}
+retframe bracketgather_exit( stackpair *stkp, void *v_ )
+{
+	???
+}
+	/* ( tokengroup* tokengroup* token* char_parr* -- ??? ) */
+retframe bracketgather_loop_search( stackpair *stkp, void *v_ )
+{
+	STACKCHECK2( stkp, v_,  bracketgather_loop );
+	
+	context_specials ctx = (context_specials*)v_;
+	
+	uintptr_t parr, tok;
+	STACKPOP_UINT( &( stkp->data ), parr,  bracketgather_loop, scratch );
+	STACKPEEK_UINT( &( stkp->data ), 0, tok,  bracketgather_loop, scratch );
+	
+		??? /* Does this belong here? Aren't we searching for macros? */
+	genname_parr *searchbatch = ( was_freshline( (token_head*)tok ) ? freshline : inline );
+
+		/* genericnamed* bsearch1_gennamearr( genname_parr *parr, token *tok ); */
+	genericnamed *found_entry = bsearch1_gennamearr( searchbatch, (char_parr*)parr );
+		/* We no longer need the pascal array, so time to delete it. */
+	lib4_result res = char_pascalarray_destroy( (char_parr*)parr );
+#define bracketgather_loop_search_ERRREPORT( err ) \
+		???; /* Do some reporting. */ \
+		stack_ENDRETFRAME();
+	LIB4_RESULT_BODYMATCH( res, LIB4_NULL_MACRO, bracketgather_loop_search_ERRREPORT );
+	
+	if( !found_entry )
+	{
+		/* It's just a token, so we'll push it. */
+		
+		static retframe_parr justtok =
+			(retframe_parr)
+			{
+				3, /* Number of retframes  */
+				{
+						/* ( tokengroup* token* -- tokengroup* ) */
+					(retframe){ &vm_pushto_tokengroup, (void*)0 },
+					(retframe){ &token_queue_fetch, (void*)0 },
+					(retframe){ &bracketgather_loop, (void*)0 }
+				}
+			};
+			justtok.body[ 2 ].data = v_;
+		return( (retframe){ &enqueue_returns, &justtok } );
+		
+	} else if( found_entry->reftype == GENNAMETYPE_RETFRAMEFUNC )
+	{
+		if( !( found_entry->ref ) )
+		{
+			BADNULL( bracketgather_loop, ptr );
+			stack_ENDRETFRAME();
+		}
+		
+		static retframe_parr activematch =
+			(retframe_parr)
+			{
+				4, /* Number of retframes  */
+				{
+					(retframe){ &token_queue_fetch, (void*)0 },
+						/* This is meant to be overwritten with the retframe at *( ->ref ). */
+						/* ( tokengroup* token* token* -- tokengroup* ) */
+					(retframe){ &bracketgather_invalidcall, (void*)0 },
+					(retframe){ &token_queue_fetch, (void*)0 },
+					(retframe){ &bracketgather_loop, (void*)0 }
+				}
+			};
+				/* Patch in the reference that was found. */
+			activematch.body[ 1 ].handler = ( (retframe*)( found_entry->ref ) )->handler;
+			activematch.body[ 1 ].data = ( (retframe*)( found_entry->ref ) )->data;
+			activematch.body[ 3 ].data = v_;
+		return( (retframe){ &enqueue_returns, &activematch } );
+
+	} else {
+
+		TRESPASSPATH( bracketgather_loop, "Error! Unknown found_entry->reftype value: " );
+			DECARG( ( found_entry->reftype ) );
+		stack_ENDRETFRAME();
+	}
+	
+	??? /* We should never reach here. */
+}
+	/* ( tokengroup* tokengroup* token* -- ??? ) */
+retframe bracketgather_loop( stackpair *stkp, void *v_ )
+{
+	STACKCHECK2( stkp, v_,  bracketgather_loop );
+	
+	context_specials ctx = (context_specials*)v_;
+	
+	uintptr_t tok, arggrp;
+	STACKPEEK_UINT( &( stkp->data ), 0, tok,  bracketgather_loop, scratch );
+	
+	lib4_intresult res = not_contextspecials( (token_head*)tok, ctx );
+	
+#define bracketgather_loop_ERRREPORT( err ) \
+		???; /* Do some reporting. */ \
+		stack_ENDRETFRAME();
+	int a;
+	LIB4_INTRESULT_BODYMATCH( res, LIB4_OP_SETa, bracketgather_loop_ERRREPORT );
+	
+	switch( a )
+	{
+		case -1:
+			/* Ending token encountered. */
+			
+			static const retframe_parr ending =
+				(retframe_parr)
+				{
+					2, /* Number of retframes  */
+					{
+								/* ( token_head* --  ) */
+						(retframe){ &invoke_dealloctoken, (void*)0 },
+							/* ( tokengroup* tokengroup* -- tokengroup* ) */
+						(retframe){ &vm_pushto_tokengroup, (void*)0 }
+					}
+				};
+			return( (retframe){ &enqueue_returns, &ending } );
+		
+		case 0:
+			/* Break character (e.g. comma) encountered. */
+			
+			static retframe_parr comma =
+				(retframe_parr)
+				{
+					5, /* Number of retframes  */
+					{
+								/* ( token_head* --  ) */
+						(retframe){ &invoke_dealloctoken, (void*)0 },
+							/* ( tokengroup* tokengroup* -- tokengroup* ) */
+						(retframe){ &vm_pushto_tokengroup, (void*)0 },
+						(retframe){ &vm_buildempty_tokengroup, (void*)0 },
+						(retframe){ &token_queue_fetch, (void*)0 },
+						(retframe){ &bracketgather_loop, (void*)0 }
+					}
+				};
+				comma.body[ 4 ].data = v_;
+			return( (retframe){ &enqueue_returns, &comma } );
+		
+		case 1:
+			/* Other character encountered: needs additional decoding. */
+			
+			static const retframe badtok = (retframe){ bracketgather_badtoken&, (void*)0 };
+			static retframe_parr other =
+				(retframe_parr)
+				{
+					2, /* Number of retframes  */
+					{
+							/* ( token* -- token* char_parr* ) */
+							/* v_ must point to a retframe{} to handle "unrecognized token type" errors. */
+						(retframe){ &token2char_parr, (void*)( &badtok ) },
+						(retframe){ &bracketgather_loop_search, (void*)0 }	
+					}
+				};
+				comma.body[ 1 ].data = v_;
+			return( (retframe){ &enqueue_returns, &other } );
+		
+		default:
+			??? /* Erroneous result, report and fail. */
+	}
+}
+	/* ( tokengroup* token* -- ... ) */
+retframe bracketgather_check( stackpair *stkp, void *v_ )
+{
+	???
+		/* I think this might force an IMMEDIATE exit of the bracketgather */
+		/*  subsystem- if so, then behavior needs to become more nuanced. */
+	
+	STACKCHECK2( stkp, v_,  bracketgather_check );
+	
+	context_specials ctx = (context_specials*)v_;
+	
+	int scratch;
+	uintptr_t tok, tmp;
+	FETCH_SIMPLETYPE( *( ctx->start ), tok,  bracketgather_check, scratch );
+	
+	STACKPEEK_UINT( &( stkp->data ), sizeof( uintptr_t ), tmp,  bracketgather_check, scratch );
+#define bracketgather_check_ONYES( ... ) \
+		tokengroup *dest = build_tokengroup( 0 ); \
+		STACKPUSH_UINT( &( stkp->data ), (uintptr_t)dest,  bracketgather_check, scratch ); \
+		static retframe_parr seq = \
+			(retframe_parr){ \
+				5, /* Number of retframes  */ { \
+					(retframe){ &swap2nd, (void*)0 }, \
+							/* ( tokengroup* token_head* -- tokengroup* token_head* ) */ \
+					(retframe){ &vm_setsubtype_tokengroup, (void*)0 }, \
+					(retframe){ &invoke_dealloctoken, (void*)0 }, \
+					(retframe){ &token_queue_fetch, (void*)0 }, \
+					(retframe){ &bracketgather_loop, (void*)0 } } }; \
+				/* And this is why seq{} isn't a const: we need to patch it at runtime. */ \
+			seq.body[ 4 ].data = v_; \
+		return( (retframe){ &enqueue_returns, &seq } );
+#define bracketgather_check_ONNO( ... ) \
+		??? ; \
+		stack_ENDRETFRAME();
+	CHECK_SIMPLETYPE(
+		*( (token_head*)tmp ), tok, bracketgather_check_ONYES, bracketgather_check_ONNO,
+		bracketgather_check, scratch
+	);
+}
+	/* ( token_head* -- ??? ) */
+retframe bracketgather_enter( stackpair *stkp, void *v_ )
+{
+	int scratch;
+	
+	STACKCHECK2( stkp, v_,  bracketgather_enter );
+	
+	if( ( (token_head*)v_ )->toktype != TOKTYPE_CONTEXTSPECIALS )
+	{
+		/* Error, bad type! */
+		???
+	}
+	
+	tokengroup *dest = build_tokengroup( 0 );
+	if( !dest )
+	{
+		???;
+	}
+	STACKPUSH_UINT( &( stkp->data ), (uintptr_t)dest,  bracketgather_enter, scratch );
+	
+	static retframe_parr seq =
+		(retframe_parr)
+		{
+			6, /* Number of retframes  */
+			{
+				(retframe){ &swap2nd, (void*)0 },
+					/* ( tokengroup* token_head* -- tokengroup* token_head* ) */
+				(retframe){ &vm_setsubtype_tokengroup, (void*)0 },
+				(retframe){ &invoke_dealloctoken, (void*)0 },
+				
+				(retframe){ &token_queue_fetch, (void*)0 },
+				(retframe){ &bracketgather_check, (void*)0 },
+				(retframe){ &bracketgather_exit, (void*)0 }
+			}
+		};
+		seq.body[ 4 ].data = v_;
+		seq.body[ 5 ].data = v_;
+	return( (retframe){ &enqueue_returns, &seq } );
+}

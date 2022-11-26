@@ -147,7 +147,7 @@ struct divertthread_info
 		/*  BE on top upon entry, and MUST BE on top AND UNALTERED upon */
 		/*  exit, lest the entire system break. This is NOT a small thing, */
 		/*  it can completely screw up the stack. */
-	framefunc setfunc, jumpfunc;
+	retframe setfunc, jumpfunc;
 		/* Optional, but valuable. */
 	divertthread_callerinfo *recepdata;
 };
@@ -216,6 +216,7 @@ retframe longjump_callstack( stackpair *stkp, void *v_ );
 		prefix##_ONSET = \
 			(retframe_parr){ 4, { \
 				(retframe){ &drop, (void*)0 }, \
+					/* This requires a pointer to a retframe as v. */ \
 				(retframe){ &just_run, (void*)( onset_ptr ) }, \
 				(retframe){ &vm_push2, (void*)0 }, \
 					/* We've exited onset_ptr successfully, so we'll be seeing a */ \
@@ -229,6 +230,7 @@ retframe longjump_callstack( stackpair *stkp, void *v_ );
 		prefix##_ONJUMP = \
 			(retframe_parr){ 3, { \
 				(retframe){ &drop, (void*)0 }, \
+					/* This requires a pointer to a retframe as v. */ \
 				(retframe){ &just_run, (void*)( onjump_ptr ) }, \
 					/* This push is just here because the drop at the end of */ \
 					/*  prefix##_DISPATCH is gonna delete something, so we need a */ \
@@ -251,6 +253,7 @@ retframe longjump_callstack( stackpair *stkp, void *v_ );
 				(retframe){ &vm_pushdata, &( bookmark ) }, \
 				(retframe){ &setjump_callstack, (void*)&( bookmark ) }, \
 					/* setjump() peeks just_run(), it DOESN'T POP IT! */ \
+					/* This requires a pointer to a retframe as v. */ \
 				(retframe){ &just_run, (void*)&( prefix##_DISPATCH ) }, \
 				(retframe){ &vm_popdata, &( bookmark ) } \
 			} };

@@ -813,7 +813,7 @@ int divertthread_adjust( divertthread_info *alt )
 {
 	if( alt )
 	{
-		framefunc swap;
+		retframe swap;
 		
 		swap = alt->setfunc;
 		alt->setfunc = hooks.setfunc;
@@ -905,6 +905,7 @@ retframe divertthread( stackpair *stkp, void *v_ )
 				{
 						/* ( uintptr_t bookmark -- bookmark uintptr_t ) */
 					(retframe){ &swap2nd, (void*)0 },
+							/* This requires a pointer to a retframe as v. */
 						(retframe){ &just_run, (void*)&( hooks.setfunc ) },
 					(retframe){ &divertthread_exit, (void*)0 }
 				}
@@ -920,6 +921,7 @@ retframe divertthread( stackpair *stkp, void *v_ )
 		/*  expect them to both be fine. */
 	static retframe
 		onset = { &enqueue_returns, (void*)&onset_ },
+			/* This requires a pointer to a retframe as v. */
 		onjump = { &just_run, (void*)&( hooks.jumpfunc ) };
 	
 	
