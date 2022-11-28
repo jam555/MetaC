@@ -158,6 +158,7 @@ with this program; if not, write to the:
 	
 	LIB4_DEFINE_PASCALARRAY_STDDEFINE( tokenheadptr_, token_head* );
 	typedef tokenheadptr_pascalarray tokhdptr_parr;
+	/* Note: Look below token{} for the isin_tokhdptr_parr() search function. */
 	
 	LIB4_MONAD_EITHER_BUILDTYPE_DEFINITION(
 		tokenheadptr_result,

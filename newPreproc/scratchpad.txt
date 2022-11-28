@@ -261,10 +261,10 @@ retframe _entry( stackpair *stkp, void *v_ )
 
 
 
-#define VALUE_subordinateinfo \
-	(divertthread_info){  ???, &escapeinfo }
 static uintptr_t callerinfo_typeid;
 static divertthread_callerinfo escapeinfo = { (uintptr_t)&callerinfo_typeid, ??? };
+#define VALUE_subordinateinfo \
+	(divertthread_info){  ???, &escapeinfo }
 static divertthread_info subordinateinfo = VALUE_subordinateinfo;
 
 typedef struct specials
@@ -278,7 +278,7 @@ typedef struct specials
 	
 } specials;
 #define INIT__SPECIALS( tokhead,  brkparr, badparr, strtparr,  strtthead, endthead ) \
-	(specials){ (tokhead),  &(brkparr), &(badparr), &(strtparr),  &(strtthead), &(endthead),  0 }
+	(specials){ (tokhead),  &(brkparr), &(badparr), &(strtparr),  &(strtthead), &(endthead),  &subordinateinfo }
 
 retframe exit( stkp, v_ )
 {
@@ -323,6 +323,31 @@ retframe exit( stkp, v_ )
 	
 	RETFRAMEFUNC( entry, scratch );
 }
+	retframe check_argstart( stkp, v_ )
+	{
+		int scratch;
+		
+		???
+		
+		
+		specials *spec = (specials*)v_;
+		
+		uintptr_t tok;
+		STACKPEEK_UINT( &( stkp->data ), 0, tok,  entry, scratch );
+		
+			/* If the result is the failure case, then one or both arguments were provided as null. */
+			/* If the result is the success case: */
+				/* Negatives: a < b */
+				/* Positives: a > b */
+				/* 0: Match (ignores stuff like line and source file). */
+				/* 1: Ended on toktype. */
+				/* 2: Ended on length. */
+				/* 3+: Mismatch at character[ abs( result ) - 3 ]. */
+		lib4_result equal_tokens( (token_head*)tok, (token_head*)( spec->start ) );
+		
+		
+		???
+	}
 		/* Gathers tokens to fill out the current argument, dispatching */
 		/*  otherwise if appropriate for the token. */
 		/* v_ must be non-null. */
@@ -332,33 +357,46 @@ retframe exit( stkp, v_ )
 		
 		???
 		
+		specials *spec = (specials*)v_;
+		
 		uintptr_t tok;
-		STACKPOP_UINT( &( stkp->data ), tok,  entry, scratch );
+		STACKPEEK_UINT( &( stkp->data ), 0, tok,  entry, scratch );
+		
+		size_t matchloc;
+			/* Returns: */
+				/* -2: Null in *parr, if loc is provided it will hold the offset of the null. */
+				/* -1: tok or parr is null. */
+				/* 0: tok not found in parr. */
+				/* 1: tok found, if loc is provided it will hold the offset of the find. */
+		scratch = isin_tokhdptr_parr( (token*)tok, spec->bads,  &matchloc );
 		
 		???
 		
-		scratch = simplify_toktype( (token_head*)tok,  &tok );
-		if( !scratch )
-		{
-			???
-		}
+		scratch = isin_tokhdptr_parr( (token*)tok, spec->breaks,  &matchloc );
 		
-		uintptr_t tmp;
-		peek( 0, tmp );
-		switch( ( (token_head*)tmp )->toktype )
-		{
-			case comma:
-				return( (retframe){ &queue_argrecep, v_ } );
-			case :
-			case :
-			case :
-			case :
-				returnframe;
-			default:
-				break;
-		}
+		???
 		
-		push_arg();
+		scratch = isin_tokhdptr_parr( (token*)tok, spec->starts,  &matchloc );
+		
+		???
+		
+			/* If the result is the failure case, then one or both arguments were provided as null. */
+			/* If the result is the success case: */
+				/* Negatives: a < b */
+				/* Positives: a > b */
+				/* 0: Match (ignores stuff like line and source file). */
+				/* 1: Ended on toktype. */
+				/* 2: Ended on length. */
+				/* 3+: Mismatch at character[ abs( result ) - 3 ]. */
+		lib4_result equal_tokens( (token_head*)tok, (token_head*)( spec->end ) );
+		
+		
+		???
+		
+		pop();
+		peek( group );
+		
+		push_arg( group, tok );
 		
 		return( (retframe){ &accumulate_argrecep, v_ } );
 	}
@@ -377,6 +415,7 @@ retframe exit( stkp, v_ )
 		/* ( token* -- ( token* 0 ) | ( tokengroup* 1 ) | ( tokengroup* 2 ) ) */
 reframe entry( stkp, v_ )
 {
+	??? /* TODO: upgrade all of these to full tokens. */
 	static token_head
 		parenplain = INIT_TOKENHEAD( TOKTYPE_OPPAR, 0,  0,  0, 0, 0 ), /* ( */
 		parenup = INIT_TOKENHEAD( TOKTYPE_OPPARUP, 0,  0,  0, 0, 0 ), /* (^ */
@@ -445,12 +484,7 @@ reframe entry( stkp, v_ )
 				upsqar
 			);
 	
-	
-	
-	
-	???
-	
-	
+		/* This provides common behavior for the *script retframe_parr{}s. */
 	static retframe_parr
 			/* Push two tokengroup{}s onto the stack for use as things go along. */
 		preprep_arglist =
@@ -530,6 +564,11 @@ reframe entry( stkp, v_ )
 					???
 				}
 			};
+	
+	
+	
+	
+	
 	
 	???
 	
