@@ -578,6 +578,125 @@ retframe bulk_dealloc_token( stackpair *stkp, void *v )
 
 
 
+/* If the result is the failure case, then one or both arguments were provided as null. */
+/* If the result is the success case: */
+	/* Negatives: a < b */
+	/* Positives: a > b */
+	/* 0: Match (ignores stuff like line and source file). */
+	/* 1: Ended on toktype. */
+	/* 2: Ended on length. */
+lib4_result equal_tokenheads( token_head *a, token_head *b )
+{
+	if( a && b )
+	{
+		if( a->toktype < b->toktype )
+		{
+			LIB4_INTRESULT_RETURNSUCCESS( -1 );
+		}
+		if( a->toktype > b->toktype )
+		{
+			LIB4_INTRESULT_RETURNSUCCESS( 1 );
+		}
+		
+		if( a->length < b->length )
+		{
+			LIB4_INTRESULT_RETURNSUCCESS( -2 );
+		}
+		if( a->length > b->length )
+		{
+			LIB4_INTRESULT_RETURNSUCCESS( 2 );
+		}
+		
+		LIB4_INTRESULT_RETURNSUCCESS( 0 );
+	}
+	
+	LIB4_INTRESULT_RETURNFAILURE( (lib4_failure_uipresult){ LIB4_RESULT_FAILURE_DOMAIN } );
+}
+/* This inherits the results of equal_tokenheads(), and adds... */
+	/* 3+: Mismatch at character[ abs( result ) - 3 ]. */
+lib4_result equal_tokens( token_head *a_, token_head *b_ )
+{
+	if( a_ && b_ )
+	{
+		lib4_result res = equal_tokenheads( a_, b_ );
+		int c;
+		LIB4_MONAD_EITHER_BODYMATCH( res, LIB4_OP_SETc, LIB4_INTRESULT_RETURNFAILURE );
+		if( c != 0 )
+		{
+			LIB4_INTRESULT_RETURNSUCCESS( c );
+		}
+		
+		token *a = (token*)a_, *b = (token*)b_;
+		size_t iter = 0;
+		
+		while( a_->length < iter )
+		{
+			if( a->text[ iter ] < b->text[ iter ] )
+			{
+				LIB4_INTRESULT_RETURNSUCCESS( -( 3 + iter ) );
+			}
+			if( a->text[ iter ] > b->text[ iter ] )
+			{
+				LIB4_INTRESULT_RETURNSUCCESS( ( 3 + iter ) );
+			}
+			
+			++iter;
+		}
+		
+		LIB4_INTRESULT_RETURNSUCCESS( 0 );
+	}
+	
+	LIB4_INTRESULT_RETURNFAILURE( (lib4_failure_uipresult){ LIB4_RESULT_FAILURE_DOMAIN } );
+}
+
+int isin_tokhdptr_parr( token *tok, tokhdptr_par *parr,  size_t *loc )
+{
+	if( tok && parr )
+	{
+		token_head *th;
+		size_t iter = 0;
+		lib4_result res;
+		int a = 1, b = 0;
+		
+		while( parr->len > iter )
+		{
+			th = parr->body[ iter ];
+			
+			res = equal_tokens( &( tok->header ), th );
+#define isin_tokhdptr_parr_ONFAIL( err ) b = 1
+			LIB4_MONAD_EITHER_BODYMATCH( res, LIB4_OP_SETa, isin_tokhdptr_parr_ONFAIL );
+			if( b )
+			{
+				/* Error! */
+				
+				if( loc )
+				{
+					*loc = iter;
+				}
+				
+				return( -2 );
+			}
+			if( a == 0 )
+			{
+				if( loc )
+				{
+					*loc = iter;
+				}
+				
+				return( 1 );
+			}
+			
+			++iter;
+		}
+		
+		return( 0 );
+	}
+	
+	return( -1 );
+}
+
+
+
 
 #if defined( __cplusplus ) && __cplusplus >= 199711L
 	namespace

@@ -45,6 +45,7 @@ with this program; if not, write to the:
 		/*  (because null) characters. */
 		
 	} token_head;
+	/* Note: look for equal_tokenheads() below token{}. */
 		/* -1: th was null; otherwise 0 for "fancy token" or 1 for standard token */
 	int is_stdtoken( token_head *th );
 	int is_delimited( token_head *th );
@@ -101,7 +102,8 @@ with this program; if not, write to the:
 		/* v_ must point to a retframe{} to handle "unrecognized token type" */
 		/*  errors. The stack will be ( token* &stringtoken2char_parr ). */
 		/* This ultimately just exists to discard the wrapping quotes for */
-		/*  cases where those are in the way. */
+		/*  cases where those are in the way. token2char_parr() is the normal */
+		/*  function. */
 	retframe stringtoken2char_parr( stackpair *stkp, void *v_ )
 	
 		/* toktype */
@@ -197,6 +199,25 @@ with this program; if not, write to the:
 				0,  0, 0, 0 ), \
 			(char[]){ ( text ) } \
 		}
+	
+		/* If the result is the failure case, then one or both arguments were provided as null. */
+		/* If the result is the success case: */
+			/* Negatives: a < b */
+			/* Positives: a > b */
+			/* 0: Match (ignores stuff like line and source file). */
+			/* 1: Ended on toktype. */
+			/* 2: Ended on length. */
+	lib4_result equal_tokenheads( token_head *a, token_head *b );
+		/* This inherits the results of equal_tokenheads(), and adds... */
+			/* 3+: Mismatch at character[ abs( result ) - 3 ]. */
+	lib4_result equal_tokens( token_head *a_, token_head *b_ );
+	
+		/* Returns: */
+			/* -2: Null in *parr, if loc is provided it will hold the offset of the null. */
+			/* -1: tok or parr is null. */
+			/* 0: tok not found in parr. */
+			/* 1: tok found, if loc is provided it will hold the offset of the find. */
+	int isin_tokhdptr_parr( token *tok, tokhdptr_par *parr,  size_t *loc );
 	
 		/* ->header.toktype should equal TOKTYPE_NUMBER_UINT */
 	typedef struct token_uint

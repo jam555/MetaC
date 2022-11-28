@@ -369,6 +369,9 @@ retframe exit( stkp, v_ )
 	{
 		???
 		
+			/* This is used mid-parse to mark sets of tokens that are arguments. */
+		#define TOKTYPE_GENERICGROUP ( 0xB0F )
+		
 		return( (retframe){ &accumulate_argrecep, v_ } );
 	}
 		/* ( token* -- ( token* 0 ) | ( tokengroup* 1 ) | ( tokengroup* 2 ) ) */
@@ -401,10 +404,46 @@ reframe entry( stkp, v_ )
 		starters = entry_DEF_tokhdptr_parr( parenplain, parenup, curlup, sqarup );
 	
 	static specials
-		plainspecs = INIT__SPECIALS( tokhead ???,  nobreaks, plainbads, starters,  parenplain, plainparen ),
-		parenspecs = INIT__SPECIALS( tokhead ???,  commabreaks, parenbads, starters,  parenup, upparen ),
-		curlspecs = INIT__SPECIALS( tokhead ???,  commabreaks, curlbads, starters,  curlup, upcurl ),
-		sqarspecs = INIT__SPECIALS( tokhead ???,  commabreaks, sqarbads, starters,  sqarup, upsqar );
+		plainspecs =
+			INIT__SPECIALS(
+				INIT_TOKENHEAD( TOKTYPE_CONTEXTSPECIALS, 0,  0,  0, 0, 0 ),
+				nobreaks,
+				plainbads,
+				starters,
+				
+				parenplain,
+				plainparen
+			),
+		parenspecs =
+			INIT__SPECIALS(
+				INIT_TOKENHEAD( TOKTYPE_CONTEXTSPECIALS, 0,  0,  0, 0, 0 ),
+				commabreaks,
+				parenbads,
+				starters,
+				
+				parenup,
+				upparen
+			),
+		curlspecs =
+			INIT__SPECIALS(
+				INIT_TOKENHEAD( TOKTYPE_CONTEXTSPECIALS, 0,  0,  0, 0, 0 ),
+				commabreaks,
+				curlbads,
+				starters,
+				
+				curlup,
+				upcurl
+			),
+		sqarspecs =
+			INIT__SPECIALS(
+				INIT_TOKENHEAD( TOKTYPE_CONTEXTSPECIALS, 0,  0,  0, 0, 0 ),
+				commabreaks,
+				sqarbads,
+				starters,
+				
+				sqarup,
+				upsqar
+			);
 	
 	
 	
@@ -420,6 +459,8 @@ reframe entry( stkp, v_ )
 				??? , /* Number of retframes  */
 				{
 					???
+			/* This is used mid-parse to mark sets of tokens that are arguments. */
+		#define TOKTYPE_GENERICGROUP ( 0xB0F )
 				}
 			};
 	
