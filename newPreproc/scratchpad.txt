@@ -249,17 +249,49 @@ retframe _entry( stackpair *stkp, void *v_ )
 
 
 
-
-
-
-
-
-
-
-
-
-
-
+int is_execable( token *tok,  generic_named **found )
+{
+	generic_named *found_ = (generic_named*)0;
+	if( !found )
+	{
+		found = &found;
+	}
+	
+		/* Some of the directives CAN'T be inlined, so we need to */
+		/*  differentiate on that. */
+	genname_parr *searchtable = ( was_freshline( (token_head*)tok ) ? freshline : inline );
+	
+	*found =  = bsearch1_gennamearr( searchbatch, tok );
+	
+	if( !( *found ) )
+	{
+		/* Just a token, simple exit. */
+		
+		return( 0 );
+		
+	} else if( ( *found )->reftype == GENNAMETYPE_RETFRAMEFUNC )
+	{
+		if( !( ( *found )->ref ) )
+		{
+				/* Error, no reference, fatal error! */
+			TRESPASSPATH( is_execable, "Error! Null ( *found )->ref value!" );
+			
+			return( -2 );
+		}
+		
+		return( 1 );
+		
+	} else {
+		
+		TRESPASSPATH( is_execable, "Error! Unknown ( *found )->reftype value: " );
+			DECARG( ( ( *found )->reftype ) );
+		
+		return( -3 );
+	}
+	
+	/* We should never reach here. */
+}
+retframe on_execable( stkp, v_ );
 
 static uintptr_t callerinfo_typeid;
 static divertthread_callerinfo escapeinfo = { (uintptr_t)&callerinfo_typeid, ??? };
@@ -389,6 +421,28 @@ retframe exit( stkp, v_ )
 				/* 2: Ended on length. */
 				/* 3+: Mismatch at character[ abs( result ) - 3 ]. */
 		lib4_result equal_tokens( (token_head*)tok, (token_head*)( spec->end ) );
+		
+		???
+		
+		scratch = is_execable( token *tok,  generic_named **found );
+		switch( scratch )
+		{
+			case 1:
+				/* Exec-capable. */
+				break;
+			case 0:
+				/* Not exec-capable. */
+				break;
+				
+			case -3:
+				/* Unrecognized generic_named->reftype */
+			case -2:
+				/* Uninitialized generic_named->ref */
+			default:
+				/* Unknown error. */
+				
+				???
+		}
 		
 		
 		???
@@ -661,6 +715,33 @@ reframe entry( stkp, v_ )
 }
 uintptr_t callerinfo_typeid = &callerinfo_typeid;
 
+retframe on_execable( stkp, v_ )
+{
+	int scratch;
+	
+	???
+	
+	scratch = is_execable( token *tok,  generic_named **found );
+	switch( scratch )
+	{
+		case 1:
+			/* Exec-capable. */
+			break;
+		case 0:
+			/* Not exec-capable: should never have gotten here. */
+		case -2:
+			/* generic_named->ref not initialized: also should never have gotten here. */
+		case -3:
+			/* generic_named->reftype unknown: still should never have gotten here. */
+		default:
+			/* Unknown error. */
+			
+			???
+			return( ??? );
+	}
+	
+	???
+}
 
 
 
