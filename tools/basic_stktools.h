@@ -43,6 +43,18 @@ retframe swap3rd( stackpair *stkp, void *v );
 	/* ( uintptr_t*a uintptr_t uintptr_t uintptr_t*b -- uintptr_t*b uintptr_t uintptr_t uintptr_t*a ) */
 retframe swap4th( stackpair *stkp, void *v );
 
+/* Note: using ANY of these with enqueue_returns() is VERY dicey. */
+	/* ( uintptr_t -- ret: uintptr_t ) */
+retframe swap2ret( stackpair *stkp, void *v );
+	/* ( ret: uintptr_t -- uintptr_t ) */
+retframe swap2data( stackpair *stkp, void *v );
+	/* Validate that these two move retframes in ways compatible to the standard */
+	/*  retframe macro, AND vm_pushretframe(). */
+	/* ( retframe -- ret: retframe ) */
+retframe swap_retframe2ret( stackpair *stkp, void *v );
+	/* ( ret: retframe -- retframe ) */
+retframe swap_retframe2data( stackpair *stkp, void *v );
+
 
 	/* ( uintptr_t uintptr_t -- uintptr_t ) */
 retframe and2( stackpair *stkp, void *v );

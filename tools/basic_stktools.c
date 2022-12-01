@@ -181,6 +181,77 @@ retframe swap4th( stackpair *stkp, void *v )
 	RETFRAMEFUNC( stkp,  swap4th );
 }
 
+	/* ( uintptr_t -- ret: uintptr_t ) */
+retframe swap2ret( stackpair *stkp, void *v )
+{
+	uintptr_t a;
+	int scratch;
+	retframe ret;
+	
+	STACKCHECK( stkp,  swap2ret );
+	
+	STACK_POP_RETFRAME( stkp->ret, ret,  &errs, swap2ret, scratch, stack_ENDRETFRAME );
+	
+	STACKPOP_UINT( stkp->data, a,  swap2ret, scratch );
+	STACKPUSH_UINT( stkp->ret, a,  swap2ret, scratch );
+	
+	return( ret );
+}
+	/* ( ret: uintptr_t -- uintptr_t ) */
+retframe swap2data( stackpair *stkp, void *v )
+{
+	uintptr_t a;
+	int scratch;
+	retframe ret;
+	
+	STACKCHECK( stkp,  swap2data );
+	
+	STACKPOP_UINT( stkp->ret, a,  swap2data, scratch );
+	STACKPUSH_UINT( stkp->data, a,  swap2data, scratch );
+	
+	RETFRAMEFUNC( stkp,  swap2data );
+}
+	/* ( retframe -- ret: retframe ) */
+retframe swap_retframe2ret( stackpair *stkp, void *v )
+{
+	uintptr_t a, b;
+	int scratch;
+	retframe ret;
+	
+	STACKCHECK( stkp,  swap_retframe2ret );
+	
+	STACK_POP_RETFRAME( stkp->ret, ret,  &errs, swap_retframe2ret, scratch, stack_ENDRETFRAME );
+	
+	
+	STACKPOP_UINT( stkp->data, a,  swap_retframe2ret, scratch );
+	STACKPOP_UINT( stkp->data, b,  swap_retframe2ret, scratch );
+	
+	STACKPUSH_UINT( stkp->ret, b,  swap_retframe2ret, scratch );
+	STACKPUSH_UINT( stkp->ret, a,  swap_retframe2ret, scratch );
+	
+	
+	return( ret );
+}
+	/* ( ret: retframe -- retframe ) */
+retframe swap_retframe2data( stackpair *stkp, void *v )
+{
+	uintptr_t a, b;
+	int scratch;
+	retframe ret;
+	
+	STACKCHECK( stkp,  swap_retframe2data );
+	
+	
+	STACKPOP_UINT( stkp->ret, a,  swap_retframe2data, scratch );
+	STACKPOP_UINT( stkp->ret, b,  swap_retframe2data, scratch );
+	
+	STACKPUSH_UINT( stkp->data, b,  swap_retframe2data, scratch );
+	STACKPUSH_UINT( stkp->data, a,  swap_retframe2data, scratch );
+	
+	
+	RETFRAMEFUNC( stkp,  swap_retframe2data );
+}
+
 
 
 retframe and2( stackpair *stkp, void *v )

@@ -69,6 +69,8 @@ with this program; if not, write to the:
 	/*  leaf tokens which don't have pointers. */
 	retframe dealloc_token( stackpair *stkp, void *v );
 	
+		/* Use token_queue_fetch() instead: getANDassemble_token() is */
+		/*  itself used by *_fetch(). */
 	retframe getANDassemble_token( stackpair *stkp, void *v );
 	
 		/* Converts a ->toktype == NUMBER token into a token_uint, with the */

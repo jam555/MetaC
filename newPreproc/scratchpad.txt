@@ -383,6 +383,7 @@ retframe exit( stkp, v_ )
 		/* Gathers tokens to fill out the current argument, dispatching */
 		/*  otherwise if appropriate for the token. */
 		/* v_ must be non-null. */
+		/* ( tokengroup* token* -- ... ) */
 	retframe accumulate_argrecep( stkp, v_ )
 	{
 		int scratch;
@@ -390,50 +391,145 @@ retframe exit( stkp, v_ )
 		???
 		
 		specials *spec = (specials*)v_;
-		
 		uintptr_t tok;
+		size_t matchloc;
+		
 		STACKPEEK_UINT( &( stkp->data ), 0, tok,  entry, scratch );
 		
-		size_t matchloc;
-			/* Returns: */
-				/* -2: Null in *parr, if loc is provided it will hold the offset of the null. */
-				/* -1: tok or parr is null. */
-				/* 0: tok not found in parr. */
-				/* 1: tok found, if loc is provided it will hold the offset of the find. */
+			/* Have we found an illegal character? */
 		scratch = isin_tokhdptr_parr( (token*)tok, spec->bads,  &matchloc );
-		
-		???
-		
-		scratch = isin_tokhdptr_parr( (token*)tok, spec->breaks,  &matchloc );
-		
-		???
-		
-		scratch = isin_tokhdptr_parr( (token*)tok, spec->starts,  &matchloc );
-		
-		???
-		
-			/* If the result is the failure case, then one or both arguments were provided as null. */
-			/* If the result is the success case: */
-				/* Negatives: a < b */
-				/* Positives: a > b */
-				/* 0: Match (ignores stuff like line and source file). */
-				/* 1: Ended on toktype. */
-				/* 2: Ended on length. */
-				/* 3+: Mismatch at character[ abs( result ) - 3 ]. */
-		lib4_result equal_tokens( (token_head*)tok, (token_head*)( spec->end ) );
-		
-		???
-		
-		scratch = is_execable( token *tok,  generic_named **found );
 		switch( scratch )
 		{
-			case 1:
-				/* Exec-capable. */
-				break;
-			case 0:
-				/* Not exec-capable. */
-				break;
+			case 1: /* tok found, if loc is provided it will hold the offset of the find. */
+				???
 				
+				break;
+			case -2: /* Null in *parr, if loc is provided it will hold the offset of the null. */
+				???
+			case -1: /* tok or parr is null. */
+				???
+			case 0: /* tok not found in parr. */
+				???
+			break;
+				???
+		}
+		
+			/* Have we found an argument seperator? */
+		scratch = isin_tokhdptr_parr( (token*)tok, spec->breaks,  &matchloc );
+		switch( scratch )
+		{
+			case 1: /* tok found, if loc is provided it will hold the offset of the find. */
+				???
+				
+				break;
+			case -2: /* Null in *parr, if loc is provided it will hold the offset of the null. */
+				???
+			case -1: /* tok or parr is null. */
+				???
+			case 0: /* tok not found in parr. */
+				???
+			break;
+				???
+		}
+		
+			/* Have we found a new bracket entry? */
+		scratch = isin_tokhdptr_parr( (token*)tok, spec->starts,  &matchloc );
+		switch( scratch )
+		{
+			case 1: /* tok found, if loc is provided it will hold the offset of the find. */
+				???
+				
+				break;
+			case -2: /* Null in *parr, if loc is provided it will hold the offset of the null. */
+				???
+			case -1: /* tok or parr is null. */
+				???
+			case 0: /* tok not found in parr. */
+				???
+			break;
+				???
+		}
+		
+			/* Have we found the ending bracket? */
+		lib4_result res = equal_tokens( (token_head*)tok, (token_head*)( spec->end ) );
+		int a;
+#define accumulate_argrecep_ONFAIL( err ) /* One or both arguments were provided as null. */ ???
+		LIB4_MONAD_EITHER_BODYMATCH( res, LIB4_OP_SETa, accumulate_argrecep_ONFAIL )
+		switch( abs( a ) )
+		{
+				/* Negatives: tok < spec->end */
+				/* Positives: tok > spec->end */
+			case 0: /* Match (which means the bracket ending is complete). */
+				???;
+			case 1: /* Ended on toktype. */
+			case 2: /* Ended on length. */
+			default: /* Mismatch at character[ abs( result ) - 3 ]. */
+				/* Regardles of which of the three cases brought us here, we are not done. */
+				break;
+		}
+		
+		retframe_parr *retcalls = (retframe_parr*)0;
+		static retframe dynamic_recursor;
+		dynamic_recursor = (retframe){ &accumulate_argrecep, v_ };
+			/* Search for a macro or directive entrance. */
+		scratch = is_execable( (token*)tok,  generic_named **found );
+		switch( scratch )
+		{
+			case 0:
+				/* Not exec-capable. We just use the token as a... token. */
+				
+				static retframe_parr
+					not_execable_inner =
+						(retframe_parr)
+						{
+							2, /* Number of retframes  */
+							{
+									/* ( tokengroup* token_head* -- tokengroup* ) */
+								(retframe){ &vm_pushto_tokengroup, (void*)0 },
+									/* ( -- token* ) */
+								(retframe){ &token_queue_fetch, (void*)0 }
+								
+									/* ( tokengroup* token* -- ... ) */
+								/* We will mystically, magically, proceed into */
+								/*  accumulate_argrecep(), but it's probably best */
+								/*  not to think about how too horribly much. */
+							}
+						},
+					not_execable_outer =
+						(retframe_parr)
+						{
+							3, /* Number of retframes  */
+							{
+								(retframe){ &vm_pushretframe, (void*)&dynamic_recursor }
+									/* ( retframe -- ret: retframe ) */
+								(retframe){ &swap_retframe2ret, (void*)0 },
+								(retframe){ &enqueue_returns, (void*)&not_execable_inner }
+							}
+						};
+				
+				retcalls = &not_execable_outer;
+				
+				break;
+			case 1:
+				/* Exec-capable. Dispatch to "retframe on_execable( stkp, v_ )". */
+				
+				static retframe_parr
+					on_execable =
+						(retframe_parr)
+						{
+							4, /* Number of retframes  */
+							{
+									/* ( token* -- token* ) */
+								(retframe){ &on_execable, (void*)0 },
+								(retframe){ &vm_pushretframe, (void*)&dynamic_recursor }
+									/* ( retframe -- ret: retframe ) */
+								(retframe){ &swap_retframe2ret, (void*)0 },
+								(retframe){ &enqueue_returns, (void*)&not_execable_inner }
+							}
+						};
+				
+				retcalls = &on_execable;
+				break;
 			case -3:
 				/* Unrecognized generic_named->reftype */
 			case -2:
@@ -443,20 +539,12 @@ retframe exit( stkp, v_ )
 				
 				???
 		}
-		
-		
-		???
-		
-		pop();
-		peek( group );
-		
-		push_arg( group, tok );
-		
-		return( (retframe){ &accumulate_argrecep, v_ } );
+		return( (retframe){ &enqueue_returns, (void*)retcalls } );
 	}
 		/* Condense the current tokengroup{}, move into the parent */
 		/*  tokengroup{}, and push a new tokengroup{} onto the stack. */
 		/* v_ must be non-null. */
+		/* ( tokengroup* tokengroup* token* -- ... ) */
 	retframe queue_argrecep( stkp, v_ )
 	{
 		???
@@ -481,7 +569,14 @@ reframe entry( stkp, v_ )
 		upcurl = INIT_TOKENHEAD( TOKTYPE_SYM_PRECRLCL, 0,  0,  0, 0, 0 ), /* ^} */
 		upsqar = INIT_TOKENHEAD( TOKTYPE_SYM_PRESQRCL, 0,  0,  0, 0, 0 ), /* ^] */
 		
-		comma = INIT_TOKENHEAD( TOKTYPE_SYM_COMMA, 0,  0,  0, 0, 0 ); /* , */
+		comma = INIT_TOKENHEAD( TOKTYPE_SYM_COMMA, 0,  0,  0, 0, 0 ), /* , */
+		
+			/* These two are used to configure tokengroup{}s. */
+		??? = INIT_TOKENHEAD( ??? , 0,  0,  0, 0, 0 ),
+		??? = INIT_TOKENHEAD( ??? , 0,  0,  0, 0, 0 );
+					???
+			/* This is used mid-parse to mark sets of tokens that are arguments. */
+		#define TOKTYPE_GENERICGROUP ( 0xB0F )
 	
 #define entry_DEF_tokhdptr_parr( ... ) \
 		LIB4_DEFINE_PASCALARRAY_LITERAL2( tokenheadptr_, token_head*, __VA_ARGS__ )
@@ -547,8 +642,21 @@ reframe entry( stkp, v_ )
 				??? , /* Number of retframes  */
 				{
 					???
-			/* This is used mid-parse to mark sets of tokens that are arguments. */
-		#define TOKTYPE_GENERICGROUP ( 0xB0F )
+					
+					(retframe){ &vm_buildempty_tokengroup, (void*)0 },
+							/* v_ = &uintptr_t; uintptr_t = data; (  -- data ) */
+						(retframe){ &vm_pushdata, (void*) & ??? },
+							/* ( tokengroup* token_head* -- tokengroup* token_head* ) */
+						(retframe){ &vm_setsubtype_tokengroup, (void*)0 },
+						(retframe){ &invoke_dealloctoken, (void*)0 },
+					(retframe){ &vm_buildempty_tokengroup, (void*)0 },
+							/* v_ = &uintptr_t; uintptr_t = data; (  -- data ) */
+						(retframe){ &vm_pushdata, (void*) & ??? },
+							/* ( tokengroup* token_head* -- tokengroup* token_head* ) */
+						(retframe){ &vm_setsubtype_tokengroup, (void*)0 },
+						(retframe){ &invoke_dealloctoken, (void*)0 },
+					
+					???
 				}
 			};
 	
@@ -561,10 +669,14 @@ reframe entry( stkp, v_ )
 				{
 					???
 					
+						/* (  -- tokengroup* tokengroup* ) */
 					(retframe){ &enqueue_returns, (void*)&preprep_arglist },
 					
 					???
 					
+						/* ( -- token* ) */
+					(retframe){ &token_queue_fetch, (void*)0 },
+						/* ( tokengroup* token* -- ... ) */
 					(retframe){ &accumulate_argrecep, (void*)& ??? },
 					
 					???
@@ -577,10 +689,14 @@ reframe entry( stkp, v_ )
 				{
 					???
 					
+						/* (  -- tokengroup* tokengroup* ) */
 					(retframe){ &enqueue_returns, (void*)&preprep_arglist },
 					
 					???
 					
+						/* ( -- token* ) */
+					(retframe){ &token_queue_fetch, (void*)0 },
+						/* ( tokengroup* token* -- ... ) */
 					(retframe){ &accumulate_argrecep, (void*)& ??? },
 					
 					???
@@ -593,10 +709,14 @@ reframe entry( stkp, v_ )
 				{
 					???
 					
+						/* (  -- tokengroup* tokengroup* ) */
 					(retframe){ &enqueue_returns, (void*)&preprep_arglist },
 					
 					???
 					
+						/* ( -- token* ) */
+					(retframe){ &token_queue_fetch, (void*)0 },
+						/* ( tokengroup* token* -- ... ) */
 					(retframe){ &accumulate_argrecep, (void*)& ??? },
 					
 					???
@@ -609,10 +729,14 @@ reframe entry( stkp, v_ )
 				{
 					???
 					
+						/* (  -- tokengroup* tokengroup* ) */
 					(retframe){ &enqueue_returns, (void*)&preprep_arglist },
 					
 					???
 					
+						/* ( -- token* ) */
+					(retframe){ &token_queue_fetch, (void*)0 },
+						/* ( tokengroup* token* -- ... ) */
 					(retframe){ &accumulate_argrecep, (void*)& ??? },
 					
 					???
@@ -715,13 +839,20 @@ reframe entry( stkp, v_ )
 }
 uintptr_t callerinfo_typeid = &callerinfo_typeid;
 
+	/* Note: does not necessarily return the SAME token pointer. In fact, */
+	/*  generally SHOULDN'T. */
+	/* ( token* -- token* ) */
 retframe on_execable( stkp, v_ )
 {
 	int scratch;
 	
 	???
 	
-	scratch = is_execable( token *tok,  generic_named **found );
+	uintptr_t tok;
+	STACKPEEK_UINT( &( stkp->data ), tok,  on_execable, scratch );
+	
+	generic_named *found;
+	scratch = is_execable( (token*)tok,  &found );
 	switch( scratch )
 	{
 		case 1:
@@ -737,16 +868,36 @@ retframe on_execable( stkp, v_ )
 			/* Unknown error. */
 			
 			???
-			return( ??? );
 	}
 	
-	???
+	if( found->reftype != GENNAMETYPE_RETFRAMEFUNC )
+	{
+		/* Error! */
+		
+		???
+	}
+	if( !( found->ref ) )
+	{
+			/* Error, no reference, fatal error! */
+		TRESPASSPATH( is_execable, "Error! Null ( *found )->ref value!" );
+		
+		???
+	}
+	
+	return( *( (retframe*)( found->ref ) ) );
 }
 
 
 
 
 
+	
+		/* Provides a way to temporarily store tokens that WILL be going onto */
+		/*  the token's "unget" stack, for those cases when you need to reverse */
+		/*  the order that they'll be pulled back off. */
+	size_t token_queue_shuffleused();
+	int token_queue_shufflepop( token **tok );
+	int token_queue_shufflepush( token *tok );
 
 
 

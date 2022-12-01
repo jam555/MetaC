@@ -173,6 +173,31 @@ with this program; if not, write to the:
 				STDMSG_FAILEDINTFUNC_WRAPPER( ( stylesetptr ), "push_uintptr", ( caller ), ( scratch ) ); \
 				( endfunc )(); } }
 	
+	#define STACK_PEEK_RETFRAME( stk, offset, dest,  stylesetptr, caller, scratch, endfunc ) \
+		if( 1 ) { \
+			( scratch ) = peek_retframe( ( stk ),  ( offset ),  &( dest ) ); \
+			if( !( scratch ) ) { \
+				STDMSG_FAILEDINTFUNC_WRAPPER( ( stylesetptr ), "peek_retframe", ( caller ), ( scratch ) ); \
+				( endfunc )(); } \
+			if( !( dest ) ) { \
+				STDMSG_BADNULL_WRAPPER( ( stylesetptr ), ( caller ), &( dest ) ); \
+				( endfunc )(); } }
+	#define STACK_POP_RETFRAME( stk, dest,  stylesetptr, caller, scratch, endfunc ) \
+		if( 1 ) { \
+			( scratch ) = pop_retframe( ( stk ),  &( dest ) ); \
+			if( !( scratch ) ) { \
+				STDMSG_FAILEDINTFUNC_WRAPPER( ( stylesetptr ), "pop_retframe", ( caller ), ( scratch ) ); \
+				( endfunc )(); } \
+			if( !( dest ) ) { \
+				STDMSG_BADNULL_WRAPPER( ( stylesetptr ), ( caller ), &( dest ) ); \
+				( endfunc )(); } }
+	#define STACK_PUSH_RETFRAME( stk, val,  stylesetptr, caller, scratch, endfunc ) \
+		if( 1 ) { \
+			( scratch ) = push_retframe( ( stk ),  ( val ) ); \
+			if( !( scratch ) ) { \
+				STDMSG_FAILEDINTFUNC_WRAPPER( ( stylesetptr ), "push_retframe", ( caller ), ( scratch ) ); \
+				( endfunc )(); } }
+	
 	#define STACK_SWAP_UINT( stk, tmp1, tmp2,  stylesetptr, caller, scratch, endfunc ) \
 		STACK_POP_UINT( ( stk ), ( tmp1 ),  ( stylesetptr ), ( caller ), ( scratch ), ( endfunc ) ) \
 		STACK_POP_UINT( ( stk ), ( tmp2 ),  ( stylesetptr ), ( caller ), ( scratch ), ( endfunc)  ) \

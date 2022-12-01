@@ -455,6 +455,7 @@ retframe set_dealloctoken( retframe dealc_ )
 }
 retframe invoke_dealloctoken( stackpair *stkp, void *v )
 {
+		??? /* Isn't this... exactly the opposite of what should happen? */
 	if( complexlex_dealloctoken.handler )
 	{
 		BADNONULL( invoke_dealloctoken, &( complexlex_dealloctoken.handler ) );
