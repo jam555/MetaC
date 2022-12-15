@@ -380,6 +380,7 @@ retframe exit( stkp, v_ )
 		
 		???
 	}
+	retframe queue_argrecep( stkp, v_ );
 		/* Gathers tokens to fill out the current argument, dispatching */
 		/*  otherwise if appropriate for the token. */
 		/* v_ must be non-null. */
@@ -394,9 +395,9 @@ retframe exit( stkp, v_ )
 		uintptr_t tok;
 		size_t matchloc;
 		
-		STACKPEEK_UINT( &( stkp->data ), 0, tok,  entry, scratch );
+		STACKPEEK_UINT( &( stkp->data ), 0, tok,  accumulate_argrecep, scratch );
 		
-			/* Have we found an illegal character? */
+			/* Have we found an illegal token? */
 		scratch = isin_tokhdptr_parr( (token*)tok, spec->bads,  &matchloc );
 		switch( scratch )
 		{
@@ -418,10 +419,9 @@ retframe exit( stkp, v_ )
 		scratch = isin_tokhdptr_parr( (token*)tok, spec->breaks,  &matchloc );
 		switch( scratch )
 		{
-			case 1: /* tok found, if loc is provided it will hold the offset of the find. */
-				???
+			case 1: /* Found an argument seperator, dispatch appropriately. */
+				return( (retframe){ &queue_argrecep, v_ } );
 				
-				break;
 			case -2: /* Null in *parr, if loc is provided it will hold the offset of the null. */
 				???
 			case -1: /* tok or parr is null. */
@@ -457,10 +457,12 @@ retframe exit( stkp, v_ )
 		LIB4_MONAD_EITHER_BODYMATCH( res, LIB4_OP_SETa, accumulate_argrecep_ONFAIL )
 		switch( abs( a ) )
 		{
-				/* Negatives: tok < spec->end */
-				/* Positives: tok > spec->end */
 			case 0: /* Match (which means the bracket ending is complete). */
 				???;
+				
+				
+				/* Negatives: tok < spec->end */
+				/* Positives: tok > spec->end */
 			case 1: /* Ended on toktype. */
 			case 2: /* Ended on length. */
 			default: /* Mismatch at character[ abs( result ) - 3 ]. */
@@ -514,7 +516,7 @@ retframe exit( stkp, v_ )
 				/* Exec-capable. Dispatch to "retframe on_execable( stkp, v_ )". */
 				
 				static retframe_parr
-					on_execable =
+					execable =
 						(retframe_parr)
 						{
 							4, /* Number of retframes  */
@@ -528,7 +530,7 @@ retframe exit( stkp, v_ )
 							}
 						};
 				
-				retcalls = &on_execable;
+				retcalls = &execable;
 				break;
 			case -3:
 				/* Unrecognized generic_named->reftype */
@@ -547,33 +549,96 @@ retframe exit( stkp, v_ )
 		/* ( tokengroup* tokengroup* token* -- ... ) */
 	retframe queue_argrecep( stkp, v_ )
 	{
+		int scratch;
+		
+		???
+		
+		specials *spec = (specials*)v_;
+		uintptr_t tok;
+		size_t matchloc;
+		
+		STACKPEEK_UINT( &( stkp->data ), 0, tok,  queue_argrecep, scratch );
+		
+			/* Confirm we have an argument seperator. */
+		scratch = isin_tokhdptr_parr( (token*)tok, spec->breaks,  &matchloc );
+		switch( scratch )
+		{
+			case 1: /* Seperator confirmed, continue processing. */
+				break;
+				
+			case -2: /* Null in *parr, if loc is provided it will hold the offset of the null. */
+				???
+			case -1: /* tok or parr is null. */
+				???
+			case 0: /* tok not found in parr. */
+				???
+			break;
+				???
+				
+				/* Errors, all of them. */
+		}
+		
+		
+		
+		
 		???
 		
 			/* This is used mid-parse to mark sets of tokens that are arguments. */
 		#define TOKTYPE_GENERICGROUP ( 0xB0F )
 		
-		return( (retframe){ &accumulate_argrecep, v_ } );
+		
+		static retframe_parr
+			seq =
+				(retframe_parr)
+				{
+					8, /* Number of retframes  */
+					{
+							/* We actually don't care about the seperator anymore. */
+						(retframe){ &invoke_dealloctoken, (void*)0 },
+						
+						/* Shove the newest argument group into the deeper tokengroup{}. */
+							/* ( tokengroup* tokengroup* -- tokengroup* ) */
+						(retframe){ &vm_pushto_tokengroup, (void*)0 },
+						
+							/* ... and then replace it. */
+						(retframe){ &vm_buildempty_tokengroup, (void*)0 },
+								/* v_ = &uintptr_t; uintptr_t = data; (  -- data ) */
+							(retframe){ &vm_pushdata, (void*) & ??? },
+								/* ( tokengroup* token_head* -- tokengroup* token_head* ) */
+							(retframe){ &vm_setsubtype_tokengroup, (void*)0 },
+							(retframe){ &invoke_dealloctoken, (void*)0 },
+						
+						/* Recurse back to accumulate_argrecep() */
+							/* ( -- token* ) */
+						(retframe){ &token_queue_fetch, (void*)0 },
+							/* The void* for accumulate_argrecep gets dynamically patched */
+							/*  below! */
+						(retframe){ &accumulate_argrecep, (void*)0 }
+					}
+				};
+		seq.body[ 7 ].data = v_;
+		return( (retframe){ &enqueue_returns, (void*)&seq } );
 	}
 		/* ( token* -- ( token* 0 ) | ( tokengroup* 1 ) | ( tokengroup* 2 ) ) */
 reframe entry( stkp, v_ )
 {
 	??? /* TODO: upgrade all of these to full tokens. */
-	static token_head
-		parenplain = INIT_TOKENHEAD( TOKTYPE_OPPAR, 0,  0,  0, 0, 0 ), /* ( */
-		parenup = INIT_TOKENHEAD( TOKTYPE_OPPARUP, 0,  0,  0, 0, 0 ), /* (^ */
-		curlup = INIT_TOKENHEAD( TOKTYPE_OPCRLUP, 0,  0,  0, 0, 0 ), /* {^ */
-		sqarup = INIT_TOKENHEAD( TOKTYPE_OPSQRUP, 0,  0,  0, 0, 0 ), /* [^ */
+	static token
+		parenplain = INIT_TOKEN_GENERIC( TOKTYPE_OPPAR, "(" ), /* ( */
+		parenup = INIT_TOKEN_GENERIC( TOKTYPE_OPPARUP, "(^" ), /* (^ */
+		curlup = INIT_TOKEN_GENERIC( TOKTYPE_OPCRLUP, "{^" ), /* {^ */
+		sqarup = INIT_TOKEN_GENERIC( TOKTYPE_OPSQRUP, "[^" ), /* [^ */
 		
-		plainparen = INIT_TOKENHEAD( TOKTYPE_SYM_PARENCLOSE, 0,  0,  0, 0, 0 ), /* ) */
-		upparen = INIT_TOKENHEAD( TOKTYPE_SYM_PREPARCL, 0,  0,  0, 0, 0 ), /* ^) */
-		upcurl = INIT_TOKENHEAD( TOKTYPE_SYM_PRECRLCL, 0,  0,  0, 0, 0 ), /* ^} */
-		upsqar = INIT_TOKENHEAD( TOKTYPE_SYM_PRESQRCL, 0,  0,  0, 0, 0 ), /* ^] */
+		plainparen = INIT_TOKEN_GENERIC( TOKTYPE_SYM_PARENCLOSE, ")" ), /* ) */
+		upparen = INIT_TOKEN_GENERIC( TOKTYPE_SYM_PREPARCL, "^)" ), /* ^) */
+		upcurl = INIT_TOKEN_GENERIC( TOKTYPE_SYM_PRECRLCL, "^}" ), /* ^} */
+		upsqar = INIT_TOKEN_GENERIC( TOKTYPE_SYM_PRESQRCL, "^]" ), /* ^] */
 		
-		comma = INIT_TOKENHEAD( TOKTYPE_SYM_COMMA, 0,  0,  0, 0, 0 ), /* , */
+		comma = INIT_TOKEN_GENERIC( TOKTYPE_SYM_COMMA, "," ), /* , */
 		
 			/* These two are used to configure tokengroup{}s. */
-		??? = INIT_TOKENHEAD( ??? , 0,  0,  0, 0, 0 ),
-		??? = INIT_TOKENHEAD( ??? , 0,  0,  0, 0, 0 );
+		??? = INIT_TOKEN_GENERIC( ??? , "" ),
+		??? = INIT_TOKEN_GENERIC( ??? , "" );
 					???
 			/* This is used mid-parse to mark sets of tokens that are arguments. */
 		#define TOKTYPE_GENERICGROUP ( 0xB0F )
@@ -582,14 +647,14 @@ reframe entry( stkp, v_ )
 		LIB4_DEFINE_PASCALARRAY_LITERAL2( tokenheadptr_, token_head*, __VA_ARGS__ )
 	static tokhdptr_parr
 		nobreaks = entry_DEF_tokhdptr_parr(  ),
-		commabreaks = entry_DEF_tokhdptr_parr( &comma ),
+		commabreaks = entry_DEF_tokhdptr_parr( &( comma.header ) ),
 		
-		plainbads = entry_DEF_tokhdptr_parr( upparen, upcurl, upsqar ),
-		parenbads = entry_DEF_tokhdptr_parr( plainparen, upcurl, upsqar ),
-		curlbads = entry_DEF_tokhdptr_parr( plainparen, upparen, upsqar ),
-		sqarbads = entry_DEF_tokhdptr_parr( plainparen, upparen, upcurl ),
+		plainbads = entry_DEF_tokhdptr_parr( ( upparen.header ), ( upcurl.header ), ( upsqar.header ) ),
+		parenbads = entry_DEF_tokhdptr_parr( ( plainparen.header ), ( upcurl.header ), ( upsqar.header ) ),
+		curlbads = entry_DEF_tokhdptr_parr( ( plainparen.header ), ( upparen.header ), ( upsqar.header ) ),
+		sqarbads = entry_DEF_tokhdptr_parr( ( plainparen.header ), ( upparen.header ), ( upcurl.header ) ),
 		
-		starters = entry_DEF_tokhdptr_parr( parenplain, parenup, curlup, sqarup );
+		starters = entry_DEF_tokhdptr_parr( ( parenplain.header ), ( parenup.header ), ( curlup.header ), ( sqarup.header ) );
 	
 	static specials
 		plainspecs =
@@ -599,8 +664,8 @@ reframe entry( stkp, v_ )
 				plainbads,
 				starters,
 				
-				parenplain,
-				plainparen
+				( parenplain.header ),
+				( plainparen.header )
 			),
 		parenspecs =
 			INIT__SPECIALS(
@@ -609,8 +674,8 @@ reframe entry( stkp, v_ )
 				parenbads,
 				starters,
 				
-				parenup,
-				upparen
+				( parenup.header ),
+				( upparen.header )
 			),
 		curlspecs =
 			INIT__SPECIALS(
@@ -619,8 +684,8 @@ reframe entry( stkp, v_ )
 				curlbads,
 				starters,
 				
-				curlup,
-				upcurl
+				( curlup.header ),
+				( upcurl.header )
 			),
 		sqarspecs =
 			INIT__SPECIALS(
@@ -629,8 +694,8 @@ reframe entry( stkp, v_ )
 				sqarbads,
 				starters,
 				
-				sqarup,
-				upsqar
+				( sqarup.header ),
+				( upsqar.header )
 			);
 	
 		/* This provides common behavior for the *script retframe_parr{}s. */
