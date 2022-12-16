@@ -355,6 +355,14 @@ retframe exit( stkp, v_ )
 	
 	RETFRAMEFUNC( entry, scratch );
 }
+		/* Handles commas. */
+	retframe queue_argrecep( stkp, v_ );
+		/* Gathers tokens to fill out the current argument, dispatching */
+		/*  otherwise if appropriate for the token. */
+	retframe accumulate_argrecep( stkp, v_ );
+		/* ( token*1 tokengroup* tokengroup* token*2 -- ... ) */
+		/* Verify the type of token* 1, then continue on to */
+		/*  accumulate_argrecep() if correct. */
 	retframe check_argstart( stkp, v_ )
 	{
 		int scratch;
@@ -365,7 +373,7 @@ retframe exit( stkp, v_ )
 		specials *spec = (specials*)v_;
 		
 		uintptr_t tok;
-		STACKPEEK_UINT( &( stkp->data ), 0, tok,  entry, scratch );
+		STACKPEEK_UINT( &( stkp->data ), sizeof( uintptr_t ) * 3, tok,  entry, scratch );
 		
 			/* If the result is the failure case, then one or both arguments were provided as null. */
 			/* If the result is the success case: */
@@ -376,11 +384,29 @@ retframe exit( stkp, v_ )
 				/* 2: Ended on length. */
 				/* 3+: Mismatch at character[ abs( result ) - 3 ]. */
 		lib4_result equal_tokens( (token_head*)tok, (token_head*)( spec->start ) );
+		int a;
+#define check_argstart_ONFAIL( err ) /* One or both arguments were provided as null. */ ???
+		LIB4_MONAD_EITHER_BODYMATCH( res, LIB4_OP_SETa, check_argstart_ONFAIL )
+		switch( abs( a ) )
+		{
+			case 0: /* Match (which means the starting bracket is a match to our specials). */
+				???;
+				
+				
+				/* Negatives: tok < spec->start */
+				/* Positives: tok > spec->start */
+			case 1: /* Ended on toktype. */
+			case 2: /* Ended on length. */
+			default: /* Mismatch at character[ abs( result ) - 3 ]. */
+				/* Regardles of which of the three cases brought us here, we are not done. */
+				break;
+		}
 		
 		
 		???
+		
+		return( (retframe){ &accumulate_argrecep, v_ } );
 	}
-	retframe queue_argrecep( stkp, v_ );
 		/* Gathers tokens to fill out the current argument, dispatching */
 		/*  otherwise if appropriate for the token. */
 		/* v_ must be non-null. */
@@ -543,6 +569,7 @@ retframe exit( stkp, v_ )
 		}
 		return( (retframe){ &enqueue_returns, (void*)retcalls } );
 	}
+		/* Handles commas. */
 		/* Condense the current tokengroup{}, move into the parent */
 		/*  tokengroup{}, and push a new tokengroup{} onto the stack. */
 		/* v_ must be non-null. */
@@ -577,15 +604,6 @@ retframe exit( stkp, v_ )
 				
 				/* Errors, all of them. */
 		}
-		
-		
-		
-		
-		???
-		
-			/* This is used mid-parse to mark sets of tokens that are arguments. */
-		#define TOKTYPE_GENERICGROUP ( 0xB0F )
-		
 		
 		static retframe_parr
 			seq =
@@ -706,7 +724,8 @@ reframe entry( stkp, v_ )
 			{
 				??? , /* Number of retframes  */
 				{
-					???
+					??? /* WARNING: if you make any changes, then adjust the */
+						/*  "subordinate function" sigs, and thus details! */
 					
 					(retframe){ &vm_buildempty_tokengroup, (void*)0 },
 							/* v_ = &uintptr_t; uintptr_t = data; (  -- data ) */
@@ -714,12 +733,16 @@ reframe entry( stkp, v_ )
 							/* ( tokengroup* token_head* -- tokengroup* token_head* ) */
 						(retframe){ &vm_setsubtype_tokengroup, (void*)0 },
 						(retframe){ &invoke_dealloctoken, (void*)0 },
+							??? /* Actually, I think a dealloc() will segfault, since */
+							/*  this should be a static allocation. So, use drop() */
+							/*  instead. */
 					(retframe){ &vm_buildempty_tokengroup, (void*)0 },
 							/* v_ = &uintptr_t; uintptr_t = data; (  -- data ) */
 						(retframe){ &vm_pushdata, (void*) & ??? },
 							/* ( tokengroup* token_head* -- tokengroup* token_head* ) */
 						(retframe){ &vm_setsubtype_tokengroup, (void*)0 },
 						(retframe){ &invoke_dealloctoken, (void*)0 },
+							??? /* Same here as above... */
 					
 					???
 				}
@@ -742,7 +765,7 @@ reframe entry( stkp, v_ )
 						/* ( -- token* ) */
 					(retframe){ &token_queue_fetch, (void*)0 },
 						/* ( tokengroup* token* -- ... ) */
-					(retframe){ &accumulate_argrecep, (void*)& ??? },
+					(retframe){ &check_argstart, (void*)&plainspecs },
 					
 					???
 				}
@@ -762,11 +785,11 @@ reframe entry( stkp, v_ )
 						/* ( -- token* ) */
 					(retframe){ &token_queue_fetch, (void*)0 },
 						/* ( tokengroup* token* -- ... ) */
-					(retframe){ &accumulate_argrecep, (void*)& ??? },
+					(retframe){ &check_argstart, (void*)&parenspecs },
 					
 					???
 				}
-			}
+			},
 		curlscript =
 			(retframe_parr)
 			{
@@ -782,11 +805,11 @@ reframe entry( stkp, v_ )
 						/* ( -- token* ) */
 					(retframe){ &token_queue_fetch, (void*)0 },
 						/* ( tokengroup* token* -- ... ) */
-					(retframe){ &accumulate_argrecep, (void*)& ??? },
+					(retframe){ &check_argstart, (void*)&curlspecs },
 					
 					???
 				}
-			}
+			},
 		sqarscripts =
 			(retframe_parr)
 			{
@@ -802,7 +825,7 @@ reframe entry( stkp, v_ )
 						/* ( -- token* ) */
 					(retframe){ &token_queue_fetch, (void*)0 },
 						/* ( tokengroup* token* -- ... ) */
-					(retframe){ &accumulate_argrecep, (void*)& ??? },
+					(retframe){ &check_argstart, (void*)&sqarspecs },
 					
 					???
 				}
@@ -900,6 +923,8 @@ reframe entry( stkp, v_ )
 		/*  mechanism to preemptively get back out of that diversion. */
 		/* ( uintptr_t -- ??? ) : The uintptr_t is an argument to ->setfunc, */
 		/*  but divertthread() assumes it's presence. */
+		/* subordinateinfo is an instance of divertthread_info{}. I don't */
+		/*  remember why I named it "subordinate". */
 	return( (retframe){ &divertthread, (void*)&subordinateinfo } );
 }
 uintptr_t callerinfo_typeid = &callerinfo_typeid;
