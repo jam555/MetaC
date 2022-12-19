@@ -212,6 +212,25 @@ with this program; if not, write to the:
 		/* This inherits the results of equal_tokenheads(), and adds... */
 			/* 3+: Mismatch at character[ abs( result ) - 3 ]. */
 	lib4_result equal_tokens( token_head *a_, token_head *b_ );
+		/* Wrapper for simple usage of equal_tokens(). */
+		/* on_badargs should simply act like a function, but should ideally return from the */
+		/*  function that uses TOKEN_EQUALS_SIMPLECOMP_BODY(), to prevent invalid invocation of */
+		/*  the *_case handlers. It receives the error value from lib4_result{}. */
+		/* The *_case arguments should all act like functions with this sig: ???( token_head*a, */
+		/*  token_head*b, int ), except that they are located INSIDE of a switch() construct, */
+		/*  and thus can use e.g. break. Otherwise, the name says the case where the arg is */
+		/*  used. For cleanliness, DO NOT allow fall-through! The int will be negative if */
+		/*  "a" < "b", and positive if "a" > "b". If the magnitude of the int is 3 or more, */
+		/*  then the mismatch is at character[ abs( result ) - 3 ]. */
+	#define TOKEN_EQUALS_SIMPLECOMP_BODY( headptr_a, headptr_b,  on_badargs,  badtype_case, badlen_case, badchar_case, match_case ) \
+		{ \
+			lib4_result res = equal_tokens( (token_head*)( headptr_a ), (token_head*)( headptr_b ) ); \
+			int a; LIB4_MONAD_EITHER_BODYMATCH( res, LIB4_OP_SETa, ( on_badargs ) ) \
+			switch( abs( a ) ) { \
+				case 1: /* Ended on toktype. */ badtype_case( (token_head*)( headptr_a ), (token_head*)( headptr_b ), a ); \
+				case 2: /* Ended on length. */ badlen_case( (token_head*)( headptr_a ), (token_head*)( headptr_b ), a ); \
+				default: /* Mismatch at character[ abs( result ) - 3 ]. */ badchar_case( (token_head*)( headptr_a ), (token_head*)( headptr_b ), a ); \
+				case 0: /* Match. */ match_case( (token_head*)( headptr_a ), (token_head*)( headptr_b ), a ); } }
 	
 		/* Returns: */
 			/* -2: Null in *parr, if loc is provided it will hold the offset of the null. */
@@ -219,6 +238,28 @@ with this program; if not, write to the:
 			/* 0: tok not found in parr. */
 			/* 1: tok found, if loc is provided it will hold the offset of the find. */
 	int isin_tokhdptr_parr( token *tok, tokhdptr_par *parr,  size_t *loc );
+		/* testtoken must be castable to a non-null token*. */
+		/* referencearr must be castable to a non-null tokhdptr_parr*. */
+		/* optptrto_offsetrecip is a pointer to an OPTIONAL size_t*. */
+		/* on_nullarg and on_unfound will both receive testtoken and referencearr. */
+		/* on_nullelem and on_found will receive the same args as on_nullarg, but also optptrto_offsetrecip. */
+	#define ISIN_TOKHDPTR_PARR_RUN( testtoken, referencearr, optptrto_offsetrecip,  on_nullarg, on_nullelem, on_found, on_unfound,  stylesetptr, caller, scratch, endfunc ) \
+		( scratch ) = isin_tokhdptr_parr( (token*)( testtoken ), (tokhdptr_par*)( referencearr ),  ( optptrto_offsetrecip ) ); \
+		switch( scratch ) { \
+			case -1: /* tok or parr is null. */ \
+				on_nullarg( ( testtoken ), ( referencearr ) ); break; \
+			case -2: /* Null in *parr, if loc is provided it will hold the offset of the null. */ \
+				on_nullelem( ( testtoken ), ( referencearr ),  ( optptrto_offsetrecip ) ); break; \
+			case 1: /* tok found, if loc is provided it will hold the offset of the find. */ \
+				on_found( ( testtoken ), ( referencearr ),  ( optptrto_offsetrecip ) ); break; \
+			case 0: /* tok not found in parr. */ \
+				on_unfound( ( testtoken ), ( referencearr ) ); break; \
+			default: \
+				STDMSG_FAILEDINTFUNC_WRAPPER( ( stylesetptr), "isin_tokhdptr_parr()", ( caller ), ( scratch ) ); \
+					STDMSG_NOTELINE_WRAPPER( stylesetptr ); STDMSG_DATAPTRARG_WRAPPER( ( stylesetptr ), ( testtoken ) ); \
+					STDMSG_NOTESPACE_WRAPPER( stylesetptr ); STDMSG_DATAPTRARG_WRAPPER( ( stylesetptr ), ( referencearr ) ); \
+					STDMSG_NOTESPACE_WRAPPER( stylesetptr ); STDMSG_DATAPTRARG_WRAPPER( ( stylesetptr ), ( optptrto_offsetrecip ) ); \
+				endfunc(); }
 	
 		/* ->header.toktype should equal TOKTYPE_NUMBER_UINT */
 	typedef struct token_uint

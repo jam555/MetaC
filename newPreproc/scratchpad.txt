@@ -318,38 +318,46 @@ retframe exit( stkp, v_ )
 {
 	int scratch;
 	
-	uintptr_t tok, tmp;
-		/* This is in the way, move it. */
-	STACKPOP_UINT( &( stkp->data ), tok,  entry, scratch );
+	uintptr_t tok;
 	
-		/* First things first, restore the divertthread info! */
-		/* TODO: You know, if offset wasn't set to 0, we could move */
-		/*  this before pop( tok ) and reuse that instead of adding */
-		/*  a second var... */
-	scratch = peek_divertthread_callerinfo( &( stkp->data ),  0 * sizeof( uintptr_t ),  (divertthread_callerinfo*)0, &tmp );
+		/* Do we even have stkp and v_? */
+	???
+	
+		/* Are we looking at a valid stack state? Let's see */
+		/*  if our identifier is at the right spot on the stack. */
+	scratch = peek_divertthread_callerinfo( &( stkp->data ),  sizeof( uintptr_t ),  (divertthread_callerinfo*)0, &tok );
 	if( !scratch )
 	{
 		???
 	}
 	if( tmp != (uintptr_t)&callerinfo_typeid )
 	{
-		/* Massive error! Not recoverable! */
-	}
-	scratch = pop_divertthread_callerinfo( &( stkp->data ),  &escapeinfo );
-	if( !scratch )
-	{
-		???
-	}
-	scratch = pop_divertthread_info( &( stkp->data ),  &subordinateinfo );
-	if( !scratch )
-	{
+		/* Massive error! Invalid stack! Not recoverable! */
+		
 		???
 	}
 	
+	
+		/* This is in the way, move it. */
+	STACKPOP_UINT( &( stkp->data ), tok,  entry, scratch );
+		
+			/* First things first, restore the divertthread info! */
+		scratch = pop_divertthread_callerinfo( &( stkp->data ),  &escapeinfo );
+		if( !scratch )
+		{
+			???
+		}
+		scratch = pop_divertthread_info( &( stkp->data ),  &subordinateinfo );
+		if( !scratch )
+		{
+			???
+		}
+		
 		/* And now move the "token" back onto the stack. */
 	STACKPUSH_UINT( &( stkp->data ), tok,  entry, scratch );
 	
 	
+		/* TOKEN_EQUALS_SIMPLECOMP_BODY( headptr_a, headptr_b,  on_badargs,  badtype_case, badlen_case, badchar_case, match_case ) */
 	if( ( (token_head*)tok )->toktype != ( (specials*)v_ )-> ??? ->toktype )
 	{
 		/* Error: bracket mismatch! */
@@ -362,8 +370,8 @@ retframe exit( stkp, v_ )
 		/* Gathers tokens to fill out the current argument, dispatching */
 		/*  otherwise if appropriate for the token. */
 	retframe accumulate_argrecep( stkp, v_ );
-		/* ( token*1 tokengroup* tokengroup* token*2 -- ... ) */
-		/* Verify the type of token* 1, then continue on to */
+		/* ( token*brackstart tokengroup* tokengroup* token*2 -- ... ) */
+		/* Verify the type of token*brackstart, then continue on to */
 		/*  accumulate_argrecep() if correct. */
 	retframe check_argstart( stkp, v_ )
 	{
@@ -377,32 +385,17 @@ retframe exit( stkp, v_ )
 		uintptr_t tok;
 		STACKPEEK_UINT( &( stkp->data ), sizeof( uintptr_t ) * 3, tok,  entry, scratch );
 		
-			/* If the result is the failure case, then one or both arguments were provided as null. */
-			/* If the result is the success case: */
-				/* Negatives: a < b */
-				/* Positives: a > b */
-				/* 0: Match (ignores stuff like line and source file). */
-				/* 1: Ended on toktype. */
-				/* 2: Ended on length. */
-				/* 3+: Mismatch at character[ abs( result ) - 3 ]. */
-		lib4_result equal_tokens( (token_head*)tok, (token_head*)( spec->start ) );
-		int a;
-#define check_argstart_ONFAIL( err ) /* One or both arguments were provided as null. */ ???
-		LIB4_MONAD_EITHER_BODYMATCH( res, LIB4_OP_SETa, check_argstart_ONFAIL )
-		switch( abs( a ) )
-		{
-			case 0: /* Match (which means the starting bracket is a match to our specials). */
-				???;
-				
-				
-				/* Negatives: tok < spec->start */
-				/* Positives: tok > spec->start */
-			case 1: /* Ended on toktype. */
-			case 2: /* Ended on length. */
-			default: /* Mismatch at character[ abs( result ) - 3 ]. */
-				/* Regardles of which of the three cases brought us here, we are not done. */
-				break;
-		}
+#define check_argstart_BADARGS( err ) /* One or both arguments were provided as null. */ ???
+#define check_argstart_SIMPLYBREAK( ... ) /* Success. */ break;
+#define check_argstart_NONMATCH( tokhead_a, tokhead_b, int_err ) /* Some failure, report it. */ ???
+		TOKEN_EQUALS_SIMPLECOMP_BODY(
+			tok, spec->start,
+			
+			check_argstart_BADARGS,
+			
+			check_argstart_NONMATCH, check_argstart_NONMATCH, check_argstart_NONMATCH,
+			check_argstart_SIMPLYBREAK
+		);
 		
 		
 		???
@@ -415,6 +408,10 @@ retframe exit( stkp, v_ )
 		/* ( tokengroup* token* -- ... ) */
 	retframe accumulate_argrecep( stkp, v_ )
 	{
+#define accumulate_argrecep_SIMPLYBREAK( ... ) /* Success. */ break;
+#define accumulate_argrecep_ISINFUNC_NULLARG( arga, argb ) ???
+#define accumulate_argrecep_ISINFUNC_NULLELEM( arga, argb, offset ) ???
+		
 		int scratch;
 		
 		???
@@ -426,78 +423,57 @@ retframe exit( stkp, v_ )
 		STACKPEEK_UINT( &( stkp->data ), 0, tok,  accumulate_argrecep, scratch );
 		
 			/* Have we found an illegal token? */
-		scratch = isin_tokhdptr_parr( (token*)tok, spec->bads,  &matchloc );
-		switch( scratch )
-		{
-			case 1: /* tok found, if loc is provided it will hold the offset of the find. */
-				???
-				
-				break;
-			case -2: /* Null in *parr, if loc is provided it will hold the offset of the null. */
-				???
-			case -1: /* tok or parr is null. */
-				???
-			case 0: /* tok not found in parr. */
-				???
-			break;
-				???
-		}
+#define accumulate_argrecep_ONILLEGAL( arga, argb, offset ) ???
+		ISIN_TOKHDPTR_PARR_RUN(
+			tok, spec->bads, &matchloc,
+			
+			accumulate_argrecep_ISINFUNC_NULLARG, accumulate_argrecep_ISINFUNC_NULLELEM,
+			accumulate_argrecep_ONILLEGAL,
+			accumulate_argrecep_SIMPLYBREAK,
+			
+			&errs, accumulate_argrecep, scratch, endfunc ???
+		);
 		
 			/* Have we found an argument seperator? */
-		scratch = isin_tokhdptr_parr( (token*)tok, spec->breaks,  &matchloc );
-		switch( scratch )
-		{
-			case 1: /* Found an argument seperator, dispatch appropriately. */
-				return( (retframe){ &queue_argrecep, v_ } );
-				
-			case -2: /* Null in *parr, if loc is provided it will hold the offset of the null. */
-				???
-			case -1: /* tok or parr is null. */
-				???
-			case 0: /* tok not found in parr. */
-				???
-			break;
-				???
-		}
+#define accumulate_argrecep_ONSEPARATOR( arga, argb, offset ) return( (retframe){ &queue_argrecep, v_ } );
+		ISIN_TOKHDPTR_PARR_RUN(
+			tok, spec->bads, &matchloc,
+			
+			accumulate_argrecep_ISINFUNC_NULLARG, accumulate_argrecep_ISINFUNC_NULLELEM,
+			accumulate_argrecep_ONSEPARATOR,
+			accumulate_argrecep_SIMPLYBREAK,
+			
+			&errs, accumulate_argrecep, scratch, endfunc ???
+		);
 		
 			/* Have we found a new bracket entry? */
-		scratch = isin_tokhdptr_parr( (token*)tok, spec->starts,  &matchloc );
-		switch( scratch )
-		{
-			case 1: /* tok found, if loc is provided it will hold the offset of the find. */
-				???
-				
-				break;
-			case -2: /* Null in *parr, if loc is provided it will hold the offset of the null. */
-				???
-			case -1: /* tok or parr is null. */
-				???
-			case 0: /* tok not found in parr. */
-				???
-			break;
-				???
-		}
+#define accumulate_argrecep_ONBRACKETSTARTER( arga, argb, offset ) ???
+		ISIN_TOKHDPTR_PARR_RUN(
+			tok, spec->bads, &matchloc,
+			
+			accumulate_argrecep_ISINFUNC_NULLARG, accumulate_argrecep_ISINFUNC_NULLELEM,
+			accumulate_argrecep_ONBRACKETSTARTER,
+			accumulate_argrecep_SIMPLYBREAK,
+			
+			&errs, accumulate_argrecep, scratch, endfunc ???
+		);
 		
 			/* Have we found the ending bracket? */
-		lib4_result res = equal_tokens( (token_head*)tok, (token_head*)( spec->end ) );
-		int a;
-#define accumulate_argrecep_ONFAIL( err ) /* One or both arguments were provided as null. */ ???
-		LIB4_MONAD_EITHER_BODYMATCH( res, LIB4_OP_SETa, accumulate_argrecep_ONFAIL )
-		switch( abs( a ) )
-		{
-			case 0: /* Match (which means the bracket ending is complete). */
-				???;
-				
-				
-				/* Negatives: tok < spec->end */
-				/* Positives: tok > spec->end */
-			case 1: /* Ended on toktype. */
-			case 2: /* Ended on length. */
-			default: /* Mismatch at character[ abs( result ) - 3 ]. */
-				/* Regardles of which of the three cases brought us here, we are not done. */
-				break;
-		}
+#define accumulate_argrecep_BADARGS( err ) /* One or both arguments were provided as null. */ ???
+#define accumulate_argrecep_ONEND( thead_a, thead_)b, int_res ) \
+	/* We encountered the (or a?) ending token. The bracket pair is done, dispatch to exit(). */ \
+	return( (retframe){ &exit, v_ } );
+		TOKEN_EQUALS_SIMPLECOMP_BODY(
+			tok, spec->end,
+			
+			accumulate_argrecep_BADARGS,
+			
+			accumulate_argrecep_SIMPLYBREAK, accumulate_argrecep_SIMPLYBREAK, accumulate_argrecep_SIMPLYBREAK,
+			accumulate_argrecep_ONEND
+		);
 		
+			/* The token wasn't one of the types that causes specials-specific */
+			/*  behavior, so let's search the executable table. */
 		retframe_parr *retcalls = (retframe_parr*)0;
 		static retframe dynamic_recursor;
 		dynamic_recursor = (retframe){ &accumulate_argrecep, v_ };

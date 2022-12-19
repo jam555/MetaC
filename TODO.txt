@@ -29,6 +29,10 @@ Aaaand the file is already out of date. Have been using already-defined stuff
 for the FAILED * FUNC macro note above. So, lots of line numbers below are
 off...
 
+Need to add a "insert break" macro to LibAndria4, something like:
+	"#define LIB4_OPS_BREAKSWITCH( ... ) break" for use with
+		token.h:TOKEN_EQUALS_SIMPLECOMP_BODY().
+
 freshline_directives.c looks likely to just be an older version of exec.c and
 macroargs.c, so figure out if it should be deleted.
 
