@@ -312,6 +312,8 @@ typedef struct specials
 #define INIT__SPECIALS( tokhead,  brkparr, badparr, strtparr,  strtthead, endthead ) \
 	(specials){ (tokhead),  &(brkparr), &(badparr), &(strtparr),  &(strtthead), &(endthead),  &subordinateinfo }
 
+
+
 retframe exit( stkp, v_ )
 {
 	int scratch;
@@ -324,7 +326,7 @@ retframe exit( stkp, v_ )
 		/* TODO: You know, if offset wasn't set to 0, we could move */
 		/*  this before pop( tok ) and reuse that instead of adding */
 		/*  a second var... */
-	scratch = peek_divertthread_callerinfo( &( stkp->data ),  0,  (divertthread_callerinfo*)0, &tmp );
+	scratch = peek_divertthread_callerinfo( &( stkp->data ),  0 * sizeof( uintptr_t ),  (divertthread_callerinfo*)0, &tmp );
 	if( !scratch )
 	{
 		???
