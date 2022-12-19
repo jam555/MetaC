@@ -536,14 +536,15 @@ retframe exit( stkp, v_ )
 				
 				retcalls = &execable;
 				break;
-			case -3:
-				/* Unrecognized generic_named->reftype */
-			case -2:
-				/* Uninitialized generic_named->ref */
-			default:
-				/* Unknown error. */
+			case -3: /* Unrecognized generic_named->reftype */
+			case -2: /* Uninitialized generic_named->ref */
+			default: /* Unknown error. */
 				
-				???
+				STDMSG_FAILEDINTFUNC_WRAPPER( &errs, "is_execable()", accumulate_argrecep, scratch );
+					STDMSG_NOTELINE_WRAPPER( &errs ); STDMSG_DATAPTRARG_WRAPPER( &errs, (token*)tok );
+					STDMSG_NOTESPACE_WRAPPER( &errs ); STDMSG_DATAPTRARG_WRAPPER( &errs, generic_named **found );
+				
+				stack_ENDRETFRAME();
 		}
 		return( (retframe){ &enqueue_returns, (void*)retcalls } );
 	}
@@ -554,6 +555,7 @@ retframe exit( stkp, v_ )
 		/* ( tokengroup* tokengroup* token* -- ... ) */
 	retframe queue_argrecep( stkp, v_ )
 	{
+		
 		int scratch;
 		
 		???
@@ -565,23 +567,20 @@ retframe exit( stkp, v_ )
 		STACKPEEK_UINT( &( stkp->data ), 0, tok,  queue_argrecep, scratch );
 		
 			/* Confirm we have an argument seperator. */
-		scratch = isin_tokhdptr_parr( (token*)tok, spec->breaks,  &matchloc );
-		switch( scratch )
-		{
-			case 1: /* Seperator confirmed, continue processing. */
-				break;
-				
-			case -2: /* Null in *parr, if loc is provided it will hold the offset of the null. */
-				???
-			case -1: /* tok or parr is null. */
-				???
-			case 0: /* tok not found in parr. */
-				???
-			break;
-				???
-				
-				/* Errors, all of them. */
-		}
+#define queue_argrecep_SIMPLYBREAK( ... ) /* Success. */ break;
+			/* These three are all errors. */
+#define queue_argrecep_ISINFUNC_NULLARG( arga, argb ) ???
+#define queue_argrecep_ISINFUNC_NULLELEM( arga, argb, offset ) ???
+#define queue_argrecep_NOSEPARATOR( arga, argb ) ???
+		ISIN_TOKHDPTR_PARR_RUN(
+			tok, spec->breaks, &matchloc,
+			
+			queue_argrecep_ISINFUNC_NULLARG, queue_argrecep_ISINFUNC_NULLELEM,
+			queue_argrecep_SIMPLYBREAK,
+			queue_argrecep_NOSEPARATOR,
+			
+			&errs, accumulate_argrecep, scratch, endfunc ???
+		);
 		
 		static retframe_parr
 			seq =
