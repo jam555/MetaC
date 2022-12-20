@@ -51,6 +51,8 @@ with this program; if not, write to the:
 	int is_delimited( token_head *th );
 	int was_freshline( token_head *th );
 		/* ( dest-token_head* src-token_head* -- dest-token_head* src-token_head* ) */
+	retframe vm_tokenhead_settoktype( stackpair *stkp, void *v_ );
+		/* ( dest-token_head* src-token_head* -- dest-token_head* src-token_head* ) */
 	retframe vm_tokenhead_setflags( stackpair *stkp, void *v_ );
 		/* ( dest-token_head* src-token_head* -- dest-token_head* src-token_head* ) */
 	retframe vm_tokenhead_setsource( stackpair *stkp, void *v_ );
@@ -426,6 +428,15 @@ with this program; if not, write to the:
 		#define TOKTYPE_CONTEXTSPECIALS ( 0xB0E )
 			/* This is used mid-parse to mark sets of tokens that are arguments. */
 		#define TOKTYPE_GENERICGROUP ( 0xB0F )
+		
+		
+			/* Used to mark a tokengroup that was under construction when an */
+			/*  error (probably syntactic) occured. */
+		#define TOKTYPE_TOKENGROUP_ERROREDSET ( 0xB10 )
+		
+		
+		#define TOKTYPE_TOKENGROUP_ARGSET ( 0xB11 )
+		#define TOKTYPE_TOKENGROUP_ARG ( 0xB12 )
 	
 	
 #endif

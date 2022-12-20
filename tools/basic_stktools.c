@@ -20,6 +20,7 @@ with this program; if not, write to the:
 
 #include "headers.h"
 #include "stack.h"
+#include "lexalike.h"
 
 #include "basic_stktools.h"
 
@@ -250,6 +251,45 @@ retframe swap_retframe2data( stackpair *stkp, void *v )
 	
 	
 	RETFRAMEFUNC( stkp,  swap_retframe2data );
+}
+
+retframe swapdata2shuffle( stackpair *stkp, void *v )
+{
+	uintptr_t val;
+	int scratch;
+	
+	STACKCHECK( stkp,  swapdata2shuffle );
+	
+	
+	STACKPOP_UINT( stkp->data, val,  swapdata2shuffle, scratch );
+	
+	PUSH_SHUFFLE( val,  &errs, swapdata2shuffle, scratch, stack_ENDRETFRAME );
+	
+	
+	RETFRAMEFUNC( stkp,  swapdata2shuffle );
+}
+retframe swapshuffle2data( stackpair *stkp, void *v )
+{
+	token *val;
+	int scratch;
+	
+	STACKCHECK( stkp,  swapshuffle2data );
+	
+	
+#define swapshuffle2data_ONERR( dummy1, dummy2, scratcharg ) \
+		STDMSG_FAILEDINTFUNC_WRAPPER( &errs, "token_queue_shufflepop", swapshuffle2data, scratch ); \
+		stack_ENDRETFRAME();
+	POP_SHUFFLE( scratch, &val,  swapshuffle2data_ONERR, val, 0 );
+	if( !val )
+	{
+		STDMSG_BADNULL_WRAPPER( &errs, swapshuffle2data, &val );
+		stack_ENDRETFRAME();
+	}
+	
+	STACKPUSH_UINT( stkp->data, (uintptr_t)val,  swapshuffle2data, scratch );
+	
+	
+	RETFRAMEFUNC( stkp,  swapshuffle2data );
 }
 
 

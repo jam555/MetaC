@@ -255,7 +255,12 @@ retframe _entry( stackpair *stkp, void *v_ )
 /*  need to be filled in, the search function isn't receiving all of it's */
 /*  arguments, and entry() needs to be reviewed to ensure those ??? markers */
 /*  can be dropped. */
-/* So, I forgot that I need to write the longjump receiving cases. */
+/* The "ending bracket case" in accumulate_argrecep() needs to properly */
+/*  finalize the arg set- this should probably be done with a retframe_parr{} */
+/*  pulled out of entry()... */
+/* In fact, most or all of the retframe_parr{}s in entry() (and several of */
+/*  the token{}s as well, if not even more things) should be pulled out into */
+/*  the file scope instead of cluttering up entry(). */
 
 
 
@@ -379,41 +384,6 @@ retframe exit( stkp, v_ )
 	retframe queue_argrecep( stkp, v_ );
 		/* Gathers tokens to fill out the current argument, dispatching */
 		/*  otherwise if appropriate for the token. */
-	retframe accumulate_argrecep( stkp, v_ );
-		/* ( token*brackstart tokengroup* tokengroup* token*2 -- ... ) */
-		/* Verify the type of token*brackstart, then continue on to */
-		/*  accumulate_argrecep() if correct. */
-	retframe check_argstart( stkp, v_ )
-	{
-		int scratch;
-		
-		???
-		
-		
-		specials *spec = (specials*)v_;
-		
-		uintptr_t tok;
-		STACKPEEK_UINT( &( stkp->data ), sizeof( uintptr_t ) * 3, tok,  entry, scratch );
-		
-#define check_argstart_BADARGS( err ) /* One or both arguments were provided as null. */ ???
-#define check_argstart_SIMPLYBREAK( ... ) /* Success. */ break;
-#define check_argstart_NONMATCH( tokhead_a, tokhead_b, int_err ) /* Some failure, report it. */ ???
-		TOKEN_EQUALS_SIMPLECOMP_BODY(
-			tok, spec->start,
-			
-			check_argstart_BADARGS,
-			
-			check_argstart_NONMATCH, check_argstart_NONMATCH, check_argstart_NONMATCH,
-			check_argstart_SIMPLYBREAK
-		);
-		
-		
-		???
-		
-		return( (retframe){ &accumulate_argrecep, v_ } );
-	}
-		/* Gathers tokens to fill out the current argument, dispatching */
-		/*  otherwise if appropriate for the token. */
 		/* v_ must be non-null. */
 		/* ( tokengroup* token* -- ... ) */
 	retframe accumulate_argrecep( stkp, v_ )
@@ -471,8 +441,9 @@ retframe exit( stkp, v_ )
 			/* Have we found the ending bracket? */
 #define accumulate_argrecep_BADARGS( err ) /* One or both arguments were provided as null. */ ???
 #define accumulate_argrecep_ONEND( thead_a, thead_)b, int_res ) \
-	/* We encountered the (or a?) ending token. The bracket pair is done, dispatch to exit(). */ \
-	return( (retframe){ &exit, v_ } );
+	/* We encountered the (or a?) ending token. The bracket pair is done. */ \
+	??? /* We need to discard the ending token, then compress the args... this doesn't do that yet. */ \
+	RETFRAMEFUNC( stkp,  swapshuffle2data );
 		TOKEN_EQUALS_SIMPLECOMP_BODY(
 			tok, spec->end,
 			
@@ -641,12 +612,13 @@ reframe entry( stkp, v_ )
 		
 		comma = INIT_TOKEN_GENERIC( TOKTYPE_SYM_COMMA, "," ), /* , */
 		
-			/* These two are used to configure tokengroup{}s. */
-		??? = INIT_TOKEN_GENERIC( ??? , "" ),
-		??? = INIT_TOKEN_GENERIC( ??? , "" );
-					???
-			/* This is used mid-parse to mark sets of tokens that are arguments. */
-		#define TOKTYPE_GENERICGROUP ( 0xB0F )
+			/* These three are used to configure tokengroup{}s. */
+		argset = INIT_TOKEN_GENERIC( TOKTYPE_TOKENGROUP_ARGSET, "??? (a set of arguments)" ),
+		argcontainer = INIT_TOKEN_GENERIC( TOKTYPE_TOKENGROUP_ARG, "??? (a single argument)" ),
+		arggeneric = INIT_TOKEN_GENERIC( TOKTYPE_GENERICGROUP, "??? (a filler toktype for single arguments)" ),
+		
+			/* This one is used to mark errors. */
+		errored = INIT_TOKEN_GENERIC( TOKTYPE_TOKENGROUP_ERROREDSET, "??? (a tokengroup that errored mid-build)" );
 	
 #define entry_DEF_tokhdptr_parr( ... ) \
 		LIB4_DEFINE_PASCALARRAY_LITERAL2( tokenheadptr_, token_head*, __VA_ARGS__ )
@@ -716,20 +688,24 @@ reframe entry( stkp, v_ )
 					
 					(retframe){ &vm_buildempty_tokengroup, (void*)0 },
 							/* v_ = &uintptr_t; uintptr_t = data; (  -- data ) */
-						(retframe){ &vm_pushdata, (void*) & ??? },
-							/* ( tokengroup* token_head* -- tokengroup* token_head* ) */
-						(retframe){ &vm_setsubtype_tokengroup, (void*)0 },
+						(retframe){ &vm_pushdata, (void*) &argset },
+								/* ( dest-token_head* src-token_head* -- dest-token_head* src-token_head* ) */
+							(retframe){ &vm_tokenhead_settoktype, (void*)0 },
+								/* The token* from vm_pushdata() will be a static */
+								/*  allocation, so deallocation would likely segfault... */
+						(retframe){ &drop, (void*)0 },
+							/* ( token* tokengroup* -- tokengroup* token* ) */
+						(retframe){ &swap2nd, (void*)0 },
+								/* ( tokengroup* token_head* -- tokengroup* token_head* ) */
+							(retframe){ &vm_setsubtype_tokengroup, (void*)0 },
 						(retframe){ &invoke_dealloctoken, (void*)0 },
-							??? /* Actually, I think a dealloc() will segfault, since */
-							/*  this should be a static allocation. So, use drop() */
-							/*  instead. */
 					(retframe){ &vm_buildempty_tokengroup, (void*)0 },
-							/* v_ = &uintptr_t; uintptr_t = data; (  -- data ) */
-						(retframe){ &vm_pushdata, (void*) & ??? },
-							/* ( tokengroup* token_head* -- tokengroup* token_head* ) */
-						(retframe){ &vm_setsubtype_tokengroup, (void*)0 },
-						(retframe){ &invoke_dealloctoken, (void*)0 },
-							??? /* Same here as above... */
+						(retframe){ &vm_pushdata, (void*) &argcontainer },
+							(retframe){ &vm_tokenhead_settoktype, (void*)0 },
+						(retframe){ &drop, (void*)0 },
+						(retframe){ &vm_pushdata, (void*) &arggeneric },
+							(retframe){ &vm_setsubtype_tokengroup, (void*)0 },
+						(retframe){ &drop, (void*)0 },
 					
 					???
 				}
@@ -752,7 +728,7 @@ reframe entry( stkp, v_ )
 						/* ( -- token* ) */
 					(retframe){ &token_queue_fetch, (void*)0 },
 						/* ( tokengroup* token* -- ... ) */
-					(retframe){ &check_argstart, (void*)&plainspecs },
+					(retframe){ &accumulate_argrecep, (void*)&plainspecs },
 					
 					???
 				}
@@ -772,7 +748,7 @@ reframe entry( stkp, v_ )
 						/* ( -- token* ) */
 					(retframe){ &token_queue_fetch, (void*)0 },
 						/* ( tokengroup* token* -- ... ) */
-					(retframe){ &check_argstart, (void*)&parenspecs },
+					(retframe){ &accumulate_argrecep, (void*)&parenspecs },
 					
 					???
 				}
@@ -792,7 +768,7 @@ reframe entry( stkp, v_ )
 						/* ( -- token* ) */
 					(retframe){ &token_queue_fetch, (void*)0 },
 						/* ( tokengroup* token* -- ... ) */
-					(retframe){ &check_argstart, (void*)&curlspecs },
+					(retframe){ &accumulate_argrecep, (void*)&curlspecs },
 					
 					???
 				}
@@ -812,9 +788,50 @@ reframe entry( stkp, v_ )
 						/* ( -- token* ) */
 					(retframe){ &token_queue_fetch, (void*)0 },
 						/* ( tokengroup* token* -- ... ) */
-					(retframe){ &check_argstart, (void*)&sqarspecs },
+					(retframe){ &accumulate_argrecep, (void*)&sqarspecs },
 					
 					???
+				}
+			},
+		
+			/* ( tokengroup*args tokengroup*arg token* bookmark -- tokengroup*args bookmark ) */
+		errhandler =
+			(retframe_parr)
+			{
+				9, /* Number of retframes  */
+				{
+						/* ( tokengroup*args tokengroup*arg token* bookmark -- ... ) */
+					(retframe){ &swapdata2shuffle, void*)0 },
+					(retframe){ &swapdata2shuffle, void*)0 },
+						/* ( ... -- data: tokengroup*args tokengroup*arg   shuffle: bookmark token* ) */
+					
+						/* ( tokengroup*args tokengroup*arg -- tokengroup*args ) */
+					(retframe){ &vm_pushto_tokengroup, (void*)0 },
+					
+					
+						/*
+							(
+									data: tokengroup*args   shuffle: bookmark token*
+								--
+									data: tokengroup*args token*   shuffle: bookmark
+							)
+						*/
+					(retframe){ &swapshuffle2data, void*)0 },
+						/* ( tokengroup*args token* -- tokengroup*args ) */
+					(retframe){ &vm_pushto_tokengroup, (void*)0 },
+					
+					/* Remark tokengroup*args as erroneous. */
+						/* v_ = &uintptr_t; uintptr_t = data; (  -- data ) */
+					(retframe){ &vm_pushdata, (void*) &errored },
+							/* ( dest-token_head* src-token_head* -- dest-token_head* src-token_head* ) */
+						(retframe){ &vm_tokenhead_settoktype, (void*)0 },
+							/* The token* from vm_pushdata() will be a static */
+							/*  allocation, so deallocation would likely segfault... */
+					(retframe){ &drop, (void*)0 },
+					
+						/* Prepare to reenter the setjump()/longjump() logic... */
+					(retframe){ &swapshuffle2data, void*)0 }
+						/* ( ... -- tokengroup*args bookmark ) */
 				}
 			};
 	
@@ -858,8 +875,38 @@ reframe entry( stkp, v_ )
 		/* Reset the divertthread_info to a nice, safe default. */
 	subordinateinfo = VALUE_subordinateinfo;
 	
-	
-	
+	static retframe_parr
+		seq =
+			(retframe_parr)
+			{
+				2, /* Number of retframes  */
+				{
+						/* v_ must be a pointer to a divertthread_info{}. The */
+						/*  values of the elements in the provided instance */
+						/*  will be swapped with "foreign" values during the */
+						/*  longevity of the provided setfunc and jumpfunc */
+						/*  framefunc{}s, DON'T SCREW WITH THOSE VALUES. The */
+						/*  CONTENTS of ->recepdata won't be touched, with */
+						/*  the exception of ->earlyexit, which (IF */
+						/*  ->recepdata is non-null) will be initialized so */
+						/*  that user code can actually use it. */
+						/* Named in reference Unix's fork() function, but it */
+						/*  just diverts execution of the current thread */
+						/*  while providing a special exit mechanism to */
+						/*  preemptively get back out of that diversion. */
+						/* subordinateinfo is an instance of */
+						/*  divertthread_info{}. I don't remember why I named */
+						/*  it "subordinate". */
+						/* ( uintptr_t -- ??? ) : The uintptr_t is an arg to */
+						/*  ->setfunc, but divertthread() assumes it's */
+						/*  presence. */
+					(retframe){ &divertthread, (void*)&subordinateinfo },
+					
+						/* ( tokengroup* token* -- ... ) */
+					(retframe){ &exit, (void*)0 }
+				}
+			};
+#define entry_PATCHSEQ( exit_v_ ) seq.body[ 1 ].data = (void*)( exit_v_ );
 	scratch = simplify_toktype( (token_head*)tok,  &tok );
 	if( !scratch )
 	{
@@ -876,43 +923,28 @@ reframe entry( stkp, v_ )
 				/*  exit, lest the entire system break. This is NOT a small thing, */
 				/*  it can completely screw up the stack. */
 			subordinateinfo.setfunc = (retframe){ &enqueue_returns, (void*)&plainscript };
-			subordinateinfo.jumpfunc = ??? ;
+			subordinateinfo.jumpfunc = (retframe){ &enqueue_returns, (void*)&errhandler };
+			entry_PATCHSEQ( &plainspecs );
 			break;
 		case TOKTYPE_OPPARUP:
 			subordinateinfo.setfunc = (retframe){ &enqueue_returns, (void*)&parenscript };
-			subordinateinfo.jumpfunc = ??? ;
+			subordinateinfo.jumpfunc = (retframe){ &enqueue_returns, (void*)&errhandler };
+			entry_PATCHSEQ( &parenspecs );
 			break;
 		case TOKTYPE_OPCRLUP:
 			subordinateinfo.setfunc = (retframe){ &enqueue_returns, (void*)&curlscript };
-			subordinateinfo.jumpfunc = ??? ;
+			subordinateinfo.jumpfunc = (retframe){ &enqueue_returns, (void*)&errhandler };
+			entry_PATCHSEQ( &curlspecs );
 			break;
 		case TOKTYPE_OPSQRUP:
 			subordinateinfo.setfunc = (retframe){ &enqueue_returns, (void*)&sqarscripts };
-			subordinateinfo.jumpfunc = ??? ;
+			subordinateinfo.jumpfunc = (retframe){ &enqueue_returns, (void*)&errhandler };
+			entry_PATCHSEQ( &sqarspecs );
 			break;
 		default:
-			/* Throw error: this should never have happened. */
+			??? /* Throw error: this should never have happened. */
 	}
-	
-		/* v_ must be a pointer to a divertthread_info{}. The values of the */
-		/*  elements in the provided instance will be swapped with "foreign" */
-		/*  values during the longevity of the provided setfunc and jumpfunc */
-		/*  framefunc{}s, DON'T SCREW WITH THOSE VALUES. The CONTENTS of */
-		/*  ->recepdata won't be touched, with the exception of ->earlyexit, */
-		/*  which (IF ->recepdata is non-null) will be initialized so that */
-		/*  user code can actually use it. */
-		/* Note that this is intentionally named in reference to */
-		/*  multi-threading (and e.g. ITC threaded code), and Unix's fork() */
-		/*  function- I considered naming it branch() or similar, but */
-		/*  decided that sounded too much like fork- it doesn't produce a */
-		/*  new process, thread, fiber, or anything else, it just diverts */
-		/*  execution of the current thread while providing a special exit */
-		/*  mechanism to preemptively get back out of that diversion. */
-		/* ( uintptr_t -- ??? ) : The uintptr_t is an argument to ->setfunc, */
-		/*  but divertthread() assumes it's presence. */
-		/* subordinateinfo is an instance of divertthread_info{}. I don't */
-		/*  remember why I named it "subordinate". */
-	return( (retframe){ &divertthread, (void*)&subordinateinfo } );
+	return( (retframe){ &enqueue_returns, (void*)&seq } );
 }
 uintptr_t callerinfo_typeid = &callerinfo_typeid;
 

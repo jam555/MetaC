@@ -55,6 +55,9 @@ retframe swap_retframe2ret( stackpair *stkp, void *v );
 	/* ( ret: retframe -- retframe ) */
 retframe swap_retframe2data( stackpair *stkp, void *v );
 
+retframe swapdata2shuffle( stackpair *stkp, void *v );
+retframe swapshuffle2data( stackpair *stkp, void *v );
+
 
 	/* ( uintptr_t uintptr_t -- uintptr_t ) */
 retframe and2( stackpair *stkp, void *v );

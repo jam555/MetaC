@@ -115,6 +115,33 @@ int was_freshline( token_head *th )
 	return( !( th->column ) );
 }
 	/* ( dest-token_head* src-token_head* -- dest-token_head* src-token_head* ) */
+retframe vm_tokenhead_settoktype( stackpair *stkp, void *v_ )
+{
+	int scratch;
+	
+	STACKCHECK( stkp,  vm_tokenhead_settoktype );
+	
+	uintptr_t tmp;
+	
+	STACKPEEK_UINT( &( stkp->data ), 0, tmp,  vm_tokenhead_settoktype, scratch );
+	token_head *dest, *src = (token_head*)tmp;
+	if( !src )
+	{
+		???
+	}
+	
+	STACKPEEK_UINT( &( stkp->data ), sizeof( uintptr_t ), tmp,  vm_tokenhead_settoktype, scratch );
+	dest = (token_head*)tmp;
+	if( !dest )
+	{
+		???
+	}
+	
+	dest->toktype = src->toktype;
+	
+	RETFRAMEFUNC( vm_tokenhead_settoktype );
+}
+	/* ( dest-token_head* src-token_head* -- dest-token_head* src-token_head* ) */
 retframe vm_tokenhead_setflags( stackpair *stkp, void *v_ )
 {
 	int scratch;

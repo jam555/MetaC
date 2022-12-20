@@ -113,7 +113,7 @@ with this program; if not, write to the:
 			( scratch ) = token_queue_shufflepush( (token*)( tokptr ) ); \
 			if( !( scratch ) ) { \
 				STDMSG_FAILEDINTFUNC_WRAPPER( ( stylesetptr ), "token_queue_shufflepush", ( caller ), ( scratch ) ); \
-				( endfunc )(); } } \
+				( endfunc )(); } }
 	
 		/* Moves one token pointer from the "shuffle" stack to the "unget" */
 		/*  stack. */
