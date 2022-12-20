@@ -261,6 +261,8 @@ retframe _entry( stackpair *stkp, void *v_ )
 /* In fact, most or all of the retframe_parr{}s in entry() (and several of */
 /*  the token{}s as well, if not even more things) should be pulled out into */
 /*  the file scope instead of cluttering up entry(). */
+/* errhandler in entry() probably needs to call exit(), or reproduce it's */
+/*  behavior. */
 
 
 
