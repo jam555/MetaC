@@ -249,6 +249,16 @@ retframe _entry( stackpair *stkp, void *v_ )
 
 
 
+/* This code is mostly complete. */
+/*  Having said that, the longjump() stuff isn't yet used (it should be, as */
+/*  a replacement for other exits in syntax-error cases), various errors */
+/*  need to be filled in, the search function isn't receiving all of it's */
+/*  arguments, and entry() needs to be reviewed to ensure those ??? markers */
+/*  can be dropped. */
+/* So, I forgot that I need to write the longjump receiving cases. */
+
+
+
 int is_execable( token *tok,  generic_named **found )
 {
 	generic_named *found_ = (generic_named*)0;
