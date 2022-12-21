@@ -403,6 +403,35 @@ static specials
 			( upsqar.header )
 		);
 
+static retframe_parr
+	build_argcontainer =
+		(retframe_parr)
+		{
+			7, /* Number of retframes  */
+			{
+				(retframe){ &vm_buildempty_tokengroup, (void*)0 },
+					(retframe){ &vm_pushdata, (void*) &argcontainer },
+						(retframe){ &vm_tokenhead_settoktype, (void*)0 },
+					(retframe){ &drop, (void*)0 },
+					(retframe){ &vm_pushdata, (void*) &arggeneric },
+						(retframe){ &vm_setsubtype_tokengroup, (void*)0 },
+					(retframe){ &drop, (void*)0 }
+			}
+		},
+			/* ( tokengroup*args tokengroup*arg token* -- tokengroup*args ) */
+	complete_args =
+		(retframe_parr)
+		{
+			2, /* Number of retframes  */
+			{
+					/* We just needed to DETECT the closing bracket, not keep it. */
+					/* ( token* -- ) */
+				(retframe){ &invoke_dealloctoken, (void*)0 },
+					/* ( tokengroup*args tokengroup*arg -- tokengroup*args ) */
+				(retframe){ &vm_pushto_tokengroup, (void*)0 }
+			}
+		};
+
 
 
 retframe exit( stkp, v_ )
@@ -512,10 +541,7 @@ retframe exit( stkp, v_ )
 		
 			/* Have we found the ending bracket? */
 #define accumulate_argrecep_BADARGS( err ) /* One or both arguments were provided as null. */ ???
-#define accumulate_argrecep_ONEND( thead_a, thead_)b, int_res ) \
-	/* We encountered the (or a?) ending token. The bracket pair is done. */ \
-	??? /* We need to discard the ending token, then compress the args... this doesn't do that yet. */ \
-	RETFRAMEFUNC( stkp,  swapshuffle2data );
+#define accumulate_argrecep_ONEND( thead_a, thead_)b, int_res ) return( (retframe){ &complete_args, (void*)0 } );
 		TOKEN_EQUALS_SIMPLECOMP_BODY(
 			tok, spec->end,
 			
@@ -650,12 +676,7 @@ retframe exit( stkp, v_ )
 						(retframe){ &vm_pushto_tokengroup, (void*)0 },
 						
 							/* ... and then replace it. */
-						(retframe){ &vm_buildempty_tokengroup, (void*)0 },
-								/* v_ = &uintptr_t; uintptr_t = data; (  -- data ) */
-							(retframe){ &vm_pushdata, (void*) & ??? },
-								/* ( tokengroup* token_head* -- tokengroup* token_head* ) */
-							(retframe){ &vm_setsubtype_tokengroup, (void*)0 },
-							(retframe){ &invoke_dealloctoken, (void*)0 },
+						(retframe){ &enqueue_returns, (void*)&build_argcontainer },
 						
 						/* Recurse back to accumulate_argrecep() */
 							/* ( -- token* ) */
@@ -675,13 +696,14 @@ reframe entry( stkp, v_ )
 		/* This provides common behavior for the *script retframe_parr{}s. */
 	static retframe_parr
 			/* Push two tokengroup{}s onto the stack for use as things go along. */
+			/* ( token* -- tokengroup* tokengroup* ) */
 		preprep_arglist =
 			(retframe_parr)
 			{
 				??? , /* Number of retframes  */
 				{
-					??? /* WARNING: if you make any changes, then adjust the */
-						/*  "subordinate function" sigs, and thus details! */
+					/* WARNING: if you make any changes, then adjust the */
+					/*  "subordinate function" sigs, and thus details! */
 					
 					(retframe){ &vm_buildempty_tokengroup, (void*)0 },
 							/* v_ = &uintptr_t; uintptr_t = data; (  -- data ) */
@@ -696,38 +718,25 @@ reframe entry( stkp, v_ )
 								/* ( tokengroup* token_head* -- tokengroup* token_head* ) */
 							(retframe){ &vm_setsubtype_tokengroup, (void*)0 },
 						(retframe){ &invoke_dealloctoken, (void*)0 },
-					(retframe){ &vm_buildempty_tokengroup, (void*)0 },
-						(retframe){ &vm_pushdata, (void*) &argcontainer },
-							(retframe){ &vm_tokenhead_settoktype, (void*)0 },
-						(retframe){ &drop, (void*)0 },
-						(retframe){ &vm_pushdata, (void*) &arggeneric },
-							(retframe){ &vm_setsubtype_tokengroup, (void*)0 },
-						(retframe){ &drop, (void*)0 },
 					
-					???
+					(retframe){ &enqueue_returns, (void*)&build_argcontainer }
 				}
 			};
 	
 	
+		/* All have the same sig: ( token* -- tokengroup* tokengroup* token* -- ... ) */
 	static retframe_parr
 		plainscript =
 			(retframe_parr)
 			{
 				??? , /* Number of retframes  */
 				{
-					???
-					
 						/* (  -- tokengroup* tokengroup* ) */
 					(retframe){ &enqueue_returns, (void*)&preprep_arglist },
-					
-					???
-					
 						/* ( -- token* ) */
 					(retframe){ &token_queue_fetch, (void*)0 },
 						/* ( tokengroup* token* -- ... ) */
-					(retframe){ &accumulate_argrecep, (void*)&plainspecs },
-					
-					???
+					(retframe){ &accumulate_argrecep, (void*)&plainspecs }
 				}
 			},
 		parenscript =
@@ -735,19 +744,12 @@ reframe entry( stkp, v_ )
 			{
 				??? , /* Number of retframes  */
 				{
-					???
-					
 						/* (  -- tokengroup* tokengroup* ) */
 					(retframe){ &enqueue_returns, (void*)&preprep_arglist },
-					
-					???
-					
 						/* ( -- token* ) */
 					(retframe){ &token_queue_fetch, (void*)0 },
 						/* ( tokengroup* token* -- ... ) */
-					(retframe){ &accumulate_argrecep, (void*)&parenspecs },
-					
-					???
+					(retframe){ &accumulate_argrecep, (void*)&parenspecs }
 				}
 			},
 		curlscript =
@@ -755,19 +757,12 @@ reframe entry( stkp, v_ )
 			{
 				??? , /* Number of retframes  */
 				{
-					???
-					
 						/* (  -- tokengroup* tokengroup* ) */
 					(retframe){ &enqueue_returns, (void*)&preprep_arglist },
-					
-					???
-					
 						/* ( -- token* ) */
 					(retframe){ &token_queue_fetch, (void*)0 },
 						/* ( tokengroup* token* -- ... ) */
-					(retframe){ &accumulate_argrecep, (void*)&curlspecs },
-					
-					???
+					(retframe){ &accumulate_argrecep, (void*)&curlspecs }
 				}
 			},
 		sqarscripts =
@@ -775,19 +770,12 @@ reframe entry( stkp, v_ )
 			{
 				??? , /* Number of retframes  */
 				{
-					???
-					
 						/* (  -- tokengroup* tokengroup* ) */
 					(retframe){ &enqueue_returns, (void*)&preprep_arglist },
-					
-					???
-					
 						/* ( -- token* ) */
 					(retframe){ &token_queue_fetch, (void*)0 },
 						/* ( tokengroup* token* -- ... ) */
-					(retframe){ &accumulate_argrecep, (void*)&sqarspecs },
-					
-					???
+					(retframe){ &accumulate_argrecep, (void*)&sqarspecs }
 				}
 			},
 		
@@ -795,40 +783,9 @@ reframe entry( stkp, v_ )
 		errhandler =
 			(retframe_parr)
 			{
-				9, /* Number of retframes  */
+				1, /* Number of retframes  */
 				{
-						/* ( tokengroup*args tokengroup*arg token* bookmark -- ... ) */
-					(retframe){ &swapdata2shuffle, void*)0 },
-					(retframe){ &swapdata2shuffle, void*)0 },
-						/* ( ... -- data: tokengroup*args tokengroup*arg   shuffle: bookmark token* ) */
-					
-						/* ( tokengroup*args tokengroup*arg -- tokengroup*args ) */
-					(retframe){ &vm_pushto_tokengroup, (void*)0 },
-					
-					
-						/*
-							(
-									data: tokengroup*args   shuffle: bookmark token*
-								--
-									data: tokengroup*args token*   shuffle: bookmark
-							)
-						*/
-					(retframe){ &swapshuffle2data, void*)0 },
-						/* ( tokengroup*args token* -- tokengroup*args ) */
-					(retframe){ &vm_pushto_tokengroup, (void*)0 },
-					
-					/* Remark tokengroup*args as erroneous. */
-						/* v_ = &uintptr_t; uintptr_t = data; (  -- data ) */
-					(retframe){ &vm_pushdata, (void*) &errored },
-							/* ( dest-token_head* src-token_head* -- dest-token_head* src-token_head* ) */
-						(retframe){ &vm_tokenhead_settoktype, (void*)0 },
-							/* The token* from vm_pushdata() will be a static */
-							/*  allocation, so deallocation would likely segfault... */
-					(retframe){ &drop, (void*)0 },
-					
-						/* Prepare to reenter the setjump()/longjump() logic... */
-					(retframe){ &swapshuffle2data, void*)0 }
-						/* ( ... -- tokengroup*args bookmark ) */
+					(retframe){ &noop, void*)0 }
 				}
 			};
 #define entry_PATCHERR( exit_v_ ) errhandler.body[ ??? ].data = (void*)( exit_v_ );
