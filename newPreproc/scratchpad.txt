@@ -374,12 +374,6 @@ retframe exit( stkp, v_ )
 	STACKPUSH_UINT( &( stkp->data ), tok,  entry, scratch );
 	
 	
-		/* TOKEN_EQUALS_SIMPLECOMP_BODY( headptr_a, headptr_b,  on_badargs,  badtype_case, badlen_case, badchar_case, match_case ) */
-	if( ( (token_head*)tok )->toktype != ( (specials*)v_ )-> ??? ->toktype )
-	{
-		/* Error: bracket mismatch! */
-	}
-	
 	RETFRAMEFUNC( entry, scratch );
 }
 		/* Handles commas. */
@@ -405,7 +399,9 @@ retframe exit( stkp, v_ )
 		STACKPEEK_UINT( &( stkp->data ), 0, tok,  accumulate_argrecep, scratch );
 		
 			/* Have we found an illegal token? */
-#define accumulate_argrecep_ONILLEGAL( arga, argb, offset ) ???
+#define accumulate_argrecep_ONILLEGAL( arga, argb, offset ) \
+	??? /* Announce the error, conclude the bracket gathering, and use longjump(). */ \
+	return( spec->jumpinfo->recepdata->longjump );
 		ISIN_TOKHDPTR_PARR_RUN(
 			tok, spec->bads, &matchloc,
 			
@@ -416,7 +412,7 @@ retframe exit( stkp, v_ )
 			&errs, accumulate_argrecep, scratch, endfunc ???
 		);
 		
-			/* Have we found an argument seperator? */
+			/* Have we found an argument separator? */
 #define accumulate_argrecep_ONSEPARATOR( arga, argb, offset ) return( (retframe){ &queue_argrecep, v_ } );
 		ISIN_TOKHDPTR_PARR_RUN(
 			tok, spec->bads, &matchloc,
@@ -461,7 +457,8 @@ retframe exit( stkp, v_ )
 		static retframe dynamic_recursor;
 		dynamic_recursor = (retframe){ &accumulate_argrecep, v_ };
 			/* Search for a macro or directive entrance. */
-		scratch = is_execable( (token*)tok,  generic_named **found );
+		generic_named *found = (generic_named*)0;
+		scratch = is_execable( (token*)tok,  &found );
 		switch( scratch )
 		{
 			case 0:
@@ -525,7 +522,7 @@ retframe exit( stkp, v_ )
 				
 				STDMSG_FAILEDINTFUNC_WRAPPER( &errs, "is_execable()", accumulate_argrecep, scratch );
 					STDMSG_NOTELINE_WRAPPER( &errs ); STDMSG_DATAPTRARG_WRAPPER( &errs, (token*)tok );
-					STDMSG_NOTESPACE_WRAPPER( &errs ); STDMSG_DATAPTRARG_WRAPPER( &errs, generic_named **found );
+					STDMSG_NOTESPACE_WRAPPER( &errs ); STDMSG_DATAPTRARG_WRAPPER( &errs, found );
 				
 				stack_ENDRETFRAME();
 		}
@@ -836,6 +833,7 @@ reframe entry( stkp, v_ )
 						/* ( ... -- tokengroup*args bookmark ) */
 				}
 			};
+#define entry_PATCHERR( exit_v_ ) errhandler.body[ ??? ].data = (void*)( exit_v_ );
 	
 	
 	
