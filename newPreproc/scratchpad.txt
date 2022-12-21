@@ -330,6 +330,80 @@ typedef struct specials
 	(specials){ (tokhead),  &(brkparr), &(badparr), &(strtparr),  &(strtthead), &(endthead),  &subordinateinfo }
 
 
+static token
+	parenplain = INIT_TOKEN_GENERIC( TOKTYPE_OPPAR, "(" ), /* ( */
+	parenup = INIT_TOKEN_GENERIC( TOKTYPE_OPPARUP, "(^" ), /* (^ */
+	curlup = INIT_TOKEN_GENERIC( TOKTYPE_OPCRLUP, "{^" ), /* {^ */
+	sqarup = INIT_TOKEN_GENERIC( TOKTYPE_OPSQRUP, "[^" ), /* [^ */
+	
+	plainparen = INIT_TOKEN_GENERIC( TOKTYPE_SYM_PARENCLOSE, ")" ), /* ) */
+	upparen = INIT_TOKEN_GENERIC( TOKTYPE_SYM_PREPARCL, "^)" ), /* ^) */
+	upcurl = INIT_TOKEN_GENERIC( TOKTYPE_SYM_PRECRLCL, "^}" ), /* ^} */
+	upsqar = INIT_TOKEN_GENERIC( TOKTYPE_SYM_PRESQRCL, "^]" ), /* ^] */
+	
+	comma = INIT_TOKEN_GENERIC( TOKTYPE_SYM_COMMA, "," ), /* , */
+	
+		/* These three are used to configure tokengroup{}s. */
+	argset = INIT_TOKEN_GENERIC( TOKTYPE_TOKENGROUP_ARGSET, "??? (a set of arguments)" ),
+	argcontainer = INIT_TOKEN_GENERIC( TOKTYPE_TOKENGROUP_ARG, "??? (a single argument)" ),
+	arggeneric = INIT_TOKEN_GENERIC( TOKTYPE_GENERICGROUP, "??? (a filler toktype for single arguments)" ),
+	
+		/* This one is used to mark errors. */
+	errored = INIT_TOKEN_GENERIC( TOKTYPE_TOKENGROUP_ERROREDSET, "??? (a tokengroup that errored mid-build)" );
+
+
+#define DEF_tokhdptr_parr( ... ) \
+		LIB4_DEFINE_PASCALARRAY_LITERAL2( tokenheadptr_, token_head*, __VA_ARGS__ )
+static tokhdptr_parr
+	nobreaks = DEF_tokhdptr_parr(  ),
+	commabreaks = DEF_tokhdptr_parr( &( comma.header ) ),
+	
+	plainbads = DEF_tokhdptr_parr( ( upparen.header ), ( upcurl.header ), ( upsqar.header ) ),
+	parenbads = DEF_tokhdptr_parr( ( plainparen.header ), ( upcurl.header ), ( upsqar.header ) ),
+	curlbads = DEF_tokhdptr_parr( ( plainparen.header ), ( upparen.header ), ( upsqar.header ) ),
+	sqarbads = DEF_tokhdptr_parr( ( plainparen.header ), ( upparen.header ), ( upcurl.header ) ),
+	
+	starters = DEF_tokhdptr_parr( ( parenplain.header ), ( parenup.header ), ( curlup.header ), ( sqarup.header ) );
+
+static specials
+	plainspecs =
+		INIT__SPECIALS(
+			INIT_TOKENHEAD( TOKTYPE_CONTEXTSPECIALS, 0,  0,  0, 0, 0 ),
+			nobreaks,
+			plainbads,
+			starters,
+			( parenplain.header ),
+			( plainparen.header )
+		),
+	parenspecs =
+		INIT__SPECIALS(
+			INIT_TOKENHEAD( TOKTYPE_CONTEXTSPECIALS, 0,  0,  0, 0, 0 ),
+			commabreaks,
+			parenbads,
+			starters,
+			( parenup.header ),
+			( upparen.header )
+		),
+	curlspecs =
+		INIT__SPECIALS(
+			INIT_TOKENHEAD( TOKTYPE_CONTEXTSPECIALS, 0,  0,  0, 0, 0 ),
+			commabreaks,
+			curlbads,
+			starters,
+			( curlup.header ),
+			( upcurl.header )
+		),
+	sqarspecs =
+		INIT__SPECIALS(
+			INIT_TOKENHEAD( TOKTYPE_CONTEXTSPECIALS, 0,  0,  0, 0, 0 ),
+			commabreaks,
+			sqarbads,
+			starters,
+			( sqarup.header ),
+			( upsqar.header )
+		);
+
+
 
 retframe exit( stkp, v_ )
 {
@@ -597,82 +671,6 @@ retframe exit( stkp, v_ )
 		/* ( token* -- ( token* 0 ) | ( tokengroup* 1 ) | ( tokengroup* 2 ) ) */
 reframe entry( stkp, v_ )
 {
-	??? /* TODO: upgrade all of these to full tokens. */
-	static token
-		parenplain = INIT_TOKEN_GENERIC( TOKTYPE_OPPAR, "(" ), /* ( */
-		parenup = INIT_TOKEN_GENERIC( TOKTYPE_OPPARUP, "(^" ), /* (^ */
-		curlup = INIT_TOKEN_GENERIC( TOKTYPE_OPCRLUP, "{^" ), /* {^ */
-		sqarup = INIT_TOKEN_GENERIC( TOKTYPE_OPSQRUP, "[^" ), /* [^ */
-		
-		plainparen = INIT_TOKEN_GENERIC( TOKTYPE_SYM_PARENCLOSE, ")" ), /* ) */
-		upparen = INIT_TOKEN_GENERIC( TOKTYPE_SYM_PREPARCL, "^)" ), /* ^) */
-		upcurl = INIT_TOKEN_GENERIC( TOKTYPE_SYM_PRECRLCL, "^}" ), /* ^} */
-		upsqar = INIT_TOKEN_GENERIC( TOKTYPE_SYM_PRESQRCL, "^]" ), /* ^] */
-		
-		comma = INIT_TOKEN_GENERIC( TOKTYPE_SYM_COMMA, "," ), /* , */
-		
-			/* These three are used to configure tokengroup{}s. */
-		argset = INIT_TOKEN_GENERIC( TOKTYPE_TOKENGROUP_ARGSET, "??? (a set of arguments)" ),
-		argcontainer = INIT_TOKEN_GENERIC( TOKTYPE_TOKENGROUP_ARG, "??? (a single argument)" ),
-		arggeneric = INIT_TOKEN_GENERIC( TOKTYPE_GENERICGROUP, "??? (a filler toktype for single arguments)" ),
-		
-			/* This one is used to mark errors. */
-		errored = INIT_TOKEN_GENERIC( TOKTYPE_TOKENGROUP_ERROREDSET, "??? (a tokengroup that errored mid-build)" );
-	
-#define entry_DEF_tokhdptr_parr( ... ) \
-		LIB4_DEFINE_PASCALARRAY_LITERAL2( tokenheadptr_, token_head*, __VA_ARGS__ )
-	static tokhdptr_parr
-		nobreaks = entry_DEF_tokhdptr_parr(  ),
-		commabreaks = entry_DEF_tokhdptr_parr( &( comma.header ) ),
-		
-		plainbads = entry_DEF_tokhdptr_parr( ( upparen.header ), ( upcurl.header ), ( upsqar.header ) ),
-		parenbads = entry_DEF_tokhdptr_parr( ( plainparen.header ), ( upcurl.header ), ( upsqar.header ) ),
-		curlbads = entry_DEF_tokhdptr_parr( ( plainparen.header ), ( upparen.header ), ( upsqar.header ) ),
-		sqarbads = entry_DEF_tokhdptr_parr( ( plainparen.header ), ( upparen.header ), ( upcurl.header ) ),
-		
-		starters = entry_DEF_tokhdptr_parr( ( parenplain.header ), ( parenup.header ), ( curlup.header ), ( sqarup.header ) );
-	
-	static specials
-		plainspecs =
-			INIT__SPECIALS(
-				INIT_TOKENHEAD( TOKTYPE_CONTEXTSPECIALS, 0,  0,  0, 0, 0 ),
-				nobreaks,
-				plainbads,
-				starters,
-				
-				( parenplain.header ),
-				( plainparen.header )
-			),
-		parenspecs =
-			INIT__SPECIALS(
-				INIT_TOKENHEAD( TOKTYPE_CONTEXTSPECIALS, 0,  0,  0, 0, 0 ),
-				commabreaks,
-				parenbads,
-				starters,
-				
-				( parenup.header ),
-				( upparen.header )
-			),
-		curlspecs =
-			INIT__SPECIALS(
-				INIT_TOKENHEAD( TOKTYPE_CONTEXTSPECIALS, 0,  0,  0, 0, 0 ),
-				commabreaks,
-				curlbads,
-				starters,
-				
-				( curlup.header ),
-				( upcurl.header )
-			),
-		sqarspecs =
-			INIT__SPECIALS(
-				INIT_TOKENHEAD( TOKTYPE_CONTEXTSPECIALS, 0,  0,  0, 0, 0 ),
-				commabreaks,
-				sqarbads,
-				starters,
-				
-				( sqarup.header ),
-				( upsqar.header )
-			);
 	
 		/* This provides common behavior for the *script retframe_parr{}s. */
 	static retframe_parr
