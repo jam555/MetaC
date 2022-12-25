@@ -250,19 +250,9 @@ retframe _entry( stackpair *stkp, void *v_ )
 
 
 /* This code is mostly complete. */
-/*  Having said that, the longjump() stuff isn't yet used (it should be, as */
-/*  a replacement for other exits in syntax-error cases), various errors */
-/*  need to be filled in, the search function isn't receiving all of it's */
-/*  arguments, and entry() needs to be reviewed to ensure those ??? markers */
+/*  Having said that, various errors need to be filled in, */
+/*  and entry() needs to be reviewed to ensure those ??? markers */
 /*  can be dropped. */
-/* The "ending bracket case" in accumulate_argrecep() needs to properly */
-/*  finalize the arg set- this should probably be done with a retframe_parr{} */
-/*  pulled out of entry()... */
-/* In fact, most or all of the retframe_parr{}s in entry() (and several of */
-/*  the token{}s as well, if not even more things) should be pulled out into */
-/*  the file scope instead of cluttering up entry(). */
-/* errhandler in entry() probably needs to call exit(), or reproduce it's */
-/*  behavior. */
 
 
 
@@ -271,7 +261,7 @@ int is_execable( token *tok,  generic_named **found )
 	generic_named *found_ = (generic_named*)0;
 	if( !found )
 	{
-		found = &found;
+		found = &found_;
 	}
 	
 		/* Some of the directives CAN'T be inlined, so we need to */
@@ -501,10 +491,23 @@ retframe exit( stkp, v_ )
 		
 		STACKPEEK_UINT( &( stkp->data ), 0, tok,  accumulate_argrecep, scratch );
 		
+		static retframe_parr
+			badtoken_exit =
+				(retframe_parr)
+				{
+					2, /* Number of retframes  */
+					{
+						(retframe){ &enqueue_returns, (void*)&complete_args },
+							??? /* Need a "placeholder" function that JUST throws an error. */
+						(retframe){ &noop, (void*)0 }
+					}
+				};
 			/* Have we found an illegal token? */
 #define accumulate_argrecep_ONILLEGAL( arga, argb, offset ) \
-	??? /* Announce the error, conclude the bracket gathering, and use longjump(). */ \
-	return( spec->jumpinfo->recepdata->longjump );
+	??? /* Announce the error. */ \
+		/* Patch over the placeholder. */ \
+	badtoken_exit.body[ 1 ] = spec->jumpinfo->recepdata->longjump; \
+	return( (retframe){ &enqueue_returns, (void*)&badtoken_exit } );
 		ISIN_TOKHDPTR_PARR_RUN(
 			tok, spec->bads, &matchloc,
 			
@@ -541,7 +544,7 @@ retframe exit( stkp, v_ )
 		
 			/* Have we found the ending bracket? */
 #define accumulate_argrecep_BADARGS( err ) /* One or both arguments were provided as null. */ ???
-#define accumulate_argrecep_ONEND( thead_a, thead_)b, int_res ) return( (retframe){ &complete_args, (void*)0 } );
+#define accumulate_argrecep_ONEND( thead_a, thead_b, int_res ) return( (retframe){ &enqueue_returns, (void*)&complete_args } );
 		TOKEN_EQUALS_SIMPLECOMP_BODY(
 			tok, spec->end,
 			
@@ -557,8 +560,7 @@ retframe exit( stkp, v_ )
 		static retframe dynamic_recursor;
 		dynamic_recursor = (retframe){ &accumulate_argrecep, v_ };
 			/* Search for a macro or directive entrance. */
-		generic_named *found = (generic_named*)0;
-		scratch = is_execable( (token*)tok,  &found );
+		scratch = is_execable( (token*)tok,  (generic_named**)0 );
 		switch( scratch )
 		{
 			case 0:
@@ -779,7 +781,7 @@ reframe entry( stkp, v_ )
 				}
 			},
 		
-			/* ( tokengroup*args tokengroup*arg token* bookmark -- tokengroup*args bookmark ) */
+			/* ( tokengroup*args bookmark -- tokengroup*args bookmark ) */
 		errhandler =
 			(retframe_parr)
 			{
