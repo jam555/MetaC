@@ -298,12 +298,24 @@ int is_execable( token *tok,  generic_named **found )
 	
 	/* We should never reach here. */
 }
-retframe on_execable( stkp, v_ );
+retframe on_execable( stackpair *stkp, void *v );
 
 static uintptr_t callerinfo_typeid;
-static divertthread_callerinfo escapeinfo = { (uintptr_t)&callerinfo_typeid, ??? };
+static divertthread_callerinfo escapeinfo =
+	{
+		(uintptr_t)&callerinfo_typeid,
+		{
+			&divertthread_earlyexit_ptr_placeholder,
+			(divertthread_info*)0
+		},
+		(retframe){ &vm_placeholder, (void*)0 }
+	};
 #define VALUE_subordinateinfo \
-	(divertthread_info){  ???, &escapeinfo }
+	(divertthread_info){ \
+		0,\
+		(retframe){ &vm_placeholder, (void*)0 }, (retframe){ &vm_placeholder, (void*)0 }, \
+		&escapeinfo \
+	}
 static divertthread_info subordinateinfo = VALUE_subordinateinfo;
 
 typedef struct specials
@@ -424,27 +436,31 @@ static retframe_parr
 
 
 
-retframe exit( stkp, v_ )
+retframe exit( stackpair *stkp, void *v )
 {
 	int scratch;
 	
 	uintptr_t tok;
 	
-		/* Do we even have stkp and v_? */
-	???
+	STACKCHECK2( stkp, v_,  exit );
 	
 		/* Are we looking at a valid stack state? Let's see */
 		/*  if our identifier is at the right spot on the stack. */
 	scratch = peek_divertthread_callerinfo( &( stkp->data ),  sizeof( uintptr_t ),  (divertthread_callerinfo*)0, &tok );
 	if( !scratch )
 	{
-		???
-	}
-	if( tmp != (uintptr_t)&callerinfo_typeid )
-	{
-		/* Massive error! Invalid stack! Not recoverable! */
+		FAILEDINTFUNC( "peek_divertthread_callerinfo", exit, scratch );
 		
-		???
+		stack_ENDRETFRAME();
+	}
+	if( tok != (uintptr_t)&callerinfo_typeid )
+	{
+		/* Fatal error! Invalid stack! Not recoverable! */
+		
+		BADINT( exit, &tok, (uintptr_t)&callerinfo_typeid );
+			NOTELINE(); STRARG( "Call to peek_divertthread_callerinfo() returned wrong typeid!" );
+		
+		stack_ENDRETFRAME();
 	}
 	
 	
@@ -455,12 +471,16 @@ retframe exit( stkp, v_ )
 		scratch = pop_divertthread_callerinfo( &( stkp->data ),  &escapeinfo );
 		if( !scratch )
 		{
-			???
+			FAILEDINTFUNC( "pop_divertthread_callerinfo", exit, scratch ):
+			
+			stack_ENDRETFRAME();
 		}
 		scratch = pop_divertthread_info( &( stkp->data ),  &subordinateinfo );
 		if( !scratch )
 		{
-			???
+			FAILEDINTFUNC( "pop_divertthread_info", exit, scratch ):
+			
+			stack_ENDRETFRAME();
 		}
 		
 		/* And now move the "token" back onto the stack. */
@@ -475,15 +495,21 @@ retframe exit( stkp, v_ )
 		/*  otherwise if appropriate for the token. */
 		/* v_ must be non-null. */
 		/* ( tokengroup* token* -- ... ) */
-	retframe accumulate_argrecep( stkp, v_ )
+	retframe accumulate_argrecep( stackpair *stkp, void *v )
 	{
 #define accumulate_argrecep_SIMPLYBREAK( ... ) /* Success. */ break;
-#define accumulate_argrecep_ISINFUNC_NULLARG( arga, argb ) ???
-#define accumulate_argrecep_ISINFUNC_NULLELEM( arga, argb, offset ) ???
+#define accumulate_argrecep_ISINFUNC_NULLARG( arga, argb ) \
+		/* One or both arguments were provided as null. */ \
+	BADNULL2( accumulate_argrecep, &( arga ), &( argb ) ); \
+	stack_ENDRETFRAME();
+#define accumulate_argrecep_ISINFUNC_NULLELEM( arga, argb, offset ) \
+	TRESPASSPATH( accumulate_argrecep, "ERROR! Null element encountered by isin_tokhdptr_parr() in accumulate_argrecep()." ); \
+		NOTELINE(); DATAPTR( argb ); \
+		NOTESPACE(); DECARG( offset );
 		
 		int scratch;
 		
-		???
+		STACKCHECK2( stkp, v_,  exit );
 		
 		specials *spec = (specials*)v_;
 		uintptr_t tok;
@@ -498,13 +524,22 @@ retframe exit( stkp, v_ )
 					2, /* Number of retframes  */
 					{
 						(retframe){ &enqueue_returns, (void*)&complete_args },
-							??? /* Need a "placeholder" function that JUST throws an error. */
-						(retframe){ &noop, (void*)0 }
+						(retframe){ &vm_placeholder, (void*)0 }
 					}
 				};
 			/* Have we found an illegal token? */
 #define accumulate_argrecep_ONILLEGAL( arga, argb, offset ) \
-	??? /* Announce the error. */ \
+	NOTELINE(); \
+	STRARG( "ERROR! Invalid token in specials( " ); \
+		DATAPTR( spec ); \
+			STRARG( " )->( " ); \
+			DECARG( spec->start->toktype ); \
+			NOTESPACE(); \
+			STRARG( ( (token*)( spec->start ) )->text ); \
+			STRARG( " ) bracket context: " ); \
+		DECARG( ( (token_head*)tok )->toktype ); \
+			NOTESPACE(); \
+			STRARG( ( (token*)tok )->text ); \
 		/* Patch over the placeholder. */ \
 	badtoken_exit.body[ 1 ] = spec->jumpinfo->recepdata->longjump; \
 	return( (retframe){ &enqueue_returns, (void*)&badtoken_exit } );
@@ -515,11 +550,12 @@ retframe exit( stkp, v_ )
 			accumulate_argrecep_ONILLEGAL,
 			accumulate_argrecep_SIMPLYBREAK,
 			
-			&errs, accumulate_argrecep, scratch, endfunc ???
+			&errs, accumulate_argrecep, scratch, stack_ENDRETFRAME
 		);
 		
 			/* Have we found an argument separator? */
-#define accumulate_argrecep_ONSEPARATOR( arga, argb, offset ) return( (retframe){ &queue_argrecep, v_ } );
+#define accumulate_argrecep_ONSEPARATOR( arga, argb, offset ) \
+	return( (retframe){ &queue_argrecep, v_ } );
 		ISIN_TOKHDPTR_PARR_RUN(
 			tok, spec->bads, &matchloc,
 			
@@ -527,11 +563,23 @@ retframe exit( stkp, v_ )
 			accumulate_argrecep_ONSEPARATOR,
 			accumulate_argrecep_SIMPLYBREAK,
 			
-			&errs, accumulate_argrecep, scratch, endfunc ???
+			&errs, accumulate_argrecep, scratch, stack_ENDRETFRAME
 		);
 		
+		static retframe_parr
+			on_bracketstart =
+				(retframe_parr)
+				{
+					2, /* Number of retframes  */
+					{
+						(retframe){ &on_execable, (void*)0 },
+						(retframe){ &accumulate_argrecep, (void*)0 }
+					}
+				};
 			/* Have we found a new bracket entry? */
-#define accumulate_argrecep_ONBRACKETSTARTER( arga, argb, offset ) ???
+#define accumulate_argrecep_ONBRACKETSTARTER( arga, argb, offset ) \
+	on_bracketstart.body[ 1 ].data = v_; \
+	return( (retframe){ &enqueue_returns, (void*)&on_bracketstart } );
 		ISIN_TOKHDPTR_PARR_RUN(
 			tok, spec->bads, &matchloc,
 			
@@ -539,12 +587,16 @@ retframe exit( stkp, v_ )
 			accumulate_argrecep_ONBRACKETSTARTER,
 			accumulate_argrecep_SIMPLYBREAK,
 			
-			&errs, accumulate_argrecep, scratch, endfunc ???
+			&errs, accumulate_argrecep, scratch, stack_ENDRETFRAME
 		);
 		
 			/* Have we found the ending bracket? */
-#define accumulate_argrecep_BADARGS( err ) /* One or both arguments were provided as null. */ ???
-#define accumulate_argrecep_ONEND( thead_a, thead_b, int_res ) return( (retframe){ &enqueue_returns, (void*)&complete_args } );
+#define accumulate_argrecep_BADARGS( err ) \
+	/* One or both arguments were provided as null. */ \
+	FAILEDINTFUNC( "equal_tokens", accumulate_argrecep, ( err ) ); \
+	STDMSG_BADNULL2_WRAPPER( accumulate_argrecep, &tok, &( spec->end ) );
+#define accumulate_argrecep_ONEND( thead_a, thead_b, int_res ) \
+	return( (retframe){ &enqueue_returns, (void*)&complete_args } );
 		TOKEN_EQUALS_SIMPLECOMP_BODY(
 			tok, spec->end,
 			
@@ -560,7 +612,8 @@ retframe exit( stkp, v_ )
 		static retframe dynamic_recursor;
 		dynamic_recursor = (retframe){ &accumulate_argrecep, v_ };
 			/* Search for a macro or directive entrance. */
-		scratch = is_execable( (token*)tok,  (generic_named**)0 );
+		generic_named *found;
+		scratch = is_execable( (token*)tok,  &found );
 		switch( scratch )
 		{
 			case 0:
@@ -622,7 +675,7 @@ retframe exit( stkp, v_ )
 			case -2: /* Uninitialized generic_named->ref */
 			default: /* Unknown error. */
 				
-				STDMSG_FAILEDINTFUNC_WRAPPER( &errs, "is_execable()", accumulate_argrecep, scratch );
+				FAILEDINTFUNC( "is_execable()", accumulate_argrecep, scratch );
 					STDMSG_NOTELINE_WRAPPER( &errs ); STDMSG_DATAPTRARG_WRAPPER( &errs, (token*)tok );
 					STDMSG_NOTESPACE_WRAPPER( &errs ); STDMSG_DATAPTRARG_WRAPPER( &errs, found );
 				
@@ -635,12 +688,11 @@ retframe exit( stkp, v_ )
 		/*  tokengroup{}, and push a new tokengroup{} onto the stack. */
 		/* v_ must be non-null. */
 		/* ( tokengroup* tokengroup* token* -- ... ) */
-	retframe queue_argrecep( stkp, v_ )
+	retframe queue_argrecep( stackpair *stkp, void *v )
 	{
-		
 		int scratch;
 		
-		???
+		STACKCHECK2( stkp, v_,  exit );
 		
 		specials *spec = (specials*)v_;
 		uintptr_t tok;
@@ -651,9 +703,18 @@ retframe exit( stkp, v_ )
 			/* Confirm we have an argument seperator. */
 #define queue_argrecep_SIMPLYBREAK( ... ) /* Success. */ break;
 			/* These three are all errors. */
-#define queue_argrecep_ISINFUNC_NULLARG( arga, argb ) ???
-#define queue_argrecep_ISINFUNC_NULLELEM( arga, argb, offset ) ???
-#define queue_argrecep_NOSEPARATOR( arga, argb ) ???
+#define queue_argrecep_ISINFUNC_NULLARG( arga, argb ) \
+		/* One or both arguments were provided as null. */ \
+	BADNULL2( queue_argrecep, &( arga ), &( argb ) ); \
+	stack_ENDRETFRAME();
+#define queue_argrecep_ISINFUNC_NULLELEM( arga, argb, offset ) \
+	TRESPASSPATH( queue_argrecep, "ERROR! Null element encountered by isin_tokhdptr_parr() in accumulate_argrecep()." ); \
+		NOTELINE(); DATAPTR( argb ); \
+		NOTESPACE(); DECARG( offset );
+#define queue_argrecep_NOSEPARATOR( arga, argb ) \
+	TRESPASSPATH( queue_argrecep, "ERROR! queue_argrecep() invoked without a separator token! " ); \
+	DATAPTR( arga ); \
+	NOTESPACE(); DATAPTR( argb );
 		ISIN_TOKHDPTR_PARR_RUN(
 			tok, spec->breaks, &matchloc,
 			
@@ -661,7 +722,7 @@ retframe exit( stkp, v_ )
 			queue_argrecep_SIMPLYBREAK,
 			queue_argrecep_NOSEPARATOR,
 			
-			&errs, accumulate_argrecep, scratch, endfunc ???
+			&errs, accumulate_argrecep, scratch, stack_ENDRETFRAME
 		);
 		
 		static retframe_parr
@@ -692,7 +753,7 @@ retframe exit( stkp, v_ )
 		return( (retframe){ &enqueue_returns, (void*)&seq } );
 	}
 		/* ( token* -- ( token* 0 ) | ( tokengroup* 1 ) | ( tokengroup* 2 ) ) */
-reframe entry( stkp, v_ )
+reframe entry( stackpair *stkp, void *v )
 {
 	
 		/* This provides common behavior for the *script retframe_parr{}s. */
@@ -702,7 +763,7 @@ reframe entry( stkp, v_ )
 		preprep_arglist =
 			(retframe_parr)
 			{
-				??? , /* Number of retframes  */
+				8, /* Number of retframes  */
 				{
 					/* WARNING: if you make any changes, then adjust the */
 					/*  "subordinate function" sigs, and thus details! */
@@ -731,7 +792,7 @@ reframe entry( stkp, v_ )
 		plainscript =
 			(retframe_parr)
 			{
-				??? , /* Number of retframes  */
+				3, /* Number of retframes  */
 				{
 						/* (  -- tokengroup* tokengroup* ) */
 					(retframe){ &enqueue_returns, (void*)&preprep_arglist },
@@ -744,7 +805,7 @@ reframe entry( stkp, v_ )
 		parenscript =
 			(retframe_parr)
 			{
-				??? , /* Number of retframes  */
+				3, /* Number of retframes  */
 				{
 						/* (  -- tokengroup* tokengroup* ) */
 					(retframe){ &enqueue_returns, (void*)&preprep_arglist },
@@ -757,7 +818,7 @@ reframe entry( stkp, v_ )
 		curlscript =
 			(retframe_parr)
 			{
-				??? , /* Number of retframes  */
+				3, /* Number of retframes  */
 				{
 						/* (  -- tokengroup* tokengroup* ) */
 					(retframe){ &enqueue_returns, (void*)&preprep_arglist },
@@ -770,7 +831,7 @@ reframe entry( stkp, v_ )
 		sqarscripts =
 			(retframe_parr)
 			{
-				??? , /* Number of retframes  */
+				3, /* Number of retframes  */
 				{
 						/* (  -- tokengroup* tokengroup* ) */
 					(retframe){ &enqueue_returns, (void*)&preprep_arglist },
@@ -782,6 +843,7 @@ reframe entry( stkp, v_ )
 			},
 		
 			/* ( tokengroup*args bookmark -- tokengroup*args bookmark ) */
+			/* We just need the hook right now, not any actual functionality. */
 		errhandler =
 			(retframe_parr)
 			{
@@ -790,7 +852,6 @@ reframe entry( stkp, v_ )
 					(retframe){ &noop, void*)0 }
 				}
 			};
-#define entry_PATCHERR( exit_v_ ) errhandler.body[ ??? ].data = (void*)( exit_v_ );
 	
 	
 	
@@ -807,6 +868,8 @@ reframe entry( stkp, v_ )
 	
 	retframe ret;
 	
+	STACKCHECK2( stkp, v_,  exit );
+	
 	uintptr_t tok;
 	STACKPOP_UINT( &( stkp->data ), tok,  entry, scratch );
 	
@@ -814,14 +877,18 @@ reframe entry( stkp, v_ )
 	scratch = push_divertthread_info( &( stkp->data ), subordinateinfo );
 	if( !scratch )
 	{
-		???
+		FAILEDINTFUNC( "push_divertthread_info", entry, scratch );
+		
+		stack_ENDRETFRAME();
 	}
 		/* Yes, this MUST come last, because it'll ensure that *_callerinfo type id */
 		/*  is on TOP of the stack. */
 	scratch = push_divertthread_callerinfo( &( stkp->data ), escapeinfo );
 	if( !scratch )
 	{
-		???
+		FAILEDINTFUNC( "push_divertthread_callerinfo", entry, scratch );
+		
+		stack_ENDRETFRAME();
 	}
 	
 		/* Restored! And it's on top of the stuff that we won't need till exit! */
@@ -863,18 +930,22 @@ reframe entry( stkp, v_ )
 					(retframe){ &exit, (void*)0 }
 				}
 			};
-#define entry_PATCHSEQ( exit_v_ ) seq.body[ 1 ].data = (void*)( exit_v_ );
+#define entry_PATCHSEQ( exit_v_ ) \
+		seq.body[ 1 ].data = (void*)( exit_v_ );
 	scratch = simplify_toktype( (token_head*)tok,  &tok );
 	if( !scratch )
 	{
-		???
+		FAILEDINTFUNC( "simplify_toktype", entry, scratch );
+			NOTELINE(); DATAPTR( tok );
+		
+		stack_ENDRETFRAME();
 	}
 	switch( tok )
 	{
 		case TOKTYPE_OPPAR:
 				/* Both of these functions MUST comply with the following function */
 				/*  signature: */
-					/* ( ???1 bookmark -- ???2 bookmark ) */
+					/* ( bookmark -- bookmark ) */
 				/*  What is under "bookmark" DOES NOT matter, but "bookmark" WILL */
 				/*  BE on top upon entry, and MUST BE on top AND UNALTERED upon */
 				/*  exit, lest the entire system break. This is NOT a small thing, */
@@ -899,7 +970,10 @@ reframe entry( stkp, v_ )
 			entry_PATCHSEQ( &sqarspecs );
 			break;
 		default:
-			??? /* Throw error: this should never have happened. */
+			TRESPASSPATH( entry, "ERROR! Unfamiliar token type from simplify_toktype(): " );
+				DECARG( tok );
+			
+			stack_ENDRETFRAME();
 	}
 	return( (retframe){ &enqueue_returns, (void*)&seq } );
 }
@@ -908,11 +982,11 @@ uintptr_t callerinfo_typeid = &callerinfo_typeid;
 	/* Note: does not necessarily return the SAME token pointer. In fact, */
 	/*  generally SHOULDN'T. */
 	/* ( token* -- token* ) */
-retframe on_execable( stkp, v_ )
+retframe on_execable( stackpair *stkp, void *v )
 {
 	int scratch;
 	
-	???
+	STACKCHECK( stkp,  exit );
 	
 	uintptr_t tok;
 	STACKPEEK_UINT( &( stkp->data ), tok,  on_execable, scratch );
@@ -933,21 +1007,28 @@ retframe on_execable( stkp, v_ )
 		default:
 			/* Unknown error. */
 			
-			???
+			FAILEDINTFUNC( "is_execable", on_execable, scratch );
+				NOTELINE(); DATAPTR( tok );
+				NOTESPACE(); DATAPTR( &found );
+			
+			stack_ENDRETFRAME();
 	}
 	
 	if( found->reftype != GENNAMETYPE_RETFRAMEFUNC )
 	{
-		/* Error! */
+			/* Error! */
+		BADUINT( on_execable, &( found->reftype ), GENNAMETYPE_RETFRAMEFUNC );
+			NOTELINE(); DATAPTR( &found );
 		
-		???
+		stack_ENDRETFRAME();
 	}
 	if( !( found->ref ) )
 	{
 			/* Error, no reference, fatal error! */
 		TRESPASSPATH( is_execable, "Error! Null ( *found )->ref value!" );
+			NOTELINE(); DATAPTR( &found );
 		
-		???
+		stack_ENDRETFRAME();
 	}
 	
 	return( *( (retframe*)( found->ref ) ) );

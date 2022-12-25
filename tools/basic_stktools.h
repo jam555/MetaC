@@ -106,6 +106,7 @@ retframe vm_datacall( stackpair *stkp, void *v );
 
 typedef struct divertthread_info divertthread_info;
 typedef retframe (*divertthread_earlyexit_ptr)( stackpair*, divertthread_info*, unsigned );
+retframe divertthread_earlyexit_ptr_placeholder( stackpair*, divertthread_info*, unsigned );
 
 typedef struct divertthread_callerinfo
 {

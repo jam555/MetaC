@@ -675,6 +675,11 @@ retframe longjump_callstack( stackpair *stkp, void *v_ )
 
 
 
+retframe divertthread_earlyexit_ptr_placeholder( stackpair *ignore1, divertthread_info *ignore2, unsigned ignore3 )
+{
+	return( (retframe){ &vm_placeholder, (void*)0 } );
+}
+
 int push_divertthread_callerinfo( stackframe *stk, divertthread_callerinfo val )
 {
 	if( !stk )

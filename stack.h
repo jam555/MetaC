@@ -81,6 +81,8 @@ with this program; if not, write to the:
 		/* Seriously, all it does is return. For when you want */
 		/*  a placeholder, but don't want to end execution. */
 	retframe noop( stackpair *stkp, void *v );
+		/* For when you want a placeholder thar SHOULD end execution. */
+	retframe vm_placeholder( stackpair *stkp, void *v );
 	
 	
 	

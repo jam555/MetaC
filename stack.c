@@ -51,6 +51,9 @@ stackpair std_stacks;
 	#define STACK_DECARG( uint ) STDMSG_DECARG_WRAPPER( &errs, ( uint ) )
 	#define STACK_DATAPTR( ptr ) STDMSG_DATAPTRARG_WRAPPER( &errs, ( ptr ) )
 
+#define TRESPASSPATH( funcname, msgstr ) \
+	STDMSG_TRESPASSPATH_WRAPPER( &errs, funcname, ( msgstr ) )
+
 
 #define STACKCHECK( stack,  caller, endfunc ) \
 	STACK_CHECK( ( stack ),  &err, ( caller ), ( endfunc ) )
@@ -114,6 +117,18 @@ retframe noop( stackpair *stkp, void *v )
 	int scratch;
 	
 	RET_FRAMEFUNC( stkp,  noop, scratch );
+}
+retframe vm_placeholder( stackpair *stkp, void *v )
+{
+	STACKCHECK( stkp,  end_run, stack_ENDRETFRAME );
+	
+	TRESPASSPATH(
+		vm_placeholder,
+		"ERROR! Calls to vm_placeholder are meant to be overwritten, it should never run!"
+	);
+	stkp->run = 0;
+	
+	return( (retframe){ (framefunc)0, (void*)0 } );
 }
 
 
