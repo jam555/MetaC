@@ -18,27 +18,13 @@ with this program; if not, write to the:
 	Boston, MA 02111-1307 USA
 */
 
-	/* .th.toktype must == TOKTYPE_CONTEXTSPECIALS */
-typedef struct context_specials
-{
-	token_head th;
-	
-	tokhdptr_parr *breaks;
-	token_head *start, *end;
-	
-} context_specials;
-lib4_intresult not_contextspecials( token_head *tok_, context_specials *ctx );
-	
-	/* This REQUIRES a context_specials{}* to be provided to v_. It will */
-	/*  return a sequence of tokens, themselves additional tokengroup{}s, */
-	/*  each representing a separate argument or similar. These may have */
-	/*  macro or directive invocation tokens mixed in, as most macros & */
-	/*  tokens are expected to NOT be invoked at this early point in the */
-	/*  parsing process. */
-	/* (  -- tokengroup* ) */
-retframe bracketgather_enter( stackpair *stkp, void *v_ );
-
-	/* This calls bracketgather_enter(), use it instead. */
-	/* ( token* -- token* | tokengroup* ) */
-retframe bracketgather_dispatcher( stackpair *stkp, void *v )
-
+int is_execable( token *tok,  generic_named **found );
+	/* Note: does not necessarily 'return' the SAME token pointer. In fact, */
+	/*  generally SHOULDN'T. */
+	/* ( token* -- ... -- token* ) */
+retframe on_execable( stackpair *stkp, void *v );
+	/* Gathers up a bunch of tokens that form a pair of brackets and it's */
+	/*  contents. This DOES at least attempt to execute anything that */
+	/*  is_execable() can find, under the influence of was_freshline(). */
+	/* ( token* -- ( token* 0 ) | ( tokengroup* 1 ) | ( tokengroup* 2 ) ) */
+reframe bracketgather_entry( stackpair *stkp, void *v );
