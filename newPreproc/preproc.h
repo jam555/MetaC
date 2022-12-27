@@ -18,6 +18,17 @@ with this program; if not, write to the:
 	Boston, MA 02111-1307 USA
 */
 
+
+	/* Needs to be called at program startup. */
+int init_basal_gennameLUTs();
+	/* Don't use this one, it should be left to internal purposes. */
+int grow_basal_gennameLUTs( int deltaSize );
+	/* This only deallocates the LUTs, not the contents! */
+	/* Actually, you probably shouldn't use this one either. */
+int deinit_basal_gennameLUTs()
+
+
+
 int is_execable( token *tok,  generic_named **found );
 	/* Note: does not necessarily 'return' the SAME token pointer. In fact, */
 	/*  generally SHOULDN'T. */

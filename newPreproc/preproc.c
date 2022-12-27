@@ -65,6 +65,9 @@ with this program; if not, write to the:
 #endif
 
 
+#define MONADICFAILURE( caller, calltext, err ) \
+		STDMSG_MONADICFAILURE_WRAPPER( &errs, ( caller ), ( calltext ), ( err ) )
+
 #define STACKCHECK( stack,  caller ) \
 	STACK_CHECK( ( stack ),  &err, ( caller ), stack_ENDRETFRAME )
 #define STACKCHECK2( stack, v,  caller ) \
@@ -90,378 +93,174 @@ with this program; if not, write to the:
 	TOKEN_CHECK_SIMPLETYPE( ( tokhead ), ( testval ), ( on_yes ), ( on_no ),  &errs, ( caller ), ( scratch ), stack_ENDRETFRAME )
 
 
-lib4_intresult not_contextspecials( token_head *tok_, context_specials *ctx )
-{
-	int scratch;
-	
-	if( !tok || !ctx )
-	{
-		LIB4_INTRESULT_RETURNFAILURE(
-			(lib4_failure_uipresult){ LIB4_STDERRS_BADARGS_SIMPLE }
-		);
-	}
-	if( !( ctx->th.toktype == TOKTYPE_CONTEXTSPECIALS ) )
-	{
-		LIB4_INTRESULT_RETURNFAILURE(
-			(lib4_failure_uipresult){ LIB4_STDERRS_BADARGS_COMPLEX }
-		);
-	}
-	if( !( ctx->breaks ) || !( ctx->end ) )
-	{
-		LIB4_INTRESULT_RETURNFAILURE(
-			(lib4_failure_uipresult){ LIB4_STDERRS_BADARGS_DEEP }
-		);
-	}
-	
-	uintptr_t tok, tmp;
-	FETCH_SIMPLETYPE( *tok_, tok,  not_contextspecials, scratch );
-#define not_contextspecials_ONYES( ... ) LIB4_INTRESULT_RETURNSUCCESS( -1 );
-	CHECK_SIMPLETYPE( *( ctx->end ), tmp, not_contextspecials_ONYES, LIB4_NULL_MACRO,  not_contextspecials, scratch );
-	
-	size_t loop = 0;
-	while( loop < ctx->breaks->len )
-	{
-#define not_contextspecials_LOOPYES( ... ) LIB4_INTRESULT_RETURNSUCCESS( 0 );
-		CHECK_SIMPLETYPE(
-			*( ctx->breaks->body[ loop ] ), tmp, not_contextspecials_LOOPYES, LIB4_NULL_MACRO,
-			not_contextspecials, scratch
-		);
-		loop++;
-	}
-	
-	LIB4_INTRESULT_RETURNSUCCESS( 1 );
-}
-
-
-
 	/* The actually available stuff. Maybe belongs here, maybe */
 	/*  doesn't, worry about that later. */
-???
-genname_parr *freshline, *inline;
-???
-
-
-
-	/* (  --  ) */
-retframe phase1_comonexec( stackpair *stkp, void *v_ )
-{
-	int scratch;
-	STACKCHECK2( stkp, v_,  phase1_comonexec );
-	
-	???
-}
-
-
-
-retframe bracketgather_invalidcall( stackpair *stkp, void *v_ )
-{
-	/* This should never be entered, it exists to alert when */
-	/*  something fails to get set correctly. */
-	
-	???
-}
-	/* ( token* char_parr* -- ) */
-retframe bracketgather_badtoken( stackpair *stkp, void *v_ )
-{
-	/* This should never be entered, it exists to alert when */
-	/*  something fails to get set correctly. */
-	
-	???
-}
-retframe bracketgather_exit( stackpair *stkp, void *v_ )
-{
-	???
-}
-	/* ( tokengroup* tokengroup* token* char_parr* -- ??? ) */
-retframe bracketgather_loop_search( stackpair *stkp, void *v_ )
-{
-	STACKCHECK2( stkp, v_,  bracketgather_loop );
-	
-	context_specials ctx = (context_specials*)v_;
-	
-	uintptr_t parr, tok;
-	STACKPOP_UINT( &( stkp->data ), parr,  bracketgather_loop, scratch );
-	STACKPEEK_UINT( &( stkp->data ), 0, tok,  bracketgather_loop, scratch );
-	
-		??? /* Does this belong here? Aren't we searching for macros? */
-	genname_parr *searchbatch = ( was_freshline( (token_head*)tok ) ? freshline : inline );
-
-		/* genericnamed* bsearch1_gennamearr( genname_parr *parr, token *tok ); */
-	genericnamed *found_entry = bsearch1_gennamearr( searchbatch, (char_parr*)parr );
-		/* We no longer need the pascal array, so time to delete it. */
-	lib4_result res = char_pascalarray_destroy( (char_parr*)parr );
-#define bracketgather_loop_search_ERRREPORT( err ) \
-		???; /* Do some reporting. */ \
-		stack_ENDRETFRAME();
-	LIB4_RESULT_BODYMATCH( res, LIB4_NULL_MACRO, bracketgather_loop_search_ERRREPORT );
-	
-	if( !found_entry )
-	{
-		/* It's just a token, so we'll push it. */
-		
-		static retframe_parr justtok =
-			(retframe_parr)
-			{
-				3, /* Number of retframes  */
-				{
-						/* ( tokengroup* token* -- tokengroup* ) */
-					(retframe){ &vm_pushto_tokengroup, (void*)0 },
-					(retframe){ &token_queue_fetch, (void*)0 },
-					(retframe){ &bracketgather_loop, (void*)0 }
-				}
-			};
-			justtok.body[ 2 ].data = v_;
-		return( (retframe){ &enqueue_returns, &justtok } );
-		
-	} else if( found_entry->reftype == GENNAMETYPE_RETFRAMEFUNC )
-	{
-		if( !( found_entry->ref ) )
+genname_parr
+	frln = LIB4_DEFINE_PASCALARRAY_LITERAL2( genericnamed_, genericnamed, BUILD_GENNAME_INVALID() ),
+	inln = LIB4_DEFINE_PASCALARRAY_LITERAL2( genericnamed_, genericnamed, BUILD_GENNAME_INVALID() );
+genname_parr *freshline = &frln, *inline = &inln;
+	??? /* Neither of these is initialized, that needs to change. */
+genericnamed
+	hardwired_freshline[] =
 		{
-			BADNULL( bracketgather_loop, ptr );
-			stack_ENDRETFRAME();
+			??? BUILD_GENNAME_RETFRAME( nameptr, refptr )
+		},
+	hardwired_inline[] =
+		{
+			??? BUILD_GENNAME_RETFRAME( nameptr, refptr )
+		};
+	
+	
+	LIB4_DEFINE_PASCALARRAY_STDDEFINE( genericnamed_, genericnamed );
+	typedef genericnamed_pascalarray genname_parr;
+
+int init_basal_gennameLUTs()
+{
+	genericnamed_pascalarray_result res;
+	genname_parr *a;
+	size_t len;
+	
+#define init_basal_gennameLUTs_BUILDFAIL( err ) \
+		MONADICFAILURE( init_basal_gennameLUTs, "genericnamed_build", ( err ) ); \
+		return( -2 );
+	
+	
+	res = genericnamed_build( sizeof( hardwired_freshline ) );
+	LIB4_MONAD_EITHER_BODYMATCH( res, LIB4_OP_SETa, init_basal_gennameLUTs_BUILDFAIL );
+	if( !a )
+	{
+		return( -3 );
+	}
+	freshline = a;
+	while( len < sizeof( hardwired_freshline ) )
+	{
+		freshline->body[ len ] = hardwired_freshline[ len ];
+		++len;
+	}
+	
+	
+	res = genericnamed_build( sizeof( hardwired_inline ) );
+	LIB4_MONAD_EITHER_BODYMATCH( res, LIB4_OP_SETa, init_basal_gennameLUTs_BUILDFAIL );
+	if( !a )
+	{
+		return( -4 );
+	}
+	inline = a;
+	while( len < sizeof( hardwired_inline ) )
+	{
+		inline->body[ len ] = hardwired_inline[ len ];
+		++len;
+	}
+	
+	
+	return( 1 );
+}
+int grow_basal_gennameLUTs( int deltaSize )
+{
+		/* Left( parrtype* ), right( lib4_failure_uipresult ) */
+	genericnamed_pascalarray_result res;
+	genname_parr *a;
+	size_t len;
+	
+#define grow_basal_gennameLUTs_BUILDFAIL( err ) \
+		MONADICFAILURE( init_basal_gennameLUTs, "genericnamed_build", ( err ) ); \
+		return( -2 );
+	
+	
+	len = freshline->len;
+	if( deltaSize < 1 )
+	{
+		len += deltaSize;
+	}
+	
+	res = genericnamed_rebuild( freshline, freshline->len + deltaSize );
+	LIB4_MONAD_EITHER_BODYMATCH( res, LIB4_OP_SETa, grow_basal_gennameLUTs_BUILDFAIL );
+	freshline = a;
+	
+	while( len < freshline->len )
+	{
+		if( len < sizeof( hardwired_freshline ) )
+		{
+			freshline->body[ len ] = hardwired_freshline[ len ];
+			
+		} else {
+			
+			freshline->body[ len ] = BUILD_GENNAME_INVALID();
 		}
 		
-		static retframe_parr activematch =
-			(retframe_parr)
-			{
-				4, /* Number of retframes  */
-				{
-					(retframe){ &token_queue_fetch, (void*)0 },
-						/* This is meant to be overwritten with the retframe at *( ->ref ). */
-						/* ( tokengroup* token* token* -- tokengroup* ) */
-					(retframe){ &bracketgather_invalidcall, (void*)0 },
-					(retframe){ &token_queue_fetch, (void*)0 },
-					(retframe){ &bracketgather_loop, (void*)0 }
-				}
-			};
-				/* Patch in the reference that was found. */
-			activematch.body[ 1 ].handler = ( (retframe*)( found_entry->ref ) )->handler;
-			activematch.body[ 1 ].data = ( (retframe*)( found_entry->ref ) )->data;
-			activematch.body[ 3 ].data = v_;
-		return( (retframe){ &enqueue_returns, &activematch } );
-
-	} else {
-
-		TRESPASSPATH( bracketgather_loop, "Error! Unknown found_entry->reftype value: " );
-			DECARG( ( found_entry->reftype ) );
-		stack_ENDRETFRAME();
+		++len;
 	}
 	
-	??? /* We should never reach here. */
-}
-	/* ( tokengroup* tokengroup* token* -- ??? ) */
-retframe bracketgather_loop( stackpair *stkp, void *v_ )
-{
-	STACKCHECK2( stkp, v_,  bracketgather_loop );
 	
-	context_specials ctx = (context_specials*)v_;
-	
-	uintptr_t tok, arggrp;
-	STACKPEEK_UINT( &( stkp->data ), 0, tok,  bracketgather_loop, scratch );
-	
-	lib4_intresult res = not_contextspecials( (token_head*)tok, ctx );
-	
-#define bracketgather_loop_ERRREPORT( err ) \
-		???; /* Do some reporting. */ \
-		stack_ENDRETFRAME();
-	int a;
-	LIB4_INTRESULT_BODYMATCH( res, LIB4_OP_SETa, bracketgather_loop_ERRREPORT );
-	
-	switch( a )
+	len = inline->len;
+	if( deltaSize < 1 )
 	{
-		case -1:
-			/* Ending token encountered. */
-			
-			static const retframe_parr ending =
-				(retframe_parr)
-				{
-					2, /* Number of retframes  */
-					{
-								/* ( token_head* --  ) */
-						(retframe){ &invoke_dealloctoken, (void*)0 },
-							/* ( tokengroup* tokengroup* -- tokengroup* ) */
-						(retframe){ &vm_pushto_tokengroup, (void*)0 }
-					}
-				};
-			return( (retframe){ &enqueue_returns, &ending } );
-		
-		case 0:
-			/* Break character (e.g. comma) encountered. */
-			
-			static retframe_parr comma =
-				(retframe_parr)
-				{
-					5, /* Number of retframes  */
-					{
-								/* ( token_head* --  ) */
-						(retframe){ &invoke_dealloctoken, (void*)0 },
-							/* ( tokengroup* tokengroup* -- tokengroup* ) */
-						(retframe){ &vm_pushto_tokengroup, (void*)0 },
-						(retframe){ &vm_buildempty_tokengroup, (void*)0 },
-						(retframe){ &token_queue_fetch, (void*)0 },
-						(retframe){ &bracketgather_loop, (void*)0 }
-					}
-				};
-				comma.body[ 4 ].data = v_;
-			return( (retframe){ &enqueue_returns, &comma } );
-		
-		case 1:
-			/* Other character encountered: needs additional decoding. */
-			
-			static const retframe badtok = (retframe){ bracketgather_badtoken&, (void*)0 };
-			static retframe_parr other =
-				(retframe_parr)
-				{
-					2, /* Number of retframes  */
-					{
-							/* ( token* -- token* char_parr* ) */
-							/* v_ must point to a retframe{} to handle "unrecognized token type" errors. */
-						(retframe){ &token2char_parr, (void*)( &badtok ) },
-						(retframe){ &bracketgather_loop_search, (void*)0 }	
-					}
-				};
-				comma.body[ 1 ].data = v_;
-			return( (retframe){ &enqueue_returns, &other } );
-		
-		default:
-			??? /* Erroneous result, report and fail. */
+		len += deltaSize;
 	}
-}
-	/* ( tokengroup* token* -- ... ) */
-retframe bracketgather_check( stackpair *stkp, void *v_ )
-{
-	???
-		/* I think this might force an IMMEDIATE exit of the bracketgather */
-		/*  subsystem- if so, then behavior needs to become more nuanced. */
 	
-	STACKCHECK2( stkp, v_,  bracketgather_check );
+	res = genericnamed_rebuild( inline, inline->len + deltaSize );
+	LIB4_MONAD_EITHER_BODYMATCH( res, LIB4_OP_SETa, grow_basal_gennameLUTs_BUILDFAIL );
+	inline = a;
 	
-	context_specials ctx = (context_specials*)v_;
-	
-	int scratch;
-	uintptr_t tok, tmp;
-	FETCH_SIMPLETYPE( *( ctx->start ), tok,  bracketgather_check, scratch );
-	
-	STACKPEEK_UINT( &( stkp->data ), sizeof( uintptr_t ), tmp,  bracketgather_check, scratch );
-#define bracketgather_check_ONYES( ... ) \
-		tokengroup *dest = build_tokengroup( 0 ); \
-		STACKPUSH_UINT( &( stkp->data ), (uintptr_t)dest,  bracketgather_check, scratch ); \
-		static retframe_parr seq = \
-			(retframe_parr){ \
-				5, /* Number of retframes  */ { \
-					(retframe){ &swap2nd, (void*)0 }, \
-							/* ( tokengroup* token_head* -- tokengroup* token_head* ) */ \
-					(retframe){ &vm_setsubtype_tokengroup, (void*)0 }, \
-					(retframe){ &invoke_dealloctoken, (void*)0 }, \
-					(retframe){ &token_queue_fetch, (void*)0 }, \
-					(retframe){ &bracketgather_loop, (void*)0 } } }; \
-				/* And this is why seq{} isn't a const: we need to patch it at runtime. */ \
-			seq.body[ 4 ].data = v_; \
-		return( (retframe){ &enqueue_returns, &seq } );
-#define bracketgather_check_ONNO( ... ) \
-		??? ; \
-		stack_ENDRETFRAME();
-	CHECK_SIMPLETYPE(
-		*( (token_head*)tmp ), tok, bracketgather_check_ONYES, bracketgather_check_ONNO,
-		bracketgather_check, scratch
-	);
-}
-	/* ( token_head* -- ??? ) */
-retframe bracketgather_enter( stackpair *stkp, void *v_ )
-{
-	int scratch;
-	
-	STACKCHECK2( stkp, v_,  bracketgather_enter );
-	
-	if( ( (token_head*)v_ )->toktype != TOKTYPE_CONTEXTSPECIALS )
+	while( len < ->len )
 	{
-		/* Error, bad type! */
-		???
-	}
-	
-	tokengroup *dest = build_tokengroup( 0 );
-	if( !dest )
-	{
-		???;
-	}
-	STACKPUSH_UINT( &( stkp->data ), (uintptr_t)dest,  bracketgather_enter, scratch );
-	
-	static retframe_parr seq =
-		(retframe_parr)
+		if( len < sizeof( hardwired_inline ) )
 		{
-			6, /* Number of retframes  */
-			{
-				(retframe){ &swap2nd, (void*)0 },
-					/* ( tokengroup* token_head* -- tokengroup* token_head* ) */
-				(retframe){ &vm_setsubtype_tokengroup, (void*)0 },
-				(retframe){ &invoke_dealloctoken, (void*)0 },
-				
-				(retframe){ &token_queue_fetch, (void*)0 },
-				(retframe){ &bracketgather_check, (void*)0 },
-				(retframe){ &bracketgather_exit, (void*)0 }
-			}
-		};
-		seq.body[ 4 ].data = v_;
-		seq.body[ 5 ].data = v_;
-	return( (retframe){ &enqueue_returns, &seq } );
-}
-
-
-	/* ( token* -- token* | tokengroup* ) */
-retframe bracketgather_dispatcher( stackpair *stkp, void *v )
-{
-	static const context_specials
-		curly =
-			{
-				(tokenhead){  },
-				(tokhdptr_parr*){  }, /* breaks */
-				(token_head*), /* start */
-				(token_head*) /* end */
-			},
-		square =
-			{
-				(tokenhead){  },
-				(tokhdptr_parr*){  }, /* breaks */
-				(token_head*), /* start */
-				(token_head*) /* end */
-			},
-		paren =
-			{
-				(tokenhead){  },
-				(tokhdptr_parr*){  }, /* breaks */
-				(token_head*), /* start */
-				(token_head*) /* end */
-			};
-	int scratch;
-	
-	STACKCHECK( stkp,  bracketgather_dispatcher );
-	
-	uintptr_t tmp;
-	
-	STACKPEEK_UINT( &( stkp->data ), sizeof( uintptr_t ), tmp,  bracketgather_dispatcher, scratch );
-	FETCH_SIMPLETYPE( *( (token_head*)tmp ), tmp,  bracketgather_dispatcher, scratch );
-	switch( tmp )
-	{
-		case TOKTYPE_OPCRLUP: /* {^ */
-			return( (retframe){ &bracketgather_enter, (void*)&curly } );
-		case TOKTYPE_OPSQRUP: /* [^ */
-			return( (retframe){ &bracketgather_enter, (void*)&square } );
-		case TOKTYPE_OPPARUP: /* (^ */
-			return( (retframe){ &bracketgather_enter, (void*)&paren } );
+			inline->body[ len ] = hardwired_inline[ len ];
 			
-		default:
-			???;
+		} else {
+			
+			inline->body[ len ] = BUILD_GENNAME_INVALID();
+		}
+		
+		++len;
 	}
 	
-	???
+	
+	return( 1 );
+}
+	/* This only deallocates the LUTs, not the contents! */
+int deinit_basal_gennameLUTs()
+{
+	lib4_result res;
+	lib4_success_result a;
+	
+#define deinit_basal_gennameLUTs_ONFAIL( err ) \
+		MONADICFAILURE( init_basal_gennameLUTs, "genericnamed_build", ( err ) ); \
+		return( -2 );
+	
+	if( freshline != &frln )
+	{
+		res = genericnamed_destroy( freshline );
+		LIB4_MONAD_EITHER_BODYMATCH( res, LIB4_OP_SETa, deinit_basal_gennameLUTs_ONFAIL );
+		
+		freshline = &frln;
+	}
+	if( inline != &inln )
+	{
+		res = genericnamed_destroy( inline );
+		LIB4_MONAD_EITHER_BODYMATCH( res, LIB4_OP_SETa, deinit_basal_gennameLUTs_ONFAIL );
+		
+		inline = &inln;
+	}
+	
+	return( 1 );
 }
 
 
 
-
-
-/* Below is the new stuff: it should probably COMPLETELY */
-/*  replace the stuff above, BUT CHECK. */
+/* These functions have been purged, but should only */
+/*  have been referenced in this file: */
+	/* phase1_comonexec, bracketgather_invalidcall, */
+	/*  bracketgather_badtoken, bracketgather_exit, */
+	/*  bracketgather_loop_search, bracketgather_loop. */
+/* These functions might have external references, if */
+/*  so then those references should be massaged enough */
+/*  to move to bracketgather_entry(). */
+	/* bracketgather_enter, bracketgather_dispatcher. */
+/* bracketgather_check() and not_contextspecials() may */
+/*  also have some external references, though I THINK */
+/*  it would have all been internal. */
 
 
 

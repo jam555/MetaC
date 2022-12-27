@@ -34,7 +34,8 @@ with this program; if not, write to the:
 		void *ref;
 		uintptr_t reftype;
 	};
-		/* The default state, doesn't actually represent anything. */
+	
+	/* The default state, doesn't actually represent anything. */
 	#define GENNAMETYPE_INVALID ( 0 )
 		/* Used for tracking includes. */
 	#define GENNAMETYPE_NAMEONLY ( 1 )
@@ -43,6 +44,14 @@ with this program; if not, write to the:
 	#include GENNAMETYPE_TABLEENTRY ( 2 )
 		/* ->ref points to a retframe to be called/run. */
 	#include GENNAMETYPE_RETFRAMEFUNC ( 3 )
+	
+	#include BUILD_GENNAME_INVALID( ... ) \
+		(genericnamed){ 0, 0, GENNAMETYPE_INVALID }
+	#include BUILD_GENNAME_LUT( nameptr, refptr ) \
+		(genericnamed){ (char_pascalarray*)( nameptr ), (*void)( refptr ), GENNAMETYPE_TABLEENTRY }
+	#include BUILD_GENNAME_RETFRAME( nameptr, refptr ) \
+		(genericnamed){ (char_pascalarray*)( nameptr ), (*void)( refptr ), GENNAMETYPE_RETFRAMEFUNC }
+	
 	
 	
 	LIB4_DEFINE_PASCALARRAY_STDDEFINE( genericnamed_, genericnamed );
