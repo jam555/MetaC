@@ -61,7 +61,7 @@ static divertthread_callerinfo escapeinfo =
 	}
 static divertthread_info subordinateinfo = VALUE_subordinateinfo;
 
-typedef struct specials
+typedef struct bracketcontext_specials
 {
 	token_head th;
 	
@@ -70,9 +70,9 @@ typedef struct specials
 	
 	divertthread_info *jumpinfo;
 	
-} specials;
+} bracketcontext_specials;
 #define INIT__SPECIALS( tokhead,  brkparr, badparr, strtparr,  strtthead, endthead ) \
-	(specials){ (tokhead),  &(brkparr), &(badparr), &(strtparr),  &(strtthead), &(endthead),  &subordinateinfo }
+	(bracketcontext_specials){ (tokhead),  &(brkparr), &(badparr), &(strtparr),  &(strtthead), &(endthead),  &subordinateinfo }
 
 
 static token
@@ -110,7 +110,7 @@ static tokhdptr_parr
 	
 	starters = DEF_tokhdptr_parr( ( parenplain.header ), ( parenup.header ), ( curlup.header ), ( sqarup.header ) );
 
-static specials
+static bracketcontext_specials
 	plainspecs =
 		INIT__SPECIALS(
 			INIT_TOKENHEAD( TOKTYPE_CONTEXTSPECIALS, 0,  0,  0, 0, 0 ),
@@ -155,10 +155,10 @@ static retframe_parr
 			7, /* Number of retframes  */
 			{
 				(retframe){ &vm_buildempty_tokengroup, (void*)0 },
-					(retframe){ &vm_pushdata, (void*) &argcontainer },
+					(retframe){ &vm_pushdata, (void*)&argcontainer },
 						(retframe){ &vm_tokenhead_settoktype, (void*)0 },
 					(retframe){ &drop, (void*)0 },
-					(retframe){ &vm_pushdata, (void*) &arggeneric },
+					(retframe){ &vm_pushdata, (void*)&arggeneric },
 						(retframe){ &vm_setsubtype_tokengroup, (void*)0 },
 					(retframe){ &drop, (void*)0 }
 			}
@@ -179,13 +179,13 @@ static retframe_parr
 
 
 
-retframe exit( stackpair *stkp, void *v )
+retframe bracketgather_exit( stackpair *stkp, void *v )
 {
 	int scratch;
 	
 	uintptr_t tok;
 	
-	STACKCHECK2( stkp, v_,  exit );
+	STACKCHECK2( stkp, v_,  bracketgather_exit );
 	
 		/* Are we looking at a valid stack state? Let's see if our */
 		/*  identifier is at the right spot on the stack. */
@@ -193,7 +193,7 @@ retframe exit( stackpair *stkp, void *v )
 	scratch = peek_divertthread_callerinfo( &( stkp->data ),  sizeof( uintptr_t ),  (divertthread_callerinfo*)0, &tok );
 	if( !scratch )
 	{
-		FAILEDINTFUNC( "peek_divertthread_callerinfo", exit, scratch );
+		FAILEDINTFUNC( "peek_divertthread_callerinfo", bracketgather_exit, scratch );
 		
 		stack_ENDRETFRAME();
 	}
@@ -201,7 +201,7 @@ retframe exit( stackpair *stkp, void *v )
 	{
 		/* Fatal error! Invalid stack! Not recoverable! */
 		
-		BADINT( exit, &tok, (uintptr_t)&callerinfo_typeid );
+		BADINT( bracketgather_exit, &tok, (uintptr_t)&callerinfo_typeid );
 			NOTELINE(); STRARG( "Call to peek_divertthread_callerinfo() returned wrong typeid!" );
 		
 		stack_ENDRETFRAME();
@@ -209,29 +209,29 @@ retframe exit( stackpair *stkp, void *v )
 	
 	
 		/* This is in the way, move it. */
-	STACKPOP_UINT( &( stkp->data ), tok,  entry, scratch );
+	STACKPOP_UINT( &( stkp->data ), tok,  bracketgather_exit, scratch );
 		
 			/* First things first, restore the divertthread info! */
 		scratch = pop_divertthread_callerinfo( &( stkp->data ),  &escapeinfo );
 		if( !scratch )
 		{
-			FAILEDINTFUNC( "pop_divertthread_callerinfo", exit, scratch ):
+			FAILEDINTFUNC( "pop_divertthread_callerinfo", bracketgather_exit, scratch ):
 			
 			stack_ENDRETFRAME();
 		}
 		scratch = pop_divertthread_info( &( stkp->data ),  &subordinateinfo );
 		if( !scratch )
 		{
-			FAILEDINTFUNC( "pop_divertthread_info", exit, scratch ):
+			FAILEDINTFUNC( "pop_divertthread_info", bracketgather_exit, scratch ):
 			
 			stack_ENDRETFRAME();
 		}
 		
 		/* And now move the "token" back onto the stack. */
-	STACKPUSH_UINT( &( stkp->data ), tok,  entry, scratch );
+	STACKPUSH_UINT( &( stkp->data ), tok,  bracketgather_exit, scratch );
 	
 	
-	RETFRAMEFUNC( entry, scratch );
+	RETFRAMEFUNC( bracketgather_exit, scratch );
 }
 		/* Handles commas. */
 	retframe queue_argrecep( stkp, v_ );
@@ -253,9 +253,9 @@ retframe exit( stackpair *stkp, void *v )
 		
 		int scratch;
 		
-		STACKCHECK2( stkp, v_,  exit );
+		STACKCHECK2( stkp, v_,  accumulate_argrecep );
 		
-		specials *spec = (specials*)v_;
+		bracketcontext_specials *spec = (bracketcontext_specials*)v_;
 		uintptr_t tok;
 		size_t matchloc;
 		
@@ -274,13 +274,13 @@ retframe exit( stackpair *stkp, void *v )
 			/* Have we found an illegal token? */
 #define accumulate_argrecep_ONILLEGAL( arga, argb, offset ) \
 	NOTELINE(); \
-	STRARG( "ERROR! Invalid token in specials( " ); \
+	STRARG( "ERROR! Invalid token in bracketcontext_specials{ " ); \
 		DATAPTR( spec ); \
-			STRARG( " )->( " ); \
+			STRARG( " }->start:  " ); \
 			DECARG( spec->start->toktype ); \
 			NOTESPACE(); \
 			STRARG( ( (token*)( spec->start ) )->text ); \
-			STRARG( " ) bracket context: " ); \
+			STRARG( "; bracket context: " ); \
 		DECARG( ( (token_head*)tok )->toktype ); \
 			NOTESPACE(); \
 			STRARG( ( (token*)tok )->text ); \
@@ -436,9 +436,9 @@ retframe exit( stackpair *stkp, void *v )
 	{
 		int scratch;
 		
-		STACKCHECK2( stkp, v_,  exit );
+		STACKCHECK2( stkp, v_,  queue_argrecep );
 		
-		specials *spec = (specials*)v_;
+		bracketcontext_specials *spec = (bracketcontext_specials*)v_;
 		uintptr_t tok;
 		size_t matchloc;
 		
@@ -497,7 +497,7 @@ retframe exit( stackpair *stkp, void *v )
 		return( (retframe){ &enqueue_returns, (void*)&seq } );
 	}
 		/* ( token* -- ( token* 0 ) | ( tokengroup* 1 ) | ( tokengroup* 2 ) ) */
-reframe entry( stackpair *stkp, void *v )
+reframe bracketgather_entry( stackpair *stkp, void *v )
 {
 		/* This provides common behavior for the *script retframe_parr{}s. */
 	static retframe_parr
@@ -601,16 +601,16 @@ reframe entry( stackpair *stkp, void *v )
 	
 	retframe ret;
 	
-	STACKCHECK2( stkp, v_,  exit );
+	STACKCHECK2( stkp, v_,  bracketgather_entry );
 	
 	uintptr_t tok;
-	STACKPOP_UINT( &( stkp->data ), tok,  entry, scratch );
+	STACKPOP_UINT( &( stkp->data ), tok,  bracketgather_entry, scratch );
 	
 		/* Save the old divertthread info- we'll be needing it if this was nested. */
 	scratch = push_divertthread_info( &( stkp->data ), subordinateinfo );
 	if( !scratch )
 	{
-		FAILEDINTFUNC( "push_divertthread_info", entry, scratch );
+		FAILEDINTFUNC( "push_divertthread_info", bracketgather_entry, scratch );
 		
 		stack_ENDRETFRAME();
 	}
@@ -619,13 +619,13 @@ reframe entry( stackpair *stkp, void *v )
 	scratch = push_divertthread_callerinfo( &( stkp->data ), escapeinfo );
 	if( !scratch )
 	{
-		FAILEDINTFUNC( "push_divertthread_callerinfo", entry, scratch );
+		FAILEDINTFUNC( "push_divertthread_callerinfo", bracketgather_entry, scratch );
 		
 		stack_ENDRETFRAME();
 	}
 	
 		/* Restored! And it's on top of the stuff that we won't need till exit! */
-	STACKPUSH_UINT( &( stkp->data ), tok,  entry, scratch );
+	STACKPUSH_UINT( &( stkp->data ), tok,  bracketgather_entry, scratch );
 	
 	
 	
@@ -660,7 +660,7 @@ reframe entry( stackpair *stkp, void *v )
 					(retframe){ &divertthread, (void*)&subordinateinfo },
 					
 						/* ( tokengroup* token* -- ... ) */
-					(retframe){ &exit, (void*)0 }
+					(retframe){ &bracketgather_exit, (void*)0 }
 				}
 			};
 #define entry_PATCHSEQ( exit_v_ ) \
@@ -668,7 +668,7 @@ reframe entry( stackpair *stkp, void *v )
 	scratch = simplify_toktype( (token_head*)tok,  &tok );
 	if( !scratch )
 	{
-		FAILEDINTFUNC( "simplify_toktype", entry, scratch );
+		FAILEDINTFUNC( "simplify_toktype", bracketgather_entry, scratch );
 			NOTELINE(); DATAPTR( tok );
 		
 		stack_ENDRETFRAME();
@@ -722,7 +722,7 @@ retframe on_execable( stackpair *stkp, void *v )
 {
 	int scratch;
 	
-	STACKCHECK( stkp,  exit );
+	STACKCHECK( stkp,  on_execable );
 	
 	uintptr_t tok;
 	STACKPEEK_UINT( &( stkp->data ), tok,  on_execable, scratch );
@@ -761,7 +761,7 @@ retframe on_execable( stackpair *stkp, void *v )
 	if( !( found->ref ) )
 	{
 			/* Error, no reference, fatal error! */
-		TRESPASSPATH( is_execable, "Error! Null ( *found )->ref value!" );
+		TRESPASSPATH( on_execable, "Error! Null ( *found )->ref value!" );
 			NOTELINE(); DATAPTR( &found );
 		
 		stack_ENDRETFRAME();
