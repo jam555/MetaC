@@ -19,6 +19,22 @@ with this program; if not, write to the:
 */
 
 
+
+/* These functions have been purged, but should only */
+/*  have been referenced in preproc.c: */
+	/* phase1_comonexec, bracketgather_invalidcall, */
+	/*  bracketgather_badtoken, bracketgather_exit, */
+	/*  bracketgather_loop_search, bracketgather_loop. */
+/* These functions might have external references, if */
+/*  so then those references should be massaged enough */
+/*  to move to bracketgather_entry(). */
+	/* bracketgather_enter, bracketgather_dispatcher. */
+/* bracketgather_check() and not_contextspecials() may */
+/*  also have some external references, though I THINK */
+/*  it would have all been internal. */
+
+
+
 	/* Needs to be called at program startup. */
 int init_basal_gennameLUTs();
 	/* Don't use this one, it should be left to internal purposes. */
