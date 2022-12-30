@@ -45,14 +45,34 @@ with this program; if not, write to the:
 #define MONADICFAILURE( funcname, calltext, err ) \
 	STDMSG_MONADICFAILURE_WRAPPER( &errs, ( funcname ), ( calltext ), ( err ) )
 
+	#define NOTELINE() \
+		STDMSG_NOTELINE_WRAPPER( &errs )
 	#define NOTESPACE() \
 		STDMSG_NOTESPACE_WRAPPER( &errs )
+
 	#define DECARG( val ) \
 		STDMSG_DECARG_WRAPPER( &errs, ( val ) )
 	$define CHARARG( val ) \
 		STDMSG_CHARARG_WRAPPER( &errs, ( val ) )
 	#define DATAPTRARG( val ) \
 		STDMSG_DATAPTRARG_WRAPPER( &errs, ( val ) )
+	#define STRARG( strptr ) \
+		STDMSG_STRARG_WRAPPER( &errs, ( strptr ) )
+
+
+#define STACKCHECK( stack,  caller ) \
+	STACK_CHECK( ( stack ),  &err, ( caller ), stack_ENDRETFRAME )
+
+#define STACKPEEK_UINT( stk, offset, dest,  caller, scratch ) \
+	STACK_PEEK_UINT( ( stk ), ( offset ), ( dest ),  &errs, ( caller ), ( scratch ), stack_ENDRETFRAME )
+#define STACKPOP_UINT( stk, dest,  caller, scratch ) \
+	STACK_POP_UINT( ( stk ), ( dest ),  &errs, ( caller ), ( scratch ), stack_ENDRETFRAME )
+#define STACKPUSH_UINT( stk, val,  caller, scratch ) \
+	STACK_PUSH_UINT( ( stk ), ( val ),  &errs, ( caller ), ( scratch ), stack_ENDRETFRAME )
+
+
+#define RETFRAMEFUNC( caller, scratch ) \
+	RET_FRAMEFUNC( stkp,  &errs, ( caller ), ( scratch ), stack_ENDRETFRAME )
 
 #define FAILEDINTFUNC( calleestr, callername, val ) \
 	STDMSG_FAILEDINTFUNC_WRAPPER( &errs, ( calleestr ), ( callername ), ( val ) )
@@ -373,6 +393,107 @@ int discard_source( source *src )
 	TRESPASSPATH( discard_source, "ERROR: discard_source() failed to exit before reaching it's end." );
 	return( -1 );
 }
+
+
+
+
+retframe metaC_stdinclude_body( stackpair *stkp, void *v );
+retframe metaC_stdinclude( stackpair *stkp, void *v )
+{
+	int scratch;
+	
+	uintptr_t tok;
+	
+	STACKCHECK( stkp,  metaC_stdinclude );
+	
+	static retframe_parr
+		seq =
+			(retframe_parr)
+			{
+				3, /* Number of retframes  */
+				{
+						/* ( -- token* ) */
+					(retframe){ &token_queue_fetch, (void*)0 },
+					(retframe){ &bracketgather_entry, (void*)0 },
+					(retframe){ &metaC_stdinclude_body, (void*)0 }
+				}
+			};
+	return( (retframe){ &enqueue_returns, (void*)&seq } );
+}
+retframe metaC_stdinclude_body( stackpair *stkp, void *v )
+{
+	???
+	
+	int scratch;
+	
+	uintptr_t tok;
+	
+	STACKCHECK( stkp,  metaC_stdinclude_body );
+	
+	uintptr_t retcategory, tok;
+	STACKPOP_UINT( &( stkp->data ), retcategory,  metaC_stdinclude_body, scratch );
+	STACKPEEK_UINT( &( stkp->data ), 0, tok,  metaC_stdinclude_body, scratch );
+		/* Note: retcategory will be the stack-topper provided by bracketgather_entry()! */
+	switch( retcategory )
+	{
+		case 1:
+			/* Success! */
+			
+			break;
+		case 0:
+			/* Bad token: not a bracket opener. */
+			
+			TRESPASSPATH( metaC_stdinclude_body, "ERROR! Bad token, was not a bracket-starter!" );
+				NOTELINE(); DATAPTRARG( tok );
+				NOTESPACE(); DECARG( ( ( (token_head*)tok )->toktype ) );
+			
+			return( (retframe){ &token_queue_seekFreshline, (void*)0 } );
+		case 2:
+			/* Bad token: failed bracket accumulation. */
+			
+			TRESPASSPATH( metaC_stdinclude_body, "ERROR! Bad token, bracket accumulation encountered a forbidden token!" );
+				NOTELINE(); DATAPTRARG( tok );
+				NOTESPACE(); DECARG( ( ( (token_head*)tok )->toktype ) );
+			
+			return( (retframe){ &token_queue_seekFreshline, (void*)0 } );
+		default:
+			/* Unknown retcategory from bracketgather_entry(): this shouldn't happen. */
+			
+			TRESPASSPATH( metaC_stdinclude_body, "ERROR! Unfamiliar result category from bracketgather_entry()!" );
+				NOTELINE(); DECARG( retcategory );
+				NOTESPACE(); DATAPTRARG( tok );
+				NOTESPACE(); DECARG( ( ( (token_head*)tok )->toktype ) );
+			
+			stack_ENDRETFRAME();
+	}
+	
+	/* Horay, we have a proper bracket set, and have clear to the end */
+	/*  of the line! Now we check the number of arguments (should be */
+	/*  2), confirm that both are strings (which may involve merging */
+	/*  them), and do some search+setup to include the designated */
+	/*  file. */
+	/* The arguments to this directive: */
+		/* 1) Root name: the program-argument assigned name of the */
+		/*  point in the directory that the next directive-argument */
+		/*  will be defined in relation to: this will currently be */
+		/*  ignored, but it'll matter later. */
+		/* 2) Inclusion path: the directory path and file name to */
+		/*  include. This MUST be converted to "cannonical form" (so */
+		/*  no ".." or "." components in it) BEFORE being combined */
+		/*  with the root. The named-root directory + the cannonical */
+		/*  form of this path specify the file to be included. */
+	
+	???
+}
+	NOTELINE()
+	NOTESPACE()
+
+	DECARG( val )
+	CHARARG( val )
+	DATAPTRARG( val )
+	STRARG( strptr )
+	
+	RETFRAMEFUNC( caller, scratch );
 
 
 

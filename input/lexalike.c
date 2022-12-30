@@ -388,6 +388,7 @@ int token_queue_pop( token **tok )
 	return( -1 );
 }
 
+	/* ( token* --  ) */
 retframe token_queue_unfetch( stackpair *stkp, void *v )
 {
 	int scratch;
@@ -466,6 +467,60 @@ retframe token_queue_fetch( stackpair *stkp, void *v )
 		
 		return( (retframe){ &getANDassemble_token, (void*)0 } );
 	}
+}
+
+	retframe token_queue_seekFreshline_inner( stackpair *stkp, void *v );
+	static retframe_parr
+		token_queue_seekFreshline_seq =
+			(retframe_parr)
+			{
+				2, /* Number of retframes  */
+				{
+						/* ( -- token* ) */
+					(retframe){ &token_queue_fetch, (void*)0 },
+					(retframe){ &token_queue_seekFreshline_inner, (void*)0 }
+				}
+			};
+		/* ( token -- ... -- ) */
+	retframe token_queue_seekFreshline_inner( stackpair *stkp, void *v )
+	{
+		int scratch;
+		
+		STACKCHECK( stkp,  token_queue_seekFreshline_inner );
+		
+		uintptr_t tok;
+		STACKPEEK_UINT( &( stkp->data ), 0, tok,  token_queue_seekFreshline_inner, scratch );
+		
+			/* Are we at a fresh line yet? */
+		if( !( ( (token_head*)tok )->column ) )
+		{
+				/* Yes, pushback and return. */
+			return( (retframe){ &token_queue_unfetch, (void*)0 } );
+			
+		} else {
+			
+				/* No, discard and continue. */
+			static retframe_parr
+				seq =
+					(retframe_parr)
+					{
+						2, /* Number of retframes  */
+						{
+								/* ( token* -- ) */
+							(retframe){ &invoke_dealloctoken, (void*)0 },
+							(retframe){ &enqueue_returns, (void*)&token_queue_seekFreshline_seq }
+						}
+					};
+			return( (retframe){ &enqueue_returns, (void*)&seq } );
+		}
+	}
+retframe token_queue_seekFreshline( stackpair *stkp, void *v )
+{
+	int scratch;
+	
+	STACKCHECK( stkp,  token_queue_seekFreshline );
+	
+	return( (retframe){ &enqueue_returns, (void*)&token_queue_seekFreshline_seq } );
 }
 
 size_t token_queue_shuffleused()

@@ -59,6 +59,10 @@ with this program; if not, write to the:
 	source* build_source( char_pascalarray *name, uintmax_t inclusionpoint );
 	int discard_source( source *src );
 	
+	
+	retframe metaC_stdinclude( stackpair *stkp, void *v );
+	
+	
 		/* If refresh_srcname is provided, then the pointer it points to */
 		/*  MUST be NULL, as internal logic makes that assumption itself. */
 		/*  Only sets refresh_srcname if the source{} instance changes, in */

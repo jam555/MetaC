@@ -97,6 +97,12 @@ with this program; if not, write to the:
 		/* ( -- token* ) */
 	retframe token_queue_fetch( stackpair *stkp, void *v );
 	
+		/* Fetches and discards tokens with token_queue_fetch() and */
+		/*  invoke_dealloctoken() until a finds a fresh line, then returns that */
+		/*  final token to be returned by token_queue_fetch() once again. */
+		/* (  --  ) */
+	retframe token_queue_seekFreshline( stackpair *stkp, void *v );
+	
 		/* Provides a way to temporarily store tokens that WILL be going onto */
 		/*  the token's "unget" stack, for those cases when you need to reverse */
 		/*  the order that they'll be pulled back off. */
