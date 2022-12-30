@@ -53,5 +53,10 @@ retframe on_execable( stackpair *stkp, void *v );
 	/* Gathers up a bunch of tokens that form a pair of brackets and it's */
 	/*  contents. This DOES at least attempt to execute anything that */
 	/*  is_execable() can find, under the influence of was_freshline(). */
+	/* Top value will be: */
+		/* 0 if not a bracket entrance, */
+		/* 1 if correctly formed, or */
+		/* 2 if explicitly bad syntax ( e.g. pairing an opening parenthese */
+		/*  with a closing squate bracket). */
 	/* ( token* -- ( token* 0 ) | ( tokengroup* 1 ) | ( tokengroup* 2 ) ) */
 reframe bracketgather_entry( stackpair *stkp, void *v );

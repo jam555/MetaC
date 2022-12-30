@@ -248,6 +248,9 @@ int deinit_basal_gennameLUTs()
 }
 
 
+??? /* Functions to add & remove macros belong here. They can be left for later though. */
+
+
 
 /* These functions have been purged, but should only */
 /*  have been referenced in this file: */
@@ -408,14 +411,14 @@ retframe bracketgather_exit( stackpair *stkp, void *v )
 {
 	int scratch;
 	
-	uintptr_t tok;
+	uintptr_t tok, retcode;
 	
 	STACKCHECK2( stkp, v_,  bracketgather_exit );
 	
 		/* Are we looking at a valid stack state? Let's see if our */
 		/*  identifier is at the right spot on the stack. */
 		/* Note that this LOOKS PAST the top of the stack. */
-	scratch = peek_divertthread_callerinfo( &( stkp->data ),  sizeof( uintptr_t ),  (divertthread_callerinfo*)0, &tok );
+	scratch = peek_divertthread_callerinfo( &( stkp->data ),  sizeof( uintptr_t ) * 2,  (divertthread_callerinfo*)0, &tok );
 	if( !scratch )
 	{
 		FAILEDINTFUNC( "peek_divertthread_callerinfo", bracketgather_exit, scratch );
@@ -432,8 +435,8 @@ retframe bracketgather_exit( stackpair *stkp, void *v )
 		stack_ENDRETFRAME();
 	}
 	
-	
-		/* This is in the way, move it. */
+		/* These are in the way, move them. */
+	STACKPOP_UINT( &( stkp->data ), retcode,  bracketgather_exit, scratch );
 	STACKPOP_UINT( &( stkp->data ), tok,  bracketgather_exit, scratch );
 		
 			/* First things first, restore the divertthread info! */
@@ -452,8 +455,9 @@ retframe bracketgather_exit( stackpair *stkp, void *v )
 			stack_ENDRETFRAME();
 		}
 		
-		/* And now move the "token" back onto the stack. */
+		/* And now move the "token" and "return code" back onto the stack. */
 	STACKPUSH_UINT( &( stkp->data ), tok,  bracketgather_exit, scratch );
+	STACKPUSH_UINT( &( stkp->data ), retcode,  bracketgather_exit, scratch );
 	
 	
 	RETFRAMEFUNC( bracketgather_exit, scratch );
@@ -526,7 +530,7 @@ retframe bracketgather_exit( stackpair *stkp, void *v )
 #define accumulate_argrecep_ONSEPARATOR( arga, argb, offset ) \
 	return( (retframe){ &queue_argrecep, v_ } );
 		ISIN_TOKHDPTR_PARR_RUN(
-			tok, spec->bads, &matchloc,
+			tok, spec->breaks, &matchloc,
 			
 			accumulate_argrecep_ISINFUNC_NULLARG, accumulate_argrecep_ISINFUNC_NULLELEM,
 			accumulate_argrecep_ONSEPARATOR,
@@ -550,7 +554,7 @@ retframe bracketgather_exit( stackpair *stkp, void *v )
 	on_bracketstart.body[ 1 ].data = v_; \
 	return( (retframe){ &enqueue_returns, (void*)&on_bracketstart } );
 		ISIN_TOKHDPTR_PARR_RUN(
-			tok, spec->bads, &matchloc,
+			tok, spec->starts, &matchloc,
 			
 			accumulate_argrecep_ISINFUNC_NULLARG, accumulate_argrecep_ISINFUNC_NULLELEM,
 			accumulate_argrecep_ONBRACKETSTARTER,
@@ -565,7 +569,11 @@ retframe bracketgather_exit( stackpair *stkp, void *v )
 	FAILEDINTFUNC( "equal_tokens", accumulate_argrecep, ( err ) ); \
 	STDMSG_BADNULL2_WRAPPER( accumulate_argrecep, &tok, &( spec->end ) );
 #define accumulate_argrecep_ONEND( thead_a, thead_b, int_res ) \
-	return( (retframe){ &enqueue_returns, (void*)&complete_args } );
+	static retframe_parr accumulate_argrecep_ONEND_SEQ = (retframe_parr) { \
+				2, /* Number of retframes  */ { \
+					(retframe){ &enqueue_returns, (void*)&complete_args }, \
+					(retframe){ &vm_push1, (void*)0 } } }; \
+	return( (retframe){ &enqueue_returns, (void*)&accumulate_argrecep_ONEND_SEQ } );
 		TOKEN_EQUALS_SIMPLECOMP_BODY(
 			tok, spec->end,
 			
@@ -809,14 +817,16 @@ reframe bracketgather_entry( stackpair *stkp, void *v )
 				}
 			},
 		
-			/* ( tokengroup*args bookmark -- tokengroup*args bookmark ) */
-			/* We just need the hook right now, not any actual functionality. */
+			/* ( tokengroup*args bookmark -- tokengroup*args 2 bookmark ) */
+			/* Mark the return as a syntax error. */
 		errhandler =
 			(retframe_parr)
 			{
-				1, /* Number of retframes  */
+				2, /* Number of retframes  */
 				{
-					(retframe){ &noop, void*)0 }
+					(retframe){ &vm_push2, void*)0 },
+						/* ( bookmark 2 -- 2 bookmark ) */
+					(retframe){ &swap2nd, (void*)0 }
 				}
 			};
 	
@@ -828,8 +838,29 @@ reframe bracketgather_entry( stackpair *stkp, void *v )
 	
 	STACKCHECK2( stkp, v_,  bracketgather_entry );
 	
-	uintptr_t tok;
+	uintptr_t tok, toktype;
 	STACKPOP_UINT( &( stkp->data ), tok,  bracketgather_entry, scratch );
+	scratch = simplify_toktype( (token_head*)tok,  &toktype );
+	if( !scratch )
+	{
+		FAILEDINTFUNC( "simplify_toktype", bracketgather_entry, scratch );
+			NOTELINE(); DATAPTR( tok );
+		
+		stack_ENDRETFRAME();
+	}
+	switch( toktype )
+	{
+		case TOKTYPE_OPPAR:
+		case TOKTYPE_OPPARUP:
+		case TOKTYPE_OPCRLUP:
+		case TOKTYPE_OPSQRUP:
+			break;
+		default:
+			STACKPUSH_UINT( &( stkp->data ), tok,  bracketgather_entry, scratch );
+			STACKPUSH_UINT( &( stkp->data ), 0,  bracketgather_entry, scratch );
+			
+			RETFRAMEFUNC( bracketgather_entry, scratch );
+	}
 	
 		/* Save the old divertthread info- we'll be needing it if this was nested. */
 	scratch = push_divertthread_info( &( stkp->data ), subordinateinfo );
@@ -890,15 +921,7 @@ reframe bracketgather_entry( stackpair *stkp, void *v )
 			};
 #define entry_PATCHSEQ( exit_v_ ) \
 		seq.body[ 1 ].data = (void*)( exit_v_ );
-	scratch = simplify_toktype( (token_head*)tok,  &tok );
-	if( !scratch )
-	{
-		FAILEDINTFUNC( "simplify_toktype", bracketgather_entry, scratch );
-			NOTELINE(); DATAPTR( tok );
-		
-		stack_ENDRETFRAME();
-	}
-	switch( tok )
+	switch( toktype )
 	{
 		case TOKTYPE_OPPAR:
 				/* Both of these functions MUST comply with the following function */
@@ -927,11 +950,6 @@ reframe bracketgather_entry( stackpair *stkp, void *v )
 			subordinateinfo.jumpfunc = (retframe){ &enqueue_returns, (void*)&errhandler };
 			entry_PATCHSEQ( &sqarspecs );
 			break;
-		default:
-			TRESPASSPATH( entry, "ERROR! Unfamiliar token type from simplify_toktype(): " );
-				DECARG( tok );
-			
-			stack_ENDRETFRAME();
 	}
 	return( (retframe){ &enqueue_returns, (void*)&seq } );
 }
