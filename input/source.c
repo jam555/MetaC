@@ -422,8 +422,6 @@ retframe metaC_stdinclude( stackpair *stkp, void *v )
 }
 retframe metaC_stdinclude_body( stackpair *stkp, void *v )
 {
-	???
-	
 	int scratch;
 	
 	uintptr_t tok;
@@ -466,6 +464,42 @@ retframe metaC_stdinclude_body( stackpair *stkp, void *v )
 			
 			stack_ENDRETFRAME();
 	}
+	
+	if( ( (token_head*)tok )->toktype != ??? )
+	{
+		???
+	}
+	tokengroup *tg = (tokengroup*)tok;
+	scratch = validate_tokengroup( tg );
+	if( !scratch )
+	{
+		???
+	}
+	switch( tg->used )
+	{
+		case 0:
+			???
+		case 1:
+			???
+		case 2:
+			/* Success! */
+			
+			break;
+		default:
+			???
+	}
+	
+	
+	/* ( token* -- token* boolean ) */
+	/* boolean == 1 if token is of type TOKTYPE_TOKENGROUP_STRMERGE, else 0. */
+retframe require_strmerge( stackpair *stkp, void *v );
+	/* ( token* -- token* boolean ) */
+	/* boolean == 1 is token is of TOKTYPE_SQSTR or TOKTYPE_DQSTR, else 0. */
+retframe require_anystring( stackpair *stkp, void *v );
+	/* ( char_parr* token* -- char_parr* ( 1 )|( token* 0 ) ) */
+retframe grow_string( stackpair *stkp, void *v );
+					/* ( string-token* -- token* char_parr* ) */
+				(retframe){ &stringtoken2char_parr, (void*)0 },
 	
 	/* Horay, we have a proper bracket set, and have clear to the end */
 	/*  of the line! Now we check the number of arguments (should be */

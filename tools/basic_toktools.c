@@ -164,12 +164,7 @@ static const token
 	/*  required. */
 retframe require_match( stackpair *stkp, void *v )
 {
-	STACKCHECK( stkp,  require_match );
-	if( !v )
-	{
-			/* Fatal error, v must point to a token! */
-		???
-	}
+	STACKCHECK2( stkp, v,  require_match );
 	
 	token *tok, *ref = (token*)v;
 	uintptr_t a, ret = 0;
@@ -177,6 +172,8 @@ retframe require_match( stackpair *stkp, void *v )
 	
 	STACKPEEK_UINT( stkp->data, 0, a,  require_match, scratch );
 	*tok = (token*)a;
+	
+	??? /* Can this be compacted via use of token.h's simplifytype stuff? */
 	
 	switch( ref->header.toktype )
 	{
@@ -507,13 +504,13 @@ retframe require_strmerge( stackpair *stkp, void *v )
 	/*  place 0 on the data stack. */
 retframe require_anystring( stackpair *stkp, void *v )
 {
-	STACKCHECK( stkp,  require_string );
+	STACKCHECK( stkp,  require_anystring );
 	
 	token *tok;
 	uintptr_t a, ret = 0;
 	int scratch;
 	
-	STACKPEEK_UINT( stkp->data, 0, a,  require_string, scratch );
+	STACKPEEK_UINT( stkp->data, 0, a,  require_anystring, scratch );
 	*tok = (token*)a;
 	
 	if
@@ -525,8 +522,8 @@ retframe require_anystring( stackpair *stkp, void *v )
 		ret = 1;
 	}
 	
-	STACKPUSH_UINT( stkp->data, ret,  require_string, scratch );
-	RETFRAMEFUNC( stkp,  require_string );
+	STACKPUSH_UINT( stkp->data, ret,  require_anystring, scratch );
+	RETFRAMEFUNC( stkp,  require_anystring );
 }
 
 
