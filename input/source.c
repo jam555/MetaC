@@ -498,8 +498,8 @@ retframe require_strmerge( stackpair *stkp, void *v );
 retframe require_anystring( stackpair *stkp, void *v );
 	/* ( char_parr* token* -- char_parr* ( 1 )|( token* 0 ) ) */
 retframe grow_string( stackpair *stkp, void *v );
-					/* ( string-token* -- token* char_parr* ) */
-				(retframe){ &stringtoken2char_parr, (void*)0 },
+	/* ( string-token* -- token* char_parr* ) */
+(retframe){ &stringtoken2char_parr, (void*)0 },
 	
 	/* Horay, we have a proper bracket set, and have clear to the end */
 	/*  of the line! Now we check the number of arguments (should be */
