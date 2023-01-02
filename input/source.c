@@ -491,15 +491,157 @@ retframe metaC_stdinclude_body( stackpair *stkp, void *v )
 	
 	
 	/* ( token* -- token* boolean ) */
-	/* boolean == 1 if token is of type TOKTYPE_TOKENGROUP_STRMERGE, else 0. */
-retframe require_strmerge( stackpair *stkp, void *v );
-	/* ( token* -- token* boolean ) */
 	/* boolean == 1 is token is of TOKTYPE_SQSTR or TOKTYPE_DQSTR, else 0. */
 retframe require_anystring( stackpair *stkp, void *v );
 	/* ( char_parr* token* -- char_parr* ( 1 )|( token* 0 ) ) */
 retframe grow_string( stackpair *stkp, void *v );
 	/* ( string-token* -- token* char_parr* ) */
 (retframe){ &stringtoken2char_parr, (void*)0 },
+	/* ( uintptr_t uintptr_t -- uintptr_t ) */
+retframe vm_lesser( stackpair *stkp, void *v );
+	/* ( uintptr_t uintptr_t -- uintptr_t ) */
+retframe vm_equal( stackpair *stkp, void *v );
+	/* ( uintptr_t uintptr_t -- uintptr_t ) */
+retframe vm_greater( stackpair *stkp, void *v );
+	/* ( uintptr_t -- uintptr_t ) */
+retframe vm_not( stackpair *stkp, void *v );
+retframe vm_push0( stackpair *stkp, void *v );
+retframe vm_push1( stackpair *stkp, void *v );
+retframe vm_push2( stackpair *stkp, void *v );
+retframe vm_pushmax( stackpair *stkp, void *v );
+	/* These all require a pointer to a retframe as v. */
+retframe just_run( stackpair *stkp, void *v );
+	/* ( uintptr_t -- uintptr_t ) */
+retframe run_if( stackpair *stkp, void *v );
+retframe run_else( stackpair *stkp, void *v );
+retframe run_on0( stackpair *stkp, void *v );
+retframe run_on1( stackpair *stkp, void *v );
+retframe run_on2( stackpair *stkp, void *v );
+retframe run_on3( stackpair *stkp, void *v );
+	/* ( tokengroup* -- tokengroup* token* ) */
+retframe vm_popfront_tokengroup( stackpair *stkp, void *v );
+	/* ( tokengroup* -- tokengroup* token* ) */
+retframe vm_popfrom_tokengroup( stackpair *stkp, void *v );
+	/* ( tokengroup* -- tokengroup* length ) */
+retframe vm_lengthof_tokengroup( stackpair *stkp, void *v );
+retframe invoke_dealloctoken( stackpair *stkp, void *v );
+	/* ( uintptr_t*a uintptr_t*b -- uintptr_t*b uintptr_t*a ) */
+retframe swap2nd( stackpair *stkp, void *v );
+	/* These require v_ to point to a uintptr_t, which will be used as the data */
+	/*  in question. */
+retframe vm_pushdata( stackpair *stkp, void *v_ );
+retframe vm_popdata( stackpair *stkp, void *v_ );
+	/* retframe*, not uintptr_t pointer. */
+retframe vm_pushretframe( stackpair *stkp, void *v_ );
+	/* Pops a retframe from the data stack, and returns it. */
+retframe vm_datacall( stackpair *stkp, void *v );
+retframe vm_push_noop( stackpair *stkp, void *v_ );
+	/* Runs enqueue_returns() with v_ upon condition match. */
+	/* ( uintptr_t -- uintptr_t ) */
+retframe enqueue_if( stackpair *stkp, void *v_ );
+retframe enqueue_else( stackpair *stkp, void *v_ );
+	/* Runs vm_pushretframe() with v_ upon condition match. */
+	/* ( uintptr_t -- uintptr_t ) */
+retframe vm_pushretframe_if( stackpair *stkp, void *v_ );
+	/* ( uintptr_t -- uintptr_t ) */
+retframe vm_pushretframe_else( stackpair *stkp, void *v_ );
+	
+	
+	static retframe
+		not_retframe = (retframe){ &vm_not, (void*)0 },
+		push0_retframe = (retframe){ &vm_push0, (void*)0 },
+		push1_retframe = (retframe){ &vm_push1, (void*)0 },
+		push_firsthook_onelems_loop;
+	static retframe_parr
+		firsthook_onelems_loop_ =
+			{
+				??? , /* Number of retframes  */
+				{
+						/* ( flag -- ) */
+					(retframe){ &drop, (void*)0 },
+					
+					/* Accumulate string. */
+						/* ( cparr* tokengroup* -- cparr* tokengroup* token* ) */
+					(retframe){ &vm_popfront_tokengroup, (void*)0 },
+						/* ( ... -- cparr* tok* tg* ) */
+					(retframe){ &swap2nd, (void*)0 },
+						/* ( ... -- tg* tok* cparr* ) */
+					(retframe){ &swap3rd, (void*)0 },
+						/* ( ... -- tg* cparr* tok* ) */
+					(retframe){ &swap2nd, (void*)0 },
+						/* ( char_parr* token* -- char_parr* ( 1 )|( token* 0 ) ) */
+					(retframe){ &grow_string, (void*)0 },
+					(retframe){ &run_else, (void*)& ??? }, /* Catch the syntax error. */
+						/* Don't care about the flag anymore. */
+					(retframe){ &drop, (void*)0 },
+					
+					/* Test and dispatch for looping. We want to be a */
+					/*  little fussier than normal with timing. */
+						(retframe){ &vm_lengthof_tokengroup, (void*)0 },
+						(retframe){ &vm_not, (void*)0 },
+							/* Will restore the value that got us into */
+							/*  this loop, and exit. */
+						(retframe){ &vm_pushretframe_if, (void*)&not_retframe },
+							/* Continue looping. */
+						(retframe){ &vm_pushretframe_else, (void*)&push_firsthook_onelems_loop },
+						/* Pops a retframe from the data stack, and returns it. */
+					(retframe){ &vm_datacall, (void*)0 }
+				}
+			},
+		firsthook_onelems_ =
+			{
+				??? , /* Number of retframes  */
+				{
+						/* ( tokengroup* -- tokengroup* token* ) */
+					(retframe){ &vm_popfront_tokengroup, (void*)0 },
+						/* ( string-token* -- token* char_parr* ) */
+					(retframe){ &stringtoken2char_parr, (void*)0 },
+						/* ( tg* tok* cparr* -- tg* cparr* tok* ) */
+					(retframe){ &swap2nd, (void*)0 },
+					(retframe){ &drop, (void*)0 },
+						/* ( tg* cparr* -- cparr* tg* ) */
+					(retframe){ &swap2nd, (void*)0 },
+					
+						(retframe){ &vm_lengthof_tokengroup, (void*)0 },
+						(retframe){ &vm_not, (void*)0 },
+						(retframe){ &run_if, (void*)&noop_retframe },
+						(retframe){ &enqueue_else, (void*)&firsthook_onelems_loop_ },
+							/* ( flag --  ) */
+						(retframe){ &drop, (void*)0 },
+					
+						/* ( cparr* tg* -- cparr* ) */
+					(retframe){ &drop, (void*)0 }
+					
+				}
+			},
+		firsthook_onelemless_ =
+			{
+				??? , /* Number of retframes  */
+				{
+						/* ( tokengroup* -- tokengroup* token* ) */
+					(retframe){ &vm_popfront_tokengroup, (void*)0 },
+					(retframe){ &swap2nd, (void*)0 },
+						/* ( ... -- tok* tg* ) */
+					
+				}
+			},;
+	static retframe
+		firsthook_onelems = (retframe){ &enqueue_returns, (void*)&firsthook_onelems_ },
+		firsthook_onelemless = (retframe){ &enqueue_returns, (void*)&firsthook_onelemless_ };
+	static retframe_parr
+		firsthook =
+			(retframe_parr)
+			{
+				??? , /* Number of retframes  */
+				{
+					(retframe){ &vm_lengthof_tokengroup, (void*)0 },
+					(retframe){ &vm_not, (void*)0 },
+					(retframe){ &run_if, (void*)&firsthook_onelemless },
+					(retframe){ &run_else, (void*)&firsthook_onelems },
+					(retframe){ &drop, (void*)0 }
+				}
+			};
+	
 	
 	/* Horay, we have a proper bracket set, and have clear to the end */
 	/*  of the line! Now we check the number of arguments (should be */
@@ -518,6 +660,39 @@ retframe grow_string( stackpair *stkp, void *v );
 		/*  form of this path specify the file to be included. */
 	
 	???
+	
+	static int hasrun = 0;
+	if( !hasrun )
+	{
+		push_firsthook_onelems_loop = (retframe){ &enqueue_returns, (void*)&firsthook_onelems_loop_ };
+		
+		hasrun = 1;
+	}
+	
+	static retframe_parr
+		seq =
+			(retframe_parr)
+			{
+				??? , /* Number of retframes  */
+				{
+						/* ( tokengroup* -- tokengroup* token* ) */
+					(retframe){ &vm_popfrom_tokengroup, (void*)0 },
+					(retframe){ &swap2nd, (void*)0 },
+						/* ( ... -- tok* tg* ) */
+					
+						/* ( tokengroup* -- tokengroup* token* ) */
+					(retframe){ &vm_popfrom_tokengroup, (void*)0 },
+					(retframe){ &swap2nd, (void*)0 },
+						/* ( ... -- tok* tok* tg* ) */
+					
+						/* ( tokengroup* -- ) */
+					(retframe){ &invoke_dealloctoken, (void*)0 },
+						/* ( ... -- tg*2nd tg*1st ) */
+					
+					???
+				}
+			};
+	return( (retframe){ &enqueue_returns, (void*)&seq } );
 }
 	NOTELINE()
 	NOTESPACE()

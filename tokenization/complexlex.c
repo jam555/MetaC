@@ -507,6 +507,7 @@ retframe vm_pushto_tokengroup( stackpair *stkp, void *v )
 	
 	RETFRAMEFUNC( vm_pushto_tokengroup );
 }
+	/* ( tokengroup* -- tokengroup* token* ) */
 retframe vm_popfront_tokengroup( stackpair *stkp, void *v )
 {
 	STACKCHECK( stkp,  vm_popfront_tokengroup, macroargs_ENDRETFRAME );
@@ -539,6 +540,7 @@ retframe vm_popfront_tokengroup( stackpair *stkp, void *v )
 	
 	RETFRAMEFUNC( vm_popfront_tokengroup );
 }
+	/* ( tokengroup* -- tokengroup* token* ) */
 retframe vm_popfrom_tokengroup( stackpair *stkp, void *v )
 {
 	STACKCHECK( stkp,  vm_popfrom_tokengroup, macroargs_ENDRETFRAME );
@@ -571,6 +573,7 @@ retframe vm_popfrom_tokengroup( stackpair *stkp, void *v )
 	
 	RETFRAMEFUNC( vm_popfrom_tokengroup );
 }
+	/* ( tokengroup* -- tokengroup* length ) */
 retframe vm_lengthof_tokengroup( stackpair *stkp, void *v )
 {
 	STACKCHECK( stkp,  vm_lengthof_tokengroup, macroargs_ENDRETFRAME );
@@ -585,7 +588,7 @@ retframe vm_lengthof_tokengroup( stackpair *stkp, void *v )
 	
 	
 	int sz = lengthof_tokengroup( (tokengroup*)a );
-	if( !res )
+	if( !sz )
 	{
 		???
 	}

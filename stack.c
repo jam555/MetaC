@@ -789,6 +789,12 @@ int pop_token( stackframe *stk,  token_head **dest )
 
 
 
+const retframe
+	noop_retframe = (retframe){ &noop, (void*)0 },
+	vm_placeholder_retframe = (retframe){ &vm_placeholder, (void*)0 };
+
+
+
 #if defined( __cplusplus ) && __cplusplus >= 199711L
 	namespace
 	{

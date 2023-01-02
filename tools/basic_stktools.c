@@ -408,6 +408,65 @@ retframe xor2( stackpair *stkp, void *v )
 	RETFRAMEFUNC( stkp,  xor2 );
 }
 
+retframe vm_lesser( stackpair *stkp, void *v )
+{
+	uintptr_t a, b;
+	int scratch;
+	
+	STACKCHECK( stkp,  vm_lesser );
+	
+	
+	STACKPOP_UINT( stkp->data, a,  vm_lesser, scratch );
+	STACKPOP_UINT( stkp->data, b,  vm_lesser, scratch );
+	
+	STACKPUSH_UINT( stkp->data, a < b,  vm_lesser, scratch );
+	
+	RETFRAMEFUNC( stkp,  vm_lesser );
+}
+retframe vm_equal( stackpair *stkp, void *v )
+{
+	uintptr_t a, b;
+	int scratch;
+	
+	STACKCHECK( stkp,  vm_equal );
+	
+	
+	STACKPOP_UINT( stkp->data, a,  vm_equal, scratch );
+	STACKPOP_UINT( stkp->data, b,  vm_equal, scratch );
+	
+	STACKPUSH_UINT( stkp->data, a < b,  vm_equal, scratch );
+	
+	RETFRAMEFUNC( stkp,  vm_equal );
+}
+retframe vm_greater( stackpair *stkp, void *v )
+{
+	uintptr_t a, b;
+	int scratch;
+	
+	STACKCHECK( stkp,  vm_greater );
+	
+	
+	STACKPOP_UINT( stkp->data, a,  vm_greater, scratch );
+	STACKPOP_UINT( stkp->data, b,  vm_greater, scratch );
+	
+	STACKPUSH_UINT( stkp->data, a > b,  vm_greater, scratch );
+	
+	RETFRAMEFUNC( stkp,  vm_greater );
+}
+
+retframe vm_not( stackpair *stkp, void *v )
+{
+	uintptr_t val;
+	int scratch;
+	
+	STACKCHECK( stkp,  vm_not );
+	
+	STACKPOP_UINT( stkp->data, val,  vm_not, scratch );
+	STACKPUSH_UINT( stkp->data, !val,  vm_not, scratch );
+	
+	RETFRAMEFUNC( stkp,  vm_not );
+}
+
 
 retframe vm_push0( stackpair *stkp, void *v )
 {
@@ -486,6 +545,15 @@ retframe vm_pushretframe( stackpair *stkp, void *v_ )
 	}
 	
 	RETFRAMEFUNC( stkp,  vm_pushretframe );
+}
+
+retframe vm_push_noop( stackpair *stkp, void *v )
+{
+	return( vm_pushretframe( stkp, (void*)&noop_retframe ) );
+}
+retframe vm_push_placeholder( stackpair *stkp, void *v )
+{
+	return( vm_pushretframe( stkp, (void*)&vm_placeholder_retframe ) );
 }
 
 
@@ -620,6 +688,84 @@ retframe vm_datacall( stackpair *stkp, void *v )
 	}
 	
 	return( rf );
+}
+	/* Runs enqueue_returns() with v_ upon condition match. */
+	/* ( uintptr_t -- uintptr_t ) */
+retframe enqueue_if( stackpair *stkp, void *v_ )
+{
+	STACKCHECK2( stkp, v,  enqueue_if );
+	
+	uintptr_t a;
+	int scratch;
+	
+	STACKPEEK_UINT( stkp->data, 0, a,  enqueue_if, scratch );
+	
+	if( a )
+	{
+		return( enqueue_returns( stkp, v_ ) );
+		
+	} else {
+		
+		RETFRAMEFUNC( stkp,  enqueue_if );
+	}
+}
+	/* ( uintptr_t -- uintptr_t ) */
+retframe enqueue_else( stackpair *stkp, void *v_ )
+{
+	STACKCHECK2( stkp, v,  enqueue_else );
+	
+	uintptr_t a;
+	int scratch;
+	
+	STACKPEEK_UINT( stkp->data, 0, a,  enqueue_else, scratch );
+	
+	if( !a )
+	{
+		return( enqueue_returns( stkp, v_ ) );
+		
+	} else {
+		
+		RETFRAMEFUNC( stkp,  enqueue_else );
+	}
+}
+	/* Runs vm_pushretframe() with v_ upon condition match. */
+	/* ( uintptr_t -- uintptr_t ) */
+retframe vm_pushretframe_if( stackpair *stkp, void *v_ )
+{
+	STACKCHECK2( stkp, v,  vm_pushretframe_if );
+	
+	uintptr_t a;
+	int scratch;
+	
+	STACKPEEK_UINT( stkp->data, 0, a,  vm_pushretframe_if, scratch );
+	
+	if( a )
+	{
+		return( vm_pushretframe( stkp, v_ ) );
+		
+	} else {
+		
+		RETFRAMEFUNC( stkp,  vm_pushretframe_if );
+	}
+}
+	/* ( uintptr_t -- uintptr_t ) */
+retframe vm_pushretframe_else( stackpair *stkp, void *v_ )
+{
+	STACKCHECK2( stkp, v,  vm_pushretframe_else );
+	
+	uintptr_t a;
+	int scratch;
+	
+	STACKPEEK_UINT( stkp->data, 0, a,  vm_pushretframe_else, scratch );
+	
+	if( !a )
+	{
+		return( vm_pushretframe( stkp, v_ ) );
+		
+	} else {
+		
+		RETFRAMEFUNC( stkp,  vm_pushretframe_else );
+	}
 }
 
 

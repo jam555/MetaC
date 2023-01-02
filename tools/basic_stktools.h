@@ -76,6 +76,16 @@ retframe ior4( stackpair *stkp, void *v );
 	/* ( uintptr_t uintptr_t -- uintptr_t ) */
 retframe xor2( stackpair *stkp, void *v );
 
+	/* ( uintptr_t uintptr_t -- uintptr_t ) */
+retframe vm_lesser( stackpair *stkp, void *v );
+	/* ( uintptr_t uintptr_t -- uintptr_t ) */
+retframe vm_equal( stackpair *stkp, void *v );
+	/* ( uintptr_t uintptr_t -- uintptr_t ) */
+retframe vm_greater( stackpair *stkp, void *v );
+
+	/* ( uintptr_t -- uintptr_t ) */
+retframe vm_not( stackpair *stkp, void *v );
+
 
 retframe vm_push0( stackpair *stkp, void *v );
 retframe vm_push1( stackpair *stkp, void *v );
@@ -89,6 +99,9 @@ retframe vm_popdata( stackpair *stkp, void *v_ );
 	/* retframe*, not uintptr_t pointer. */
 retframe vm_pushretframe( stackpair *stkp, void *v_ );
 
+retframe vm_push_noop( stackpair *stkp, void *v_ );
+retframe vm_push_placeholder( stackpair *stkp, void *v_ );
+
 
 	/* These all require a pointer to a retframe as v. */
 retframe just_run( stackpair *stkp, void *v );
@@ -101,6 +114,16 @@ retframe run_on2( stackpair *stkp, void *v );
 retframe run_on3( stackpair *stkp, void *v );
 	/* Pops a retframe from the data stack, and returns it. */
 retframe vm_datacall( stackpair *stkp, void *v );
+	/* Runs enqueue_returns() with v_ upon condition match. */
+	/* ( uintptr_t -- uintptr_t ) */
+retframe enqueue_if( stackpair *stkp, void *v_ );
+	/* ( uintptr_t -- uintptr_t ) */
+retframe enqueue_else( stackpair *stkp, void *v_ );
+	/* Runs vm_pushretframe() with v_ upon condition match. */
+	/* ( uintptr_t -- uintptr_t ) */
+retframe vm_pushretframe_if( stackpair *stkp, void *v_ );
+	/* ( uintptr_t -- uintptr_t ) */
+retframe vm_pushretframe_else( stackpair *stkp, void *v_ );
 
 
 

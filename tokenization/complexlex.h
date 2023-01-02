@@ -84,8 +84,11 @@ with this program; if not, write to the:
 	retframe vm_setsubtype_tokengroup( stackpair *stkp, void *v );
 			/* ( tokengroup* token_head* -- tokengroup* ) */
 	retframe vm_pushto_tokengroup( stackpair *stkp, void *v );
+		/* ( tokengroup* -- tokengroup* token* ) */
 	retframe vm_popfront_tokengroup( stackpair *stkp, void *v );
+		/* ( tokengroup* -- tokengroup* token* ) */
 	retframe vm_popfrom_tokengroup( stackpair *stkp, void *v );
+		/* ( tokengroup* -- tokengroup* length ) */
 	retframe vm_lengthof_tokengroup( stackpair *stkp, void *v );
 	
 	

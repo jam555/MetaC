@@ -871,6 +871,7 @@ retframe grow_string_conclude( stackpair *stkp, void *v )
 		???
 	LIB4_MONAD_EITHER_BODYMATCH( res, LIB4_OP_SETa, grow_string_conclude_ONERR1 );
 		/* Copy the two strings together. */
+		??? /* Am I interpreting ->len correctly? */
 	memcpy
 		(
 		(void*)( a->body ),
