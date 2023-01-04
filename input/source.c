@@ -555,7 +555,7 @@ retframe vm_pushretframe_else( stackpair *stkp, void *v_ );
 	static retframe_parr
 		firsthook_onelems_loop_ =
 			{
-				??? , /* Number of retframes  */
+				13, /* Number of retframes  */
 				{
 						/* ( flag -- ) */
 					(retframe){ &drop, (void*)0 },
@@ -590,7 +590,7 @@ retframe vm_pushretframe_else( stackpair *stkp, void *v_ );
 			},
 		firsthook_onelems_ =
 			{
-				??? , /* Number of retframes  */
+				11, /* Number of retframes  */
 				{
 						/* ( tokengroup* -- tokengroup* token* ) */
 					(retframe){ &vm_popfront_tokengroup, (void*)0 },
@@ -598,7 +598,7 @@ retframe vm_pushretframe_else( stackpair *stkp, void *v_ );
 					(retframe){ &stringtoken2char_parr, (void*)0 },
 						/* ( tg* tok* cparr* -- tg* cparr* tok* ) */
 					(retframe){ &swap2nd, (void*)0 },
-					(retframe){ &drop, (void*)0 },
+					(retframe){ &invoke_dealloctoken, (void*)0 },
 						/* ( tg* cparr* -- cparr* tg* ) */
 					(retframe){ &swap2nd, (void*)0 },
 					
@@ -610,8 +610,7 @@ retframe vm_pushretframe_else( stackpair *stkp, void *v_ );
 						(retframe){ &drop, (void*)0 },
 					
 						/* ( cparr* tg* -- cparr* ) */
-					(retframe){ &drop, (void*)0 }
-					
+					(retframe){ &invoke_dealloctoken, (void*)0 }
 				}
 			},
 		firsthook_onelemless_ =
