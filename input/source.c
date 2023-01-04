@@ -398,6 +398,7 @@ int discard_source( source *src )
 
 
 retframe metaC_stdinclude_body( stackpair *stkp, void *v );
+	??? /* Will we have a token* on the stack? Will that need to be deallocated? */
 retframe metaC_stdinclude( stackpair *stkp, void *v )
 {
 	int scratch;
@@ -420,6 +421,7 @@ retframe metaC_stdinclude( stackpair *stkp, void *v )
 			};
 	return( (retframe){ &enqueue_returns, (void*)&seq } );
 }
+	/* ( tokengroup* retcategory -- ... ) */
 retframe metaC_stdinclude_body( stackpair *stkp, void *v )
 {
 	int scratch;
@@ -429,6 +431,7 @@ retframe metaC_stdinclude_body( stackpair *stkp, void *v )
 	STACKCHECK( stkp,  metaC_stdinclude_body );
 	
 	uintptr_t retcategory, tok;
+		/* ( ... -- tokengroup* ) */
 	STACKPOP_UINT( &( stkp->data ), retcategory,  metaC_stdinclude_body, scratch );
 	STACKPEEK_UINT( &( stkp->data ), 0, tok,  metaC_stdinclude_body, scratch );
 		/* Note: retcategory will be the stack-topper provided by bracketgather_entry()! */
@@ -547,20 +550,33 @@ retframe vm_pushretframe_if( stackpair *stkp, void *v_ );
 retframe vm_pushretframe_else( stackpair *stkp, void *v_ );
 	
 	
-	static retframe
-		not_retframe = (retframe){ &vm_not, (void*)0 },
-		push0_retframe = (retframe){ &vm_push0, (void*)0 },
-		push1_retframe = (retframe){ &vm_push1, (void*)0 },
-		push_firsthook_onelems_loop;
+	static retframe push_noop = (retframe){ &vm_push_noop, (void*)0 };
 	static retframe_parr
-		firsthook_onelems_loop_ =
+			/* ( retframe tokengroup* cparr* token* 0 -- retframe tokengroup* cparr* 0 ) */
+		canonical_growstring_from_tg_catcherr =
 			{
-				13, /* Number of retframes  */
+				??? , /* Number of retframes  */
 				{
-						/* ( flag -- ) */
+						/* ( flag -- ... ) */
 					(retframe){ &drop, (void*)0 },
 					
-					/* Accumulate string. */
+						/* Handle the token... needs to be filled in. */
+					???
+						/* ( token* --  ) */
+					(retframe){ &invoke_dealloctoken, (void*)0 },
+						/* Ding, dong, the token's dead, the token's dead, ... */
+					
+						/* ( ... -- flag ) */
+					(retframe){ &vm_push0, (void*)0 }
+				}
+			},
+			/* ( retframe cparr* tokengroup* -- cparr* tokengroup* ) */
+		canonical_growstring_from_tg =
+			{
+				7, /* Number of retframes  */
+				{
+					!!! WRONG SIG !!! The retframe will be on top, not under cparr* and tg*!
+					
 						/* ( cparr* tokengroup* -- cparr* tokengroup* token* ) */
 					(retframe){ &vm_popfront_tokengroup, (void*)0 },
 						/* ( ... -- cparr* tok* tg* ) */
@@ -571,9 +587,39 @@ retframe vm_pushretframe_else( stackpair *stkp, void *v_ );
 					(retframe){ &swap2nd, (void*)0 },
 						/* ( char_parr* token* -- char_parr* ( 1 )|( token* 0 ) ) */
 					(retframe){ &grow_string, (void*)0 },
-					(retframe){ &run_else, (void*)& ??? }, /* Catch the syntax error. */
+							/* Catch the syntax error. */
+						(retframe){ &enqueue_else, (void*)&canonical_growstring_from_tg_catcherr },
 						/* Don't care about the flag anymore. */
 					(retframe){ &drop, (void*)0 },
+					
+						/* ( ... -- tg* cparr* 1/2retframe ) */
+					(retframe){ &swap3rd, (void*)0 },
+					(retframe){ &drop, (void*)0 },
+						/* ( ... -- cparr* tg* 1/2retframe ) */
+					(retframe){ &swap3rd, (void*)0 },
+					(retframe){ &drop, (void*)0 },
+				}
+			};
+	static retframe
+		not_retframe = (retframe){ &vm_not, (void*)0 },
+		push0_retframe = (retframe){ &vm_push0, (void*)0 },
+		push1_retframe = (retframe){ &vm_push1, (void*)0 },
+		push_firsthook_onelems_loop,
+		firsthook_catcherr = (retframe){ &enqueue_returns, (void*)&firsthook_catcherr_ };
+	static retframe_parr
+			/* ( tokengroup* cparr* tokengroup* flag -- tokengroup* cparr* tokengroup* flag ) */
+		firsthook_onelems_loop_ =
+			{
+			9, /* Number of retframes  */
+				{
+						/* ( flag -- ... ) */
+					(retframe){ &drop, (void*)0 },
+					
+					/* Accumulate string. */
+						/* The provided retframe should approximately be longjump(). */
+					(retframe){ &vm_pushretframe, (void*)(retframe*)& ??? }, },
+						/* ( cparr* tokengroup* retframe -- cparr* tokengroup* ) */
+					(retframe){ &enqueue_returns, (void*)&canonical_growstring_from_tg },
 					
 					/* Test and dispatch for looping. We want to be a */
 					/*  little fussier than normal with timing. */
@@ -585,13 +631,20 @@ retframe vm_pushretframe_else( stackpair *stkp, void *v_ );
 							/* Continue looping. */
 						(retframe){ &vm_pushretframe_else, (void*)&push_firsthook_onelems_loop },
 						/* Pops a retframe from the data stack, and returns it. */
-					(retframe){ &vm_datacall, (void*)0 }
+					(retframe){ &vm_datacall, (void*)0 },
+					
+						/* ( ... -- flag ) */
+					(retframe){ &vm_push0, (void*)0 }
 				}
 			},
+			/* ( tokengroup* tokengroup* flag -- tokengroup* cparr* flag ) */
 		firsthook_onelems_ =
 			{
-				11, /* Number of retframes  */
+				13, /* Number of retframes  */
 				{
+						/* ( flag -- ... ) */
+					(retframe){ &drop, (void*)0 },
+					
 						/* ( tokengroup* -- tokengroup* token* ) */
 					(retframe){ &vm_popfront_tokengroup, (void*)0 },
 						/* ( string-token* -- token* char_parr* ) */
@@ -605,23 +658,33 @@ retframe vm_pushretframe_else( stackpair *stkp, void *v_ );
 						(retframe){ &vm_lengthof_tokengroup, (void*)0 },
 						(retframe){ &vm_not, (void*)0 },
 						(retframe){ &run_if, (void*)&noop_retframe },
+							/* ( tokengroup* cparr* tokengroup* flag -- ... ) */
 						(retframe){ &enqueue_else, (void*)&firsthook_onelems_loop_ },
 							/* ( flag --  ) */
 						(retframe){ &drop, (void*)0 },
 					
 						/* ( cparr* tg* -- cparr* ) */
-					(retframe){ &invoke_dealloctoken, (void*)0 }
+					(retframe){ &invoke_dealloctoken, (void*)0 },
+					
+						/* ( ... -- flag ) */
+					(retframe){ &vm_push0, (void*)0 }
 				}
 			},
+			/* ( tokengroup* tokengroup* flag -- ... flag ) */
 		firsthook_onelemless_ =
 			{
 				??? , /* Number of retframes  */
 				{
+						/* ( flag -- ... ) */
+					(retframe){ &drop, (void*)0 },
+					
 						/* ( tokengroup* -- tokengroup* token* ) */
 					(retframe){ &vm_popfront_tokengroup, (void*)0 },
 					(retframe){ &swap2nd, (void*)0 },
 						/* ( ... -- tok* tg* ) */
 					
+						/* ( ... -- flag ) */
+					(retframe){ &vm_push1, (void*)0 }
 				}
 			},;
 	static retframe
@@ -678,11 +741,13 @@ retframe vm_pushretframe_else( stackpair *stkp, void *v_ );
 					(retframe){ &vm_popfrom_tokengroup, (void*)0 },
 					(retframe){ &swap2nd, (void*)0 },
 						/* ( ... -- tok* tg* ) */
+						/* Need to verify that tok* is a tokengroup? */
 					
 						/* ( tokengroup* -- tokengroup* token* ) */
 					(retframe){ &vm_popfrom_tokengroup, (void*)0 },
 					(retframe){ &swap2nd, (void*)0 },
 						/* ( ... -- tok* tok* tg* ) */
+						/* Need to verify that tok* is a tokengroup? */
 					
 						/* ( tokengroup* -- ) */
 					(retframe){ &invoke_dealloctoken, (void*)0 },
