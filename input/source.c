@@ -570,11 +570,24 @@ retframe vm_pushretframe_else( stackpair *stkp, void *v_ );
 					(retframe){ &vm_push0, (void*)0 }
 				}
 			},
-			/* ( retframe cparr* tokengroup* -- cparr* tokengroup* ) */
+			/* ( cparr* tokengroup* retframe -- cparr* tokengroup* ) */
 		canonical_growstring_from_tg =
 			{
 				7, /* Number of retframes  */
 				{
+						/* ( retframe[1] retframe[2] -- retframe[2] retframe[1] ) */
+					(retframe){ &swap2nd, (void*)0 },
+						/* ( cparr* tokengroup* retframe[2] retframe[1] --
+							retframe[1] tokengroup* retframe[2] cparr* ) */
+					(retframe){ &swap4th, (void)*0 },
+						/* ( retframe[2] cparr* -- cparr* retframe[2] ) */
+					(retframe){ &swap2nd, (void*)0 },
+						/* ( retframe[1] tokengroup* cparr* retframe[2] --
+							retframe[1] retframe[2] cparr* tokengroup* ) */
+					(retframe){ &swap3rd, (void*)0 },
+						/* ( .. -- retframe cparr* tokengroup* ) */
+					
+					
 					!!! WRONG SIG !!! The retframe will be on top, not under cparr* and tg*!
 					
 						/* ( cparr* tokengroup* -- cparr* tokengroup* token* ) */
