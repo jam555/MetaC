@@ -560,8 +560,15 @@ retframe vm_pushretframe_else( stackpair *stkp, void *v_ );
 						/* ( flag -- ... ) */
 					(retframe){ &drop, (void*)0 },
 					
-						/* Handle the token... needs to be filled in. */
-					???
+					test token
+						if breaking type
+							report error
+							deallocate token
+							call swap3rd_retframe to bring retframe to top
+							use vm_datacall() to run provided on-error retframe
+								that SHOULD act like a longjump()
+					
+					
 						/* ( token* --  ) */
 					(retframe){ &invoke_dealloctoken, (void*)0 },
 						/* Ding, dong, the token's dead, the token's dead, ... */
@@ -573,29 +580,15 @@ retframe vm_pushretframe_else( stackpair *stkp, void *v_ );
 			/* ( cparr* tokengroup* retframe -- cparr* tokengroup* ) */
 		canonical_growstring_from_tg =
 			{
-				7, /* Number of retframes  */
+				11, /* Number of retframes  */
 				{
-						/* ( retframe[1] retframe[2] -- retframe[2] retframe[1] ) */
-					(retframe){ &swap2nd, (void*)0 },
-						/* ( cparr* tokengroup* retframe[2] retframe[1] --
-							retframe[1] tokengroup* retframe[2] cparr* ) */
-					(retframe){ &swap4th, (void)*0 },
-						/* ( retframe[2] cparr* -- cparr* retframe[2] ) */
-					(retframe){ &swap2nd, (void*)0 },
-						/* ( retframe[1] tokengroup* cparr* retframe[2] --
-							retframe[1] retframe[2] cparr* tokengroup* ) */
-					(retframe){ &swap3rd, (void*)0 },
-						/* ( .. -- retframe cparr* tokengroup* ) */
-					
-					
-					!!! WRONG SIG !!! The retframe will be on top, not under cparr* and tg*!
+						/* ( cparr* tokengroup* retframe -- retframe cparr* tokengroup* ) */
+					(retframe){ &swap3rd_retframe, (void*)0 },
 					
 						/* ( cparr* tokengroup* -- cparr* tokengroup* token* ) */
 					(retframe){ &vm_popfront_tokengroup, (void*)0 },
-						/* ( ... -- cparr* tok* tg* ) */
-					(retframe){ &swap2nd, (void*)0 },
 						/* ( ... -- tg* tok* cparr* ) */
-					(retframe){ &swap3rd, (void*)0 },
+					(retframe){ &raise3rd, (void*)0 },
 						/* ( ... -- tg* cparr* tok* ) */
 					(retframe){ &swap2nd, (void*)0 },
 						/* ( char_parr* token* -- char_parr* ( 1 )|( token* 0 ) ) */
@@ -605,12 +598,12 @@ retframe vm_pushretframe_else( stackpair *stkp, void *v_ );
 						/* Don't care about the flag anymore. */
 					(retframe){ &drop, (void*)0 },
 					
-						/* ( ... -- tg* cparr* 1/2retframe ) */
+						/* ( retframe cparr* tg* -- 1/2retframe tg* cparr* 1/2retframe ) */
 					(retframe){ &swap3rd, (void*)0 },
 					(retframe){ &drop, (void*)0 },
-						/* ( ... -- cparr* tg* 1/2retframe ) */
+						/* ( 1/2retframe tg* cparr* -- cparr* tg* 1/2retframe ) */
 					(retframe){ &swap3rd, (void*)0 },
-					(retframe){ &drop, (void*)0 },
+					(retframe){ &drop, (void*)0 }
 				}
 			};
 	static retframe

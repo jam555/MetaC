@@ -182,6 +182,75 @@ retframe swap4th( stackpair *stkp, void *v )
 	RETFRAMEFUNC( stkp,  swap4th );
 }
 
+	/* ( uintptr_t*a uintptr_t*b uintptr_t*c -- uintptr_t*b uintptr_t*c uintptr_t*a ) */
+retframe raise3rd( stackpair *stkp, void *v )
+{
+	static retframe_parr
+		seq =
+			{
+				2, /* Number of retframes  */
+				{
+						/* ( uintptr_t*b uintptr_t*c -- uintptr_t*c uintptr_t*b ) */
+					(retframe){ &swap2nd, (void*)0 },
+						/* ( uintptr_t*a uintptr_t*c uintptr_t*b --
+							uintptr_t*b uintptr_t*c uintptr_t*a ) */
+					(retframe){ &swap3rd, (void)*0 }
+				}
+			};
+	return( (retframe){ &enqueue_returns, (void*)&seq } );
+}
+	/* ( uintptr_t*a uintptr_t*b uintptr_t*c -- uintptr_t*c uintptr_t*a uintptr_t*b ) */
+retframe recede_to3rd( stackpair *stkp, void *v )
+{
+	static retframe_parr
+		seq =
+			{
+				2, /* Number of retframes  */
+				{
+						/* ( uintptr_t*a uintptr_t*b uintptr_t*c -- uintptr_t*c uintptr_t*b uintptr_t*a ) */
+					(retframe){ &swap3rd, (void)*0 },
+						/* ( uintptr_t*b uintptr_t*a -- uintptr_t*a uintptr_t*b ) */
+					(retframe){ &swap2nd, (void*)0 },
+						/* ( -- uintptr_t*c uintptr_t*a uintptr_t*b ) */
+				}
+			};
+	return( (retframe){ &enqueue_returns, (void*)&seq } );
+}
+
+	/* ( uintptr_t retframe -- retframe uintptr_t ) */
+retframe swap2nd_to_retframe( stackpair *stkp, void *v )
+{
+	return( (retframe){ &raise3rd, (void*)0 } );
+}
+	/* ( retframe uintptr_t -- uintptr_t retframe ) */
+retframe swap2nd_from_retframe( stackpair *stkp, void *v )
+{
+	return( (retframe){ &recede_to3rd, (void*)0 } );
+}
+	/* ( uintptr_t*1 uintptr_t*2 retframe -- retframe uintptr_t*1 uintptr_t*2 ) */
+retframe swap3rd_retframe( stackpair *stkp, void *v )
+{
+	static retframe_parr
+		seq =
+			{
+				4, /* Number of retframes  */
+				{
+						/* ( retframe[1] retframe[2] -- retframe[2] retframe[1] ) */
+					(retframe){ &swap2nd, (void*)0 },
+						/* ( uintptr_t*1 uintptr_t*2 retframe[2] retframe[1] --
+							retframe[1] uintptr_t*2 retframe[2] uintptr_t*1 ) */
+					(retframe){ &swap4th, (void)*0 },
+						/* ( retframe[2] uintptr_t*1 -- uintptr_t*1 retframe[2] ) */
+					(retframe){ &swap2nd, (void*)0 },
+						/* ( retframe[1] uintptr_t*2 uintptr_t*1 retframe[2] --
+							retframe[1] retframe[2] uintptr_t*1 uintptr_t*2 ) */
+					(retframe){ &swap3rd, (void*)0 },
+						/* ( .. -- retframe uintptr_t*1 uintptr_t*2 ) */
+				}
+			};
+	return( (retframe){ &enqueue_returns, (void*)&seq } );
+}
+
 	/* ( uintptr_t -- ret: uintptr_t ) */
 retframe swap2ret( stackpair *stkp, void *v )
 {

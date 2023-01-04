@@ -43,6 +43,18 @@ retframe swap3rd( stackpair *stkp, void *v );
 	/* ( uintptr_t*a uintptr_t uintptr_t uintptr_t*b -- uintptr_t*b uintptr_t uintptr_t uintptr_t*a ) */
 retframe swap4th( stackpair *stkp, void *v );
 
+	/* ( uintptr_t*a uintptr_t*b uintptr_t*c -- uintptr_t*b uintptr_t*c uintptr_t*a ) */
+retframe raise3rd( stackpair *stkp, void *v );
+	/* ( uintptr_t*a uintptr_t*b uintptr_t*c -- uintptr_t*c uintptr_t*a uintptr_t*b ) */
+retframe recede_to3rd( stackpair *stkp, void *v );
+
+	/* ( uintptr_t retframe -- retframe uintptr_t ) */
+retframe swap2nd_to_retframe( stackpair *stkp, void *v );
+	/* ( retframe uintptr_t -- uintptr_t retframe ) */
+retframe swap2nd_from_retframe( stackpair *stkp, void *v );
+	/* ( uintptr_t*1 uintptr_t*2 retframe -- retframe uintptr_t*1 uintptr_t*2 ) */
+retframe swap3rd_retframe( stackpair *stkp, void *v );
+
 /* Note: using ANY of these with enqueue_returns() is VERY dicey. */
 	/* ( uintptr_t -- ret: uintptr_t ) */
 retframe swap2ret( stackpair *stkp, void *v );
