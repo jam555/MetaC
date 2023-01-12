@@ -1357,22 +1357,190 @@ retframe convert_tokengroup2string( stackpair *stkp, void *v_ )
 	return( (retframe){ &enqueue_returns, (void*)&seq } );
 }
 	/* ( tokengroup* -- tokengroup* ( 0 | char_parr* ( 1 | token* 2 ) ) */
-	/* v_ must be a pointer to a retframe{}. */
-retframe convert_tokengroup2string( stackpair *stkp, void *v_ )
+retframe convert_tokengroup2string( stackpair *stkp, void *v )
 {
+	static retframe doloop;
 	static retframe_parr
 		on_err =
 			{
-					/* ( tg* 1 token* &stringtoken2char_parr -- tg* tok* &strtok2cparr 1 ) */
-				raise3rd
-				drop
-				drop
-					/* ( ... -- tg* tok* 0 ) */
-				push0
-					/* ( ... -- tg* 0 tok* ) */
-				swap2nd
-				push0
-					/* ( ... -- tg* 0 tok* 0 ) */
+				6, /* Number of retframes  */
+				{
+						/* ( tg* 1 token* &stringtoken2char_parr -- tg* tok* &strtok2cparr 1 ) */
+					(retframe){ &raise3rd, (void*)0 },
+					(retframe){ &drop, (void*)0 },
+					(retframe){ &drop, (void*)0 },
+						/* ( ... -- tg* tok* 0 ) */
+					(retframe){ &vm_push0, (void*)0 },
+						/* ( ... -- tg* 0 tok* ) */
+					(retframe){ &swap2nd, (void*)0 },
+					(retframe){ &vm_push0, (void*)0 }
+						/* ( ... -- tg* 0 tok* 0 ) */
+				}
+			},
+		loop_grow_succ_doloop =
+			{
+				3, /* Number of retframes  */
+				{
+						/* ( ... -- tg* char_parr* ) */
+					(retframe){ &drop, (void*)0 },
+						/* ( ... -- tg* char_parr* token* ) */
+					(retframe){ &vm_popfront_tokengroup, (void*)0 },
+						/* ( ... -- tg* char_parr* token* loop-retframe ) */
+						/* When this gets run at the end of the loop, */
+						/*  it'll cause the loop to be put directly back */
+						/*  onto the execute stack, thus causing the loop */
+						/*  to run again. */
+					(retframe){ &vm_pushretframe, (void*)&doloop }
+				}
+			};
+	static retframe_parr
+		stringtok_err =
+			{
+				4, /* Number of retframes  */
+				{
+						/* ( ... -- tg* token* dummy0 0flag ) */
+					(retframe){ &drop, (void*)0 },
+							/* ( tg* token* dummy0 -- tg* dummy0 token* ) */
+						(retframe){ &swap2nd, (void*)0 },
+							/* ( ... -- tg* dummy0 token* 2 ) */
+						(retframe){ &vm_push2, (void*)0 },
+					(retframe){ &vm_push0, (void*)0 }
+				}
+			},
+		loop_grow_succ =
+			{
+				9, /* Number of retframes  */
+				{
+						/* ( tg* char_parr* 1 -- tg* char_parr* ) */
+					(retframe){ &drop, (void*)0 },
+							/* ( ... -- char_parr* tg* ) */
+						(retframe){ &swap2nd, (void*)0 },
+							/* ( ... -- char_parr* tg* len ) */
+						(retframe){ &vm_lengthof_tokengroup, (void*)0 },
+							/* ( ... -- char_parr* len tg* ) */
+						(retframe){ &swap2nd, (void*)0 },
+							/* ( ... -- tg* char_parr* len ) */
+						(retframe){ &recede_to3rd, (void*)0 },
+							/* ( ... -- tg* char_parr* !len ) */
+						(retframe){ &vm_not, (void*)0 },
+							/* ( ... -- tg* char_parr* 1 noop-retframe ) */
+							/* This case breaks the loop. */
+						(retframe){ &vm_pushretframe_if, (void*)&noop_retframe },
+							/* ( ... -- tg* char_parr* 1 doloop-retframe ) */
+							/* This case continues the loop. */
+						(retframe){ &enqueue_else, (void*)&loop_grow_succ_doloop },
+						/* ( ... -- tg* char_parr* ( token* | 1 ) retframe 1 ) */
+					(retframe){ &vm_push1, (void*)0 }
+				}
+			},
+		loop_grow_err =
+			{
+				4, /* Number of retframes  */
+				{
+						/* ( tg* char_parr* token* 0 -- tg* char_parr* token* ) */
+					(retframe){ &drop, (void*)0 },
+							/* ( ... -- tg* char_parr* token* 2 ) */
+						(retframe){ &vm_push2, (void*)0 }, /* result value */
+							/* ( ... -- tg* char_parr* token* 2 noop-retframe ) */
+							/* This case breaks the loop. */
+						(retframe){ &vm_push_noop, (void*)0 },
+						/* ( ... -- tg* char_parr* token* 2 noop-retframe 0 ) */
+					(retframe){ &vm_push0, (void*)0 }
+				}
+			},
+		stringtok_succ_emptygroup =
+			{
+				4, /* Number of retframes  */
+				{
+					(retframe){ &drop, (void*)0 },
+							/* ( ... -- tg* char_parr* ) */
+						(retframe){ &swap2nd, (void*)0 },
+					(retframe){ &vm_push1, (void*)0 },
+						/* ( ... -- tg* char_parr* 1 1 ) */
+					(retframe){ &vm_push1, (void*)0 }
+				}
+			},
+		stringtok_succ_haselems =
+			{
+				6, /* Number of retframes  */
+				{
+						/* ( ... -- char_parr* tg* ) */
+					(retframe){ &drop, (void*)0 },
+						/* ( ... -- char_parr* tg* tok* ) */
+					(retframe){ &vm_popfront_tokengroup, (void*)0 },
+						/* ( ... -- tg* tok* char_parr* ) */
+					(retframe){ &raise3rd, (void*)0 },
+						/* ( ... -- tg* char_parr* tok* ) */
+					(retframe){ &swap2nd, (void*)0 },
+							/* ( tg* char_parr* token* -- tg* char_parr* ( 1 )|( token* 0 ) ) */
+							/* ( ... -- tokengroup* char_parr* ( 1 | token* 2 | or just keep looping ) */
+						(retframe){ &just_run, (void*)&doloop },
+					(retframe){ &vm_push0, (void*)0 }
+				}
+			};
+	static retframe_parr
+		loop =
+			{
+				5, /* Number of retframes  */
+				{
+					/* Prospective loop code: */
+						/* ( tg* char_parr* token* -- tg* char_parr* ( 1 )|( token* 0 ) ) */
+					(retframe){ &grow_string, (void*)0 },
+					(retframe){ &enqueue_if, (void*)&loop_grow_succ },
+					(retframe){ &enqueue_else, (void*)&loop_grow_err },
+						/* ( tg* char_parr* ( | 1 | token* 2 ) retframe ( 0 | 1 ) -- tg* char_parr* ( | 1 | token* 2 ) retframe ) */
+					(retframe){ &drop, (void*)0 },
+					(retframe){ &vm_datacall, (void*)0 }
+						/* ( ... -- tokengroup* char_parr* ( 1 | token* 2 | or token* and just keep looping ) */
+						/* End loop code. */
+				}
+			},
+		stringtok_succ =
+			{
+				10, /* Number of retframes  */
+				{
+						/* ( ... -- tg* token* char_parr* ) */
+					(retframe){ &drop, (void*)0 },
+							/* ( ... -- tg* char_parr* token* ) */
+						(retframe){ &swap2nd, (void*)0 },
+							/* ( ... -- tg* char_parr* ) */
+						(retframe){ &invoke_dealloctoken, (void*)0 },
+							/* ( ... -- char_parr* tg* ) */
+						(retframe){ &swap2nd, (void*)0 },
+							/* ( ... -- char_parr* tg* len ) */
+						(retframe){ &vm_lengthof_tokengroup, (void*)0 },
+							/* ( ... -- char_parr* tg* !len ) */
+						(retframe){ &vm_not, (void*)0 },
+							(retframe){ &enqueue_if, (void*)&stringtok_succ_emptygroup },
+							(retframe){ &enqueue_else, (void*)&stringtok_succ_haselems },
+							/* ( ??? !len -- ??? ) */
+						(retframe){ &drop, (void*)0 },
+						/* ( ... -- char_parr* tg* val ??? ) */
+						/* Note: need ( ... -- tokengroup* char_parr* ( 1 | token* 2 ) */
+					(retframe){ &vm_push1, (void*)0 }
+				}
+			};
+	static retframe_parr
+		body =
+			{
+				8, /* Number of retframes  */
+				{
+						/* tg* -- tg* tok* */
+					(retframe){ &vm_popfront_tokengroup, (void*)0 },
+						/* tg* tok* -- tg* tok* 1 */
+					(retframe){ &vm_push1, (void*)0 },
+						/* tg* tok* 1 -- tg* 1 tok* */
+					(retframe){ &swap2nd, (void*)0 },
+						/* ( tg* 1 string-token* -- tg* flag token* char_parr* ) */
+						/* Note: the error handler is responsible for changing 1 to flag... IF it changes. */
+					(retframe){ &stringtoken2char_parr( on_err ), (void*)0 },
+						/* ( tg* flag token* char_parr* -- tg* token* char_parr* flag ) */
+					(retframe){ &raise3rd, (void*)0 },
+					(retframe){ &enqueue_if, (void*)&stringtok_succ },
+					(retframe){ &enqueue_else, (void*)&stringtok_err },
+					(retframe){ &drop, (void*)0 }
+						/* ( ... -- tokengroup* ( 0 | char_parr* ( 1 | token* 2 ) ) */
+				}
 			};
 	
 	int scratch;
@@ -1381,114 +1549,20 @@ retframe convert_tokengroup2string( stackpair *stkp, void *v_ )
 	static int hasrun = 0;
 	if( !hasrun )
 	{
-		loop_body = (retframe){ &enqueue_returns, (void*)&loop_body_ };
-		on_done = (retframe){ &enqueue_returns, (void*)&on_done_ };
+		doloop = (retframe){ &enqueue_returns, (void*)&loop };
 		
 		hasrun = 1;
 	}
 	
-	STACKCHECK2( stkp, v_,  convert_tokengroup2string );
+	STACKCHECK( stkp,  convert_tokengroup2string );
 	
 	???
 	
-	static loop =
-		{
-			
-		}
 	if( is tg )
 	{
 		if( > 0 )
 		{
-				/* tg* -- tg* tok* */
-			popfront
-				/* tg* tok* -- tg* tok* 1 */
-			push1
-				/* tg* tok* 1 -- tg* 1 tok* */
-			swap2nd
-				/* ( tg* 1 string-token* -- tg* flag token* char_parr* ) */
-			stringtoken2char_parr( on_err )
-				/* ( tg* flag token* char_parr* -- tg* token* char_parr* flag ) */
-			raise3rd
-			vm_if
-					/* ( ... -- tg* token* char_parr* ) */
-				drop
-						/* ( ... -- tg* char_parr* token* ) */
-					swap2nd
-						/* ( ... -- tg* char_parr* ) */
-					invoke_dealloctoken
-						/* ( ... -- char_parr* tg* ) */
-					swap2nd
-						/* ( ... -- char_parr* tg* len ) */
-					grouplen
-						/* ( ... -- char_parr* tg* !len ) */
-					not
-						if
-							drop
-									/* ( ... -- tg* char_parr* ) */
-								swap
-							push1
-								/* ( ... -- tg* char_parr* 1 1 ) */
-							push1
-						else
-								/* ( ... -- char_parr* tg* ) */
-							drop
-								/* ( ... -- char_parr* tg* tok* ) */
-							popfront
-								/* ( ... -- tg* tok* char_parr* ) */
-							raise3rd
-								/* ( ... -- tg* char_parr* tok* ) */
-							swap
-							???
-/* Prospective loop code: */
-	/* ( tg* char_parr* token* -- tg* char_parr* ( 1 )|( token* 0 ) ) */
-retframe grow_string( stackpair *stkp, void *v );
-if
-		/* ( tg* char_parr* 1 -- tg* char_parr* ) */
-	drop
-			/* ( ... -- tg* char_parr* len ) */
-		grouplen
-			/* ( ... -- tg* char_parr* !len ) */
-		not
-		if
-				/* ( ... -- tg* char_parr* 1 noop-retframe ) */
-			push_noop
-		else
-				/* ( ... -- tg* char_parr* ) */
-			drop
-				/* ( ... -- tg* char_parr* loop-retframe ) */
-			push_loop
-		/* ( ... -- tg* char_parr* ( | 1 ) retframe 1 ) */
-	push1
-else
-		/* ( tg* char_parr* token* 0 -- tg* char_parr* token* ) */
-	drop
-			/* ( ... -- tg* char_parr* token* 2 ) */
-		push2 /* result value */
-			/* ( ... -- tg* char_parr* token* 2 noop-retframe ) */
-		push_noop
-		/* ( ... -- tg* char_parr* token* 2 noop-retframe 0 ) */
-	push0
-	/* ( tg* char_parr* ( | 1 | token* 2 ) retframe ( 0 | 1 ) -- tg* char_parr* ( | 1 | token* 2 ) retframe ) */
-drop
-stack_run
-	/* ( ... -- tokengroup* char_parr* ( 1 | token* 2 | or just keep looping ) */
-								loop
-							push0
-						/* ( ??? !len -- ??? ) */
-					drop
-					/* ( ... -- char_parr* tg* val ??? ) */
-					/* Note: need ( ... -- tokengroup* char_parr* ( 1 | token* 2 ) */
-				push1
-			vm_else
-					/* ( ... -- tg* token* dummy0 0flag ) */
-				drop
-						/* ( tg* token* dummy0 -- tg* dummy0 token* ) */
-					swap2nd
-						/* ( ... -- tg* dummy0 token* 2 ) */
-					push2
-				push0
-			drop
-				/* ( ... -- tokengroup* ( 0 | char_parr* ( 1 | token* 2 ) ) */
+			return( (retframe){ &enqueue_returns, (void*)&body } );
 			
 		} else {
 			
