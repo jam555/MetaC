@@ -106,7 +106,7 @@ with this program; if not, write to the:
 		/* This ultimately just exists to discard the wrapping quotes for */
 		/*  cases where those are in the way. token2char_parr() is the normal */
 		/*  function. */
-	retframe stringtoken2char_parr( stackpair *stkp, void *v_ )
+	retframe stringtoken2char_parr( stackpair *stkp, void *v_ );
 	
 		/* toktype */
 			/* Choose any single TOKTYPE_* value macro from below: note that some */

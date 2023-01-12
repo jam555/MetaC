@@ -46,6 +46,11 @@ with this program; if not, write to the:
 
 
 
+#define FAILEDINTFUNC( calleestr, caller, val ) \
+	STDMSG_FAILEDINTFUNC_WRAPPER( &errs, ( calleestr ), ( caller ), ( val ) )
+
+
+
 #define STACKCHECK( stack,  caller, endfunc ) \
 	STACK_CHECK( ( stack ),  &err, ( caller ), ( endfunc ) )
 
@@ -302,12 +307,15 @@ retframe token2char_parr( stackpair *stkp, void *v_ )
 					case TOKTYPE_TOKENGROUP_MACRODIRECTIVE:
 					case TOKTYPE_TOKENGROUP_MACROCALL:
 							/* Error: none of these are stringifiable! */
-						return( 0 );
+						STACKPUSH_UINT( &( stkp->data ), (uintptr_t)&token2char_parr,  token2char_parr, scratch );
+						return( *( (retframe*)v_ ) );
 						
 					case TOKTYPE_TOKENGROUP_SAMEMERGE:
 						if( ( (tokengroup*)&( tok->header ) )->used != 1 )
 						{
-							/* Error! Invalid token count! */
+								/* Error! Incompatible token count! This function can't handle it! */
+							STACKPUSH_UINT( &( stkp->data ), (uintptr_t)&token2char_parr,  token2char_parr, scratch );
+							return( *( (retframe*)v_ ) );
 							
 						} else {
 							
@@ -335,12 +343,17 @@ retframe token2char_parr( stackpair *stkp, void *v_ )
 							
 							if( acc & 3 != 1 )
 							{
-								/* Error! Bad branch count! */
-								???
+									/* Error! Incompatible branch count! */
+								STACKPUSH_UINT( &( stkp->data ), (uintptr_t)&token2char_parr,  token2char_parr, scratch );
+								return( *( (retframe*)v_ ) );
 							}
 							
 							switch( acc & 56 )
 							{
+								case 0:
+									/* Error! The code above should render this impossible! */
+									???
+									
 								case 8:
 									tok = ( (tokenbranch*)&( tok->header ) )->lead;
 									break;
@@ -352,10 +365,6 @@ retframe token2char_parr( stackpair *stkp, void *v_ )
 								case 32:
 									tok = ( (tokenbranch*)&( tok->header ) )->tail;
 									break;
-									
-								default:
-									/* Error! */
-									???
 							}
 						}
 						break;
@@ -389,7 +398,14 @@ retframe token2char_parr( stackpair *stkp, void *v_ )
 				/* Error, full break! */
 			FAILEDINTFUNC( "is_stdtoken()", token2char_parr, scratch );
 				NOTELINE();
-				STRARG( "is_stdtoken() was somehow handed a null pointer." );
+				if( scratch == -1 )
+				{
+					STRARG( "is_stdtoken() was somehow handed a null pointer." );
+					
+				} else {
+					
+					STRARG( "is_stdtoken() returned an unexpected result." );
+				}
 			stack_ENDRETFRAME();
 	}
 	
@@ -436,8 +452,6 @@ retframe stringtoken2char_parr( stackpair *stkp, void *v_ )
 	)
 	{
 			/* Error! Wrong type! */
-		???
-		
 		STACKPUSH_UINT( &( stkp->data ), (uintptr_t)&stringtoken2char_parr,  stringtoken2char_parr, scratch );
 		return( *( (retframe*)v_ ) );
 	}
@@ -505,6 +519,7 @@ retframe smart_dealloc_token( stackpair *stkp, void *v )
 	STACKPEEK_UINT( &( stk->data ), 0, &a,  smart_dealloc_token, res, macroargs_ENDRETFRAME );
 	th = (token_head*)a;
 	
+		??? /* Several types are missing here. */
 	if( th->toktype == TOKTYPE_TOKENGROUP_SAMEMERGE )
 	{
 		tokengroup *tgrp = (tokengroup*)th;

@@ -102,3 +102,5 @@ retframe tokengroup_dealloc( stackpair *stkp, void *v );
 
 	/* ( char_parr* token* -- char_parr* ( 1 )|( token* 0 ) ) */
 retframe grow_string( stackpair *stkp, void *v );
+	/* ( tokengroup* -- tokengroup* ( 0 | char_parr* ( 1 | token* 2 ) ) */
+retframe convert_tokengroup2string( stackpair *stkp, void *v );
