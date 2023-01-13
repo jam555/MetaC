@@ -38,6 +38,23 @@ with this program; if not, write to the:
 
 
 
+#define MONADICFAILURE( funcname, calltext, err ) \
+	STDMSG_MONADICFAILURE_WRAPPER( &errs, ( funcname ), ( calltext ), ( err ) )
+
+	#define NOTELINE() \
+		STDMSG_NOTELINE_WRAPPER( &errs )
+	#define NOTESPACE() \
+		STDMSG_NOTESPACE_WRAPPER( &errs )
+
+	#define DECARG( val ) \
+		STDMSG_DECARG_WRAPPER( &errs, ( val ) )
+	$define CHARARG( val ) \
+		STDMSG_CHARARG_WRAPPER( &errs, ( val ) )
+	#define DATAPTRARG( val ) \
+		STDMSG_DATAPTRARG_WRAPPER( &errs, ( val ) )
+	#define STRARG( strptr ) \
+		STDMSG_STRARG_WRAPPER( &errs, ( strptr ) )
+
 #define STACKCHECK( stack,  caller ) \
 	STACK_CHECK( ( stack ),  &errs, ( caller ), lexalike_ENDRETFRAME )
 #define STACKCHECK2( stack, v,  caller ) \
@@ -1556,27 +1573,63 @@ retframe convert_tokengroup2string( stackpair *stkp, void *v )
 	
 	STACKCHECK( stkp,  convert_tokengroup2string );
 	
-	???
-	
-	if( is tg )
+#define convert_tokengroup2string_BADRET( err ) \
+		MONADICFAILURE( convert_tokengroup2string, "get_deeptoktype", ( err ) ); \
+		stack_ENDRETFRAME();
+	deep_toktype a;
+	deeptoktype_result deepres = get_deeptoktype( &( tok->header ) );
+	DEEPTOKTYPE_RESULT_BODYMATCH( deepres, LIB4_OP_SETa, convert_tokengroup2string_BADRET );
+	switch( a.shallow_toktype )
 	{
-		if( > 0 )
-		{
-			return( (retframe){ &enqueue_returns, (void*)&body } );
+		case TOKTYPE_SQSTR:
+		case TOKTYPE_DQSTR:
+				/* We expected to build a string, yet the string is already here... */
+			STACKPUSH_UINT( &( stkp->data ), (uintptr_t)0,  convert_tokengroup2string, scratch );
+			RETFRAMEFUNC( stkp,  convert_tokengroup2string );
 			
-		} else {
+		case TOKTYPE_TOKENGROUP_SAMEMERGE:
+			if( > 0 )
+			{
+				return( (retframe){ &enqueue_returns, (void*)&body } );
+				
+			} else {
+				
+				STRARG( "Alert: convert_tokengroup2string() was given a tokengroup with no elements." );
+				STACKPUSH_UINT( &( stkp->data ), (uintptr_t)0,  convert_tokengroup2string, scratch );
+				RETFRAMEFUNC( stkp,  convert_tokengroup2string );
+			}
 			
-			error "No elements"
-		}
-		
-	} else {
-		
-		error "Wrong type"
+		case TOKTYPE_TOKENGROUP_MACROTOKEN:
+		case TOKTYPE_TOKENGROUP_MACROTOKEN_INDIRECTION:
+			/* Wrong type: ( (macro_token*)tok )->tok */
+		case TOKTYPE_TOKENGROUP_STRMERGE:
+		case TOKTYPE_TOKENGROUP_COMNTMERGE:
+		case TOKTYPE_TOKENGROUP_EQUIVMERGE:
+		case TOKTYPE_TOKENGROUP_WHITESPACE:
+		case TOKTYPE_TOKENGROUP_DELIMITED:
+			/* Wrong type: ( (tokenbranch*)tok )-> lead, body, tail */
+		default:
+			/* Don't even know what type this is... */
+			
+			STRARG( "Alert: convert_tokengroup2string() was given the wrong type: " );
+			DECARG( a.shallow_toktype );
+			switch( a.shallow_toktype )
+			{
+				case TOKTYPE_TOKENGROUP_STRMERGE:
+				case TOKTYPE_TOKENGROUP_COMNTMERGE:
+				case TOKTYPE_TOKENGROUP_EQUIVMERGE:
+				case TOKTYPE_TOKENGROUP_WHITESPACE:
+				case TOKTYPE_TOKENGROUP_DELIMITED:
+					STRARG( "; virtual type: " );
+					DECARG( a.virtual_toktype );
+				default:
+					break;
+			}
+			STACKPUSH_UINT( &( stkp->data ), (uintptr_t)0,  convert_tokengroup2string, scratch );
+			RETFRAMEFUNC( stkp,  convert_tokengroup2string );
 	}
-	
-	
-	???
 }
+	/* ( ... -- tokengroup* ( 0 | char_parr* ( 1 | token* 2 ) ) */
 
 
 
