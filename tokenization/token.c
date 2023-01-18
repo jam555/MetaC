@@ -249,6 +249,11 @@ deeptoktype_result get_deeptoktype( token_head *th )
 }
 int simplify_toktype( token_head *tok,  uintptr_t *dest )
 {
+	if( !tok || !dest )
+	{
+		return( -1 );
+	}
+	
 #define simplify_toktype_BADRET( val ) return( -( val ) );
 	deep_toktype a;
 	
@@ -269,26 +274,17 @@ int simplify_toktype( token_head *tok,  uintptr_t *dest )
 	
 	return( 1 );
 }
-	/* ( token* -- token* char_parr* ) */
-	/* v_ must point to a retframe{} to handle "unrecognized token type" */
-	/*  errors. The stack will be ( token* &token2char_parr ). */
-retframe token2char_parr( stackpair *stkp, void *v_ )
+char_pascalarray_result stringify_tokentext( token *tok )
 {
-	STACKCHECK2( stkp, v_,  token2char_parr );
-	
-	if( !( (retframe*)v_ )->handler )
-	{
-		TRESPASSPATH( token2char_parr, "ERROR: token2char_parr() wasn't given an error reporter!" );
-			NOTELINE();
-			DATAPTR( errmark );
-		stack_ENDRETFRAME();
-	}
-	
 	int scratch, res;
 	uintptr_t tmp;
+#define stringify_tokentext_ERRRET( errvalue ) \
+	LIB4_DEFINE_PASCALARRAY_RETURNFAIL( char_, (lib4_failure_uipresult)( errvalue ) );
 	
-	STACKPEEK_UINT( &( stkp->data ), 0, tmp,  token2char_parr, scratch );
-	token *tok = (token*)tmp;
+	if( !tok )
+	{
+		stringify_tokentext_ERRRET( LIB4_RESULT_FAILURE_DOMAIN );
+	}
 	
 		/* -1: th was null; otherwise 0 for "fancy token" or 1 for standard token */
 	scratch = is_stdtoken( &( tok->header ) );
@@ -307,22 +303,24 @@ retframe token2char_parr( stackpair *stkp, void *v_ )
 					case TOKTYPE_TOKENGROUP_MACRODIRECTIVE:
 					case TOKTYPE_TOKENGROUP_MACROCALL:
 							/* Error: none of these are stringifiable! */
-						STACKPUSH_UINT( &( stkp->data ), (uintptr_t)&token2char_parr,  token2char_parr, scratch );
-						return( *( (retframe*)v_ ) );
+						stringify_tokentext_ERRRET( LIB4_RESULT_FAILURE_ILSEQ );
 						
 					case TOKTYPE_TOKENGROUP_SAMEMERGE:
 						if( ( (tokengroup*)&( tok->header ) )->used != 1 )
 						{
 								/* Error! Incompatible token count! This function can't handle it! */
-							STACKPUSH_UINT( &( stkp->data ), (uintptr_t)&token2char_parr,  token2char_parr, scratch );
-							return( *( (retframe*)v_ ) );
+							stringify_tokentext_ERRRET(
+								 ( (tokengroup*)&( tok->header ) )->used > 1 ?
+									LIB4_RESULT_FAILURE_ABOVEBOUNDS :
+									LIB4_RESULT_FAILURE_BELOWBOUNDS
+							);
 							
 						} else {
 							
 							if( !( ( (tokengroup*)&( tok->header ) )->arr ) )
 							{
 								/* Error! Missing pascal array! */
-								???
+								stringify_tokentext_ERRRET( LIB4_RESULT_FAILURE_NOTINITIALIZED );
 							}
 							
 							tok = ( (tokengroup*)&( tok->header ) )->arr->body[ 0 ];
@@ -344,15 +342,22 @@ retframe token2char_parr( stackpair *stkp, void *v_ )
 							if( acc & 3 != 1 )
 							{
 									/* Error! Incompatible branch count! */
-								STACKPUSH_UINT( &( stkp->data ), (uintptr_t)&token2char_parr,  token2char_parr, scratch );
-								return( *( (retframe*)v_ ) );
+								stringify_tokentext_ERRRET(
+									 ( (tokengroup*)&( tok->header ) )->used > 1 ?
+										LIB4_RESULT_FAILURE_ABOVEBOUNDS :
+										LIB4_RESULT_FAILURE_BELOWBOUNDS
+								);
 							}
 							
 							switch( acc & 56 )
 							{
 								case 0:
-									/* Error! The code above should render this impossible! */
-									???
+									NOTELINE();
+										STRARG(
+											"ERROR! A tokenbranch path in stringify_tokentext() "
+											"had inconsistent values for acc!"
+										);
+									stringify_tokentext_ERRRET( LIB4_RESULT_FAILURE_UNDIFFERENTIATED );
 									
 								case 8:
 									tok = ( (tokenbranch*)&( tok->header ) )->lead;
@@ -382,12 +387,9 @@ retframe token2char_parr( stackpair *stkp, void *v_ )
 			}
 			if( scratch != 1 )
 			{
-				/* Error! Never settled to a stringifiable token! */
+				NOTELINE(); STRARG( "ERROR! Never settled to a stringifiable token!" );
+				stringify_tokentext_ERRRET( LIB4_RESULT_FAILURE_UNDIFFERENTIATED );
 			}
-			
-				/* Error, call the handler. */
-			STACKPUSH_UINT( &( stkp->data ), (uintptr_t)&token2char_parr,  token2char_parr, scratch );
-			return( *( (retframe*)v_ ) );
 			
 		case 1:
 				/* The one and only 'good' path. */
@@ -396,7 +398,7 @@ retframe token2char_parr( stackpair *stkp, void *v_ )
 		case -1:
 		default:
 				/* Error, full break! */
-			FAILEDINTFUNC( "is_stdtoken()", token2char_parr, scratch );
+			FAILEDINTFUNC( "is_stdtoken()", stringify_tokentext, scratch );
 				NOTELINE();
 				if( scratch == -1 )
 				{
@@ -406,24 +408,118 @@ retframe token2char_parr( stackpair *stkp, void *v_ )
 					
 					STRARG( "is_stdtoken() returned an unexpected result." );
 				}
-			stack_ENDRETFRAME();
+			stringify_tokentext_ERRRET( LIB4_RESULT_FAILURE_UNDIFFERENTIATED );
 	}
 	
-	char_parr *cparr = char_pascalarray_build( strlen( tok->text ) + 1 );
-	if( !cparr )
+	char_pascalarray_result cres = char_pascalarray_build( strlen( tok->text ) + 1 );
+	char_parr *a = (char_parr*)0;
+	lib4_failure_uipresult b;
+	LIB4_DEFINE_PASCALARRAY_BODYMATCH( cres, LIB4_OP_SETa, LIB4_OP_SETb );
+	if( !a )
 	{
-		BADNULL( token2char_parr, &cparr );
+		BADNULL( stringify_tokentext, &a );
 			NOTELINE();
 			STRARG( "char_pascalarray_build() failed." );
-		stack_ENDRETFRAME();
+				/* "b" will have been set, so if there might be something */
+				/*  useful then report it here. */
+			???
+		stringify_tokentext_ERRRET( LIB4_RESULT_FAILURE_RANGE );
 	}
 	
-	strcpy( tok->text, cparr->body );
+	strcpy( tok->text, a->body );
+	
+	return( cres );
+}
+	/* ( token* -- token* char_parr* ) */
+	/* v_ must point to a retframe{} to handle "unrecognized token type" */
+	/*  errors. The stack will be ( token* &token2char_parr ). */
+retframe token2char_parr( stackpair *stkp, void *v_ )
+{
+	int scratch, res;
+	STACKCHECK2( stkp, v_,  token2char_parr );
+	
+	if( !( (retframe*)v_ )->handler )
+	{
+		TRESPASSPATH( token2char_parr, "ERROR: token2char_parr() wasn't given an error reporter!" );
+			NOTELINE();
+			DATAPTR( errmark );
+		stack_ENDRETFRAME();
+	}
+#define token2char_parr_ERRHANDRET() \
+		STACKPUSH_UINT( &( stkp->data ), (uintptr_t)&token2char_parr,  token2char_parr, scratch ); \
+		return( *( (retframe*)v_ ) );
+	
+	uintptr_t tmp;
+	STACKPEEK_UINT( &( stkp->data ), 0, tmp,  token2char_parr, scratch );
+	token *tok = (token*)tmp;
 	
 	
-	STACKPUSH_UINT( &( stkp->data ), (uintptr_t)cparr,  token2char_parr, scratch );
+	char_pascalarray_result cres = stringify_tokentext( tok );
+	char_parr *a = (char_parr*)0;
+	lib4_failure_uipresult b;
+	LIB4_DEFINE_PASCALARRAY_BODYMATCH( cres, LIB4_OP_SETa, LIB4_OP_SETb );
+	if( a )
+	{
+		/* The only "good" exit. */
+		
+		STACKPUSH_UINT( &( stkp->data ), (uintptr_t)a,  token2char_parr, scratch );
+		RETFRAMEFUNC( token2char_parr );
+	}
 	
-	RETFRAMEFUNC( token2char_parr );
+	static char
+		*underlen = ", no elements.",
+		*overlen = ", more than one element.";
+	NOTELINE(); STRARG( "Fatal error in token2char_parr." );
+	switch( b.val )
+	{
+		case LIB4_RESULT_FAILURE_DOMAIN:
+			TRESPASSPATH( token2char_parr, "stringify_tokentext() was given a null argument." );
+			break;
+		case LIB4_RESULT_FAILURE_ILSEQ:
+			/* Error: none of these are stringifiable! */
+			NOTELINE();
+				STRARG( "\tstringify_tokentext() was given a non-stringifiable token type: " );
+				DECARG( tok->header->toktype );
+			token2char_parr_ERRHANDRET();
+		case LIB4_RESULT_FAILURE_NOTINITIALIZED:
+			NOTELINE();
+			STRARG( "\tstringify_tokentext() was given a tokengroup with a null ->arr member" );
+			break;
+		case LIB4_RESULT_FAILURE_BELOWBOUNDS:
+		case LIB4_RESULT_FAILURE_ABOVEBOUNDS:
+			switch( tok->header->toktype )
+			{
+				case TOKTYPE_TOKENGROUP_SAMEMERGE:
+					NOTELINE();
+						STRARG( "Incompatible element count from tokengroup" );
+						STRARG( b.val == LIB4_RESULT_FAILURE_BELOWBOUNDS ? underlen : overlen );
+					token2char_parr_ERRHANDRET();
+				case TOKTYPE_TOKENGROUP_STRMERGE:
+				case TOKTYPE_TOKENGROUP_COMNTMERGE:
+				case TOKTYPE_TOKENGROUP_EQUIVMERGE:
+				case TOKTYPE_TOKENGROUP_WHITESPACE:
+				case TOKTYPE_TOKENGROUP_DELIMITED:
+					NOTELINE();
+						STRARG( "Incompatible branch count from tokenbranch type: " );
+						DECARG( tok->header->toktype );
+						STRARG( b.val == LIB4_RESULT_FAILURE_BELOWBOUNDS ? underlen : overlen );
+					token2char_parr_ERRHANDRET();
+				default:
+					NOTELINE();
+						STRARG( "Length error from unrecognized token type. Type: " );
+						DECARG( tok->header->toktype );
+						STRARG( b.val == LIB4_RESULT_FAILURE_BELOWBOUNDS ? underlen : overlen );
+					break;
+			}
+		case LIB4_RESULT_FAILURE_UNDIFFERENTIATED:
+			/* They all do their own reporting. */
+			break;
+		case LIB4_RESULT_FAILURE_RANGE:
+			/* Allocation failure. Already reported. */
+			break;
+	}
+	
+	stack_ENDRETFRAME();
 }
 	/* ( string-token* -- token* char_parr* ) */
 	/* v_ must point to a retframe{} to handle "unrecognized token type" */

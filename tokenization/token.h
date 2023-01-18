@@ -94,7 +94,20 @@ with this program; if not, write to the:
 			/* err = TOKTYPE_TOKENGROUP_MACROTOKEN_INDIRECTION: as shallow, but ->tok was null */
 			/* err = TOKTYPE_SPACE: somehow the switch didn't return, even though it always should. */
 	deeptoktype_result get_deeptoktype( token_head *th );
+		/* Depending on get_deeptoktype()'s .shallow_toktype, either */
+		/*  .shallow_toktype or .virtual_toktype will be stored into */
+		/*  *dest. */
 	int simplify_toktype( token_head *tok,  uintptr_t *dest );
+		/* tok must not be null. Will either return a char_pascalarray*, or an error value. */
+		/* Errors: */
+			/* LIB4_RESULT_FAILURE_DOMAIN */
+			/* LIB4_RESULT_FAILURE_ILSEQ */
+			/* LIB4_RESULT_FAILURE_NOTINITIALIZED */
+			/* LIB4_RESULT_FAILURE_BELOWBOUNDS */
+			/* LIB4_RESULT_FAILURE_ABOVEBOUNDS */
+			/* LIB4_RESULT_FAILURE_UNDIFFERENTIATED */
+			/* LIB4_RESULT_FAILURE_RANGE */
+	char_pascalarray_result stringify_tokentext( token *tok );
 		/* ( token* -- token* char_parr* ) */
 		/* v_ must point to a retframe{} to handle "unrecognized token type" */
 		/*  errors. The stack will be ( token* char_parr* ). */
@@ -317,8 +330,8 @@ with this program; if not, write to the:
 		#define TOKTYPE_OPPARAST ( 0x50E ) /* (* */
 	
 	/* Strings: "6" block. */
-		#define TOKTYPE_SQSTR ( 0x600 )
-		#define TOKTYPE_DQSTR ( 0x601 )
+		#define TOKTYPE_SQSTR ( 0x600 ) /* ' */
+		#define TOKTYPE_DQSTR ( 0x601 ) /* " */
 	
 	/* Symbols: "7" block. */
 		#define TOKTYPE_SYM_DECREMENT ( 0X700 ) /* -- */
@@ -380,18 +393,18 @@ with this program; if not, write to the:
 		#define TOKTYPE_SYM_SQUARECLOSE ( 0x738 ) /* ] */
 		#define TOKTYPE_SYM_PARENCLOSE ( 0x739 ) /* ) */
 		#define TOKTYPE_SYM_TILDE ( 0x73A ) /* ~ */
-		#define TOKTYPE_SYM_DOT ( 0x73B )
+		#define TOKTYPE_SYM_DOT ( 0x73B ) /* . */
 		#define TOKTYPE_SYM_COMMA ( 0x73C ) /* , */
-		#define TOKTYPE_SYM_BSLASH ( 0x73D )
+		#define TOKTYPE_SYM_BSLASH ( 0x73D ) /* \ */
 	
 	/* Unused: "8" block. */
-		#define TOKTYPE_DOLLAR ( 0x800 )
-		#define TOKTYPE_GRAVE ( 0x801 )
+		#define TOKTYPE_DOLLAR ( 0x800 ) /* $ */
+		#define TOKTYPE_GRAVE ( 0x801 ) /* ` */
 	
-	#define TOKTYPE_OCTO ( 9 )
-		#define TOKTYPE_DOUBLEOCTO ( 0x900 )
+	#define TOKTYPE_OCTO ( 9 ) /* # */
+		#define TOKTYPE_DOUBLEOCTO ( 0x900 ) /* ## */
 	
-	#define TOKTYPE_AT ( 10 )
+	#define TOKTYPE_AT ( 10 ) /* @ */
 	#define TOKTYPE_OTHER ( 11 )
 	
 	
