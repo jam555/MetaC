@@ -397,7 +397,7 @@ int discard_source( source *src )
 
 
 
-retframe metaC_stdinclude_body( stackpair *stkp, void *v );
+retframe metaC_stdinclude_argfetch1( stackpair *stkp, void *v );
 	??? /* Will we have a token* on the stack? Will that need to be deallocated? */
 retframe metaC_stdinclude( stackpair *stkp, void *v )
 {
@@ -415,11 +415,114 @@ retframe metaC_stdinclude( stackpair *stkp, void *v )
 				{
 						/* ( -- token* ) */
 					(retframe){ &token_queue_fetch, (void*)0 },
+						/* ( token* -- ( token* 0 ) | ( tokengroup* 1 ) | ( tokengroup* 2 ) ) */
 					(retframe){ &bracketgather_entry, (void*)0 },
-					(retframe){ &metaC_stdinclude_body, (void*)0 }
+					(retframe){ &metaC_stdinclude_argfetch1, (void*)0 }
 				}
 			};
 	return( (retframe){ &enqueue_returns, (void*)&seq } );
+}
+	/* ( ??? ( ( token* 0 ) | ( tokengroup* 1 ) | ( tokengroup* 2 ) ) -- ... ) */
+retframe metaC_stdinclude_argfetch1( stackpair *stkp, void *v )
+{
+	int scratch;
+	
+	uintptr_t tok;
+	
+	STACKCHECK( stkp,  metaC_stdinclude_argfetch1 );
+	
+	STACKPEEK_UINT( &( stkp->data ), sizeof( uintptr_t ) * 0, tok,  metaC_stdinclude_argfetch1, scratch );
+	switch( tok )
+	{
+		case 0:
+			{
+				STACKPEEK_UINT( &( stkp->data ), sizeof( uintptr_t ) * 1, tok,  metaC_stdinclude_argfetch1, scratch );
+				
+#define metaC_stdinclude_argfetch1_BADRET( err ) \
+	MONADICFAILURE( metaC_stdinclude_argfetch1, "get_deeptoktype", ( err ) ); \
+	stack_ENDRETFRAME();
+				deep_toktype a;
+				deeptoktype_result deepres = get_deeptoktype( &( tok->header ) );
+				DEEPTOKTYPE_RESULT_BODYMATCH( deepres, LIB4_OP_SETa, metaC_stdinclude_argfetch1_BADRET );
+				switch( a.shallow_type )
+				{
+					case TOKTYPE_TOKENGROUP_COMNTMERGE:
+					case TOKTYPE_TOKENGROUP_WHITESPACE:
+							/* Ok, report that this happened and redo the bracket fetch. */
+						NOTELINE();
+						STRARG( "metaC_stdinclude_argfetch1() encountered a " );
+							STRARG( "whitespace-equivalent token where expecting a " );
+							STRARG( "bracket set, attempting to fetch brackets again..." );
+						
+						{
+							static retframe_parr
+								seq =
+									(retframe_parr)
+									{
+										5, /* Number of retframes  */
+										{
+												/* ( 0 -- ) */
+											(retframe){ &drop, (void*)0 },
+												/* ( token* -- ) */
+											(retframe){ &invoke_dealloctoken, (void*)0 },
+												/* ( -- token* ) */
+											(retframe){ &token_queue_fetch, (void*)0 },
+												/* ( token* -- ( token* 0 ) | ( tokengroup* 1 ) | ( tokengroup* 2 ) ) */
+											(retframe){ &bracketgather_entry, (void*)0 },
+											(retframe){ &metaC_stdinclude_argfetch1, (void*)0 }
+										}
+									};
+							return( (retframe){ &enqueue_returns, (void*)&seq } );
+						}
+					case TOKTYPE_TOKENGROUP_SAMEMERGE:
+						/* Check the deeper type. */
+						???
+					case TOKTYPE_SQSTR:
+					case TOKTYPE_DQSTR:
+					case TOKTYPE_TOKENGROUP_STRMERGE:
+						/* Wrong level: these belong inside brackets. */
+					case TOKTYPE_TOKENGROUP_MACROLINK:
+					case TOKTYPE_TOKENGROUP_MACROTOKEN:
+					case TOKTYPE_TOKENGROUP_MACROTOKEN_INDIRECTION:
+					case TOKTYPE_TOKENGROUP_MACRORUN:
+					case TOKTYPE_TOKENGROUP_MACRODIRECTIVE:
+						/* These ALL should have been resolved already. */
+					case TOKTYPE_TOKENGROUP_DELIMITED:
+						/* What DO we do with this? */
+					case TOKTYPE_TOKENGROUP_ERROREDSET:
+						/* All we can do is trickle down the error. */
+					case TOKTYPE_TOKENGROUP_EQUIVMERGE:
+						/* Wrong type: this is a (tokenbranch*), and we need a (tokengroup*). */
+					default:
+				}
+				
+				/* 0 if not a bracket entrance, */
+				
+				???
+			}
+		case 1:
+			/* 1 if correctly formed, or */
+			break;
+		case 2:
+			/* 2 if explicitly bad syntax ( e.g. pairing an opening parenthese */
+			/*  with a closing square bracket). */
+			???
+		default:
+			???
+	}
+	
+	STACKPEEK_UINT( &( stkp->data ), sizeof( uintptr_t ) * 1, tok,  metaC_stdinclude_argfetch1, scratch );
+	switch( ( (token_head*)tok )->toktype )
+	{
+		case ???:
+	}
+	
+	???
+	
+		/* ( tokengroup* -- tokengroup* ( 0 | char_parr* ( 1 | token* 2 ) ) */
+	retframe convert_tokengroup2string( stackpair *stkp, void *v );
+	
+	???
 }
 	/* ( tokengroup* retcategory -- ... ) */
 retframe metaC_stdinclude_body( stackpair *stkp, void *v )
