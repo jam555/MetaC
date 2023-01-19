@@ -93,11 +93,21 @@ with this program; if not, write to the:
 	TOKEN_CHECK_SIMPLETYPE( ( tokhead ), ( testval ), ( on_yes ), ( on_no ),  &errs, ( caller ), ( scratch ), stack_ENDRETFRAME )
 
 
+	/* on_octothorpe() needs to be linked into frln and inln */
+	/*  below as the handlers for the "#" (octothorpe) */
+	/*  character. */
+???
+	/* ( token* -- ... -- token* ) */
+retframe on_octothorpe( stackpair *stkp, void *v );
+
 	/* The actually available stuff. Maybe belongs here, maybe */
 	/*  doesn't, worry about that later. */
 genname_parr
 	frln = LIB4_DEFINE_PASCALARRAY_LITERAL2( genericnamed_, genericnamed, BUILD_GENNAME_INVALID() ),
-	inln = LIB4_DEFINE_PASCALARRAY_LITERAL2( genericnamed_, genericnamed, BUILD_GENNAME_INVALID() );
+	inln = LIB4_DEFINE_PASCALARRAY_LITERAL2( genericnamed_, genericnamed, BUILD_GENNAME_INVALID() ),
+	
+	frln_directives = LIB4_DEFINE_PASCALARRAY_LITERAL2( genericnamed_, genericnamed, BUILD_GENNAME_INVALID() ),
+	inln_directives = LIB4_DEFINE_PASCALARRAY_LITERAL2( genericnamed_, genericnamed, BUILD_GENNAME_INVALID() );
 genname_parr *freshline = &frln, *inline = &inln;
 	??? /* Neither of these is initialized, that needs to change. */
 genericnamed
@@ -968,7 +978,7 @@ int is_execable( token *tok,  generic_named **found )
 		/*  differentiate on that. */
 	genname_parr *searchtable = ( was_freshline( (token_head*)tok ) ? freshline : inline );
 	
-	*found =  = bsearch1_gennamearr( searchbatch, tok );
+	*found = bsearch1_gennamearr( searchbatch, tok );
 	
 	if( !( *found ) )
 	{
@@ -999,9 +1009,97 @@ int is_execable( token *tok,  generic_named **found )
 	/* We should never reach here. */
 }
 
-/* We need a function to handle "macro" matches for the "#" token. We */
-/*  also need one for "##", but that's just going to throw a syntax error */
-/*  for now... */
+
+	/* ( token* -- token* ) */
+retframe on_octothorpe_search( stackpair *stkp, void *v );
+	/* ( token* -- ... -- token* ) */
+retframe on_octothorpe( stackpair *stkp, void *v )
+{
+	int scratch;
+	
+	STACKCHECK( stkp,  on_octothorpe );
+	
+	uintptr_t tok;
+	STACKPEEK_UINT( &( stkp->data ), tok,  on_execable, scratch );
+	
+		/* -1: th was null; otherwise 0 for "fancy token" or 1 for standard token */
+	scratch = was_freshline( (token_head*)tok );
+	switch( scratch )
+	{
+		case 0: /* column, so inline. */
+		case 1: /* !column, so freshline. */
+			break;
+		case -1:
+		default:
+			/* Errors. */
+			???
+			stack_ENDRETFRAME();
+	}
+	
+	static retframe_parr seq =
+		(retframe_parr)
+		{
+			3, /* Number of retframes  */
+			{
+					/* ( token*old -- ) */
+				(retframe){ &invoke_dealloctoken, (void*)0 },
+					/* ( -- token*new ) */
+				(retframe){ &token_queue_fetch, (void*)0 },
+					/* ( token* -- token* ) */
+				(retframe){ &on_octothorpe_search, (void*)0 }
+			}
+		};
+	seq.body[ 2 ].data = (void*)( scratch ? &inln_directives : &frln_directives );
+	
+	return( (retframe){ &enqueue_returns, (void*)&seq} );
+}
+retframe on_octothorpe_search( stackpair *stkp, void *v_ )
+{
+	int scratch;
+	
+	STACKCHECK2( stkp, v_,  on_octothorpe_search );
+	
+	genname_parr *table = (genname_parr*)v_;
+	
+	uintptr_t tok;
+	STACKPEEK_UINT( &( stkp->data ), tok,  on_execable, scratch );
+	
+	generic_named *found_ = bsearch1_gennamearr( table, (token*)tok );
+	
+	if( !( *found ) )
+	{
+		/* Just a token, error. */
+		
+		???
+		stack_ENDRETFRAME();
+		
+	} else if( ( *found )->reftype == GENNAMETYPE_RETFRAMEFUNC )
+	{
+		if( !( ( *found )->ref ) )
+		{
+				/* Error, no reference, fatal error! */
+			TRESPASSPATH( on_octothorpe_search, "Error! Null ( *found )->ref value!" );
+			
+			???
+			stack_ENDRETFRAME();
+		}
+		
+			/* Successful find, dispatch. */
+		return( *( (retframe*)( found->ref ) ) );
+		
+	} else {
+		
+		TRESPASSPATH( on_octothorpe_search, "Error! Unknown ( *found )->reftype value: " );
+			DECARG( ( ( *found )->reftype ) );
+		
+		???
+		stack_ENDRETFRAME();
+	}
+	
+		/* We should never reach this. */
+	??? TRESPASSPATH( on_octothorpe_search, "???" );
+	stack_ENDRETFRAME();
+}
 
 	/* ( token*1 token*2 -- token*2 ) */
 retframe on_execable_exit( stackpair *stkp, void *v );
