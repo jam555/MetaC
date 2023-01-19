@@ -998,6 +998,11 @@ int is_execable( token *tok,  generic_named **found )
 	
 	/* We should never reach here. */
 }
+
+/* We need a function to handle "macro" matches for the "#" token. We */
+/*  also need one for "##", but that's just going to throw a syntax error */
+/*  for now... */
+
 	/* ( token*1 token*2 -- token*2 ) */
 retframe on_execable_exit( stackpair *stkp, void *v );
 	/* Note: does not necessarily return the SAME token pointer. In fact, */
@@ -1068,18 +1073,21 @@ retframe on_execable( stackpair *stkp, void *v )
 		return( *( (retframe*)( found->ref ) ) );
 		
 		default:
-			???
-		/* tok must not be null. Will either return a char_pascalarray*, or an error value. */
-		/* Errors: */
-			/* LIB4_RESULT_FAILURE_DOMAIN */
-			/* LIB4_RESULT_FAILURE_ILSEQ */
-			/* LIB4_RESULT_FAILURE_NOTINITIALIZED */
-			/* LIB4_RESULT_FAILURE_BELOWBOUNDS */
-			/* LIB4_RESULT_FAILURE_ABOVEBOUNDS */
-			/* LIB4_RESULT_FAILURE_UNDIFFERENTIATED */
-			/* LIB4_RESULT_FAILURE_RANGE */
-	char_pascalarray_result stringify_tokentext( token *tok );
-			???
+				/* tok must not be null. Will either return a char_pascalarray*, or an error value. */
+				/* Errors: */
+					/* LIB4_RESULT_FAILURE_DOMAIN */
+					/* LIB4_RESULT_FAILURE_ILSEQ */
+					/* LIB4_RESULT_FAILURE_NOTINITIALIZED */
+					/* LIB4_RESULT_FAILURE_BELOWBOUNDS */
+					/* LIB4_RESULT_FAILURE_ABOVEBOUNDS */
+					/* LIB4_RESULT_FAILURE_UNDIFFERENTIATED */
+					/* LIB4_RESULT_FAILURE_RANGE */
+			char_pascalarray_result res = stringify_tokentext( token *tok );
+			char_pascalarray *a;
+#define on_execable_ONFAIL( err ) \
+	??? \
+	stack_ENDRETFRAME();
+			LIB4_DEFINE_PASCALARRAY_BODYMATCH( res, LIB4_OP_SETa, on_execable_ONFAIL );
 			
 			static retframe_parr seq =
 				(retframe_parr)
@@ -1091,7 +1099,7 @@ retframe on_execable( stackpair *stkp, void *v )
 					}
 				};
 			seq.body[ 0 ].data = (void*)( found->ref );
-			seq.body[ 1 ].data = (void*) ???;
+			seq.body[ 1 ].data = (void*)a;
 			
 			return( (retframe){ &enqueue_returns, (void*)&seq} );
 	}
@@ -1105,7 +1113,7 @@ retframe on_execable_exit( stackpair *stkp, void *v_ )
 	
 	STACKCHECK2( stkp, v_,  on_execable_exit );
 	
-		/* We should really be doing actualo work here, but */
+		/* We should really be doing actual work here, but */
 		/*  infinite-loop protections can come later... */
 	???
 	

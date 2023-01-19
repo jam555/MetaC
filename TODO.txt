@@ -52,13 +52,9 @@ All sorts of stuff will need to be rechecked to ensure that e.g. line numbers
 
 !!!VITAL NOTE!!! : For the sake of regularity, the execution of macros
 	realistically probably needs to be handled sorta like "freshlines"- in
-	particular, the "get token" functionality needs to track "the last
-	macro-izable token" that passed through (which means that I need to decide
-	what those EVEN ARE), so that if a macro invocation is detected, it can
-	look at that value (or probably "adopt" or "subsume" that value when the
-	start of the invocation is detected) to figure out what exactly should
-	REALLY be done.
-	Gonna need rewind capabilities to make this reliably work...
+	particular, the on_execable() functionality in preproc.c needs to work
+	with it's matching exit function to decide whether to actually run a
+	macro: the hook areas are commented, but don't do anything special.
 
 
 Will want a command line option to output license info. GPL suggestion is
