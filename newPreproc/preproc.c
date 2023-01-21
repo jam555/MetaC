@@ -93,18 +93,37 @@ with this program; if not, write to the:
 	TOKEN_CHECK_SIMPLETYPE( ( tokhead ), ( testval ), ( on_yes ), ( on_no ),  &errs, ( caller ), ( scratch ), stack_ENDRETFRAME )
 
 
-	/* on_octothorpe() needs to be linked into frln and inln */
-	/*  below as the handlers for the "#" (octothorpe) */
-	/*  character. */
-???
 	/* ( token* -- ... -- token* ) */
 retframe on_octothorpe( stackpair *stkp, void *v );
+static char_pascalarray directive_octothorpe_cparr = ??? ; /* Value should equal "#". */
+static retframe directive_octothorpe_retf = (retframe){ &on_octothorpe, (void*)0 };
 
 	/* The actually available stuff. Maybe belongs here, maybe */
 	/*  doesn't, worry about that later. */
+	/* on_octothorpe */
 genname_parr
-	frln = LIB4_DEFINE_PASCALARRAY_LITERAL2( genericnamed_, genericnamed, BUILD_GENNAME_INVALID() ),
-	inln = LIB4_DEFINE_PASCALARRAY_LITERAL2( genericnamed_, genericnamed, BUILD_GENNAME_INVALID() ),
+	frln =
+		LIB4_DEFINE_PASCALARRAY_LITERAL2(
+			genericnamed_,
+			genericnamed,
+			
+			BUILD_GENNAME_RETFRAME(
+				&directive_octothorpe_cparr,
+				&directive_octothorpe_retf
+			),
+			BUILD_GENNAME_INVALID()
+		),
+	inln =
+		LIB4_DEFINE_PASCALARRAY_LITERAL2(
+			genericnamed_,
+			genericnamed,
+			
+			BUILD_GENNAME_RETFRAME(
+				&directive_octothorpe_cparr,
+				&directive_octothorpe_retf
+			),
+			BUILD_GENNAME_INVALID()
+		),
 	
 	frln_directives = LIB4_DEFINE_PASCALARRAY_LITERAL2( genericnamed_, genericnamed, BUILD_GENNAME_INVALID() ),
 	inln_directives = LIB4_DEFINE_PASCALARRAY_LITERAL2( genericnamed_, genericnamed, BUILD_GENNAME_INVALID() );
@@ -113,11 +132,23 @@ genname_parr *freshline = &frln, *inline = &inln;
 genericnamed
 	hardwired_freshline[] =
 		{
-			??? BUILD_GENNAME_RETFRAME( nameptr, refptr )
+			??? ,
+			
+			BUILD_GENNAME_RETFRAME(
+				&directive_octothorpe_cparr,
+				&directive_octothorpe_retf
+			),
+			BUILD_GENNAME_INVALID()
 		},
 	hardwired_inline[] =
 		{
-			??? BUILD_GENNAME_RETFRAME( nameptr, refptr )
+			??? ,
+			
+			BUILD_GENNAME_RETFRAME(
+				&directive_octothorpe_cparr,
+				&directive_octothorpe_retf
+			),
+			BUILD_GENNAME_INVALID()
 		};
 	
 	
@@ -1053,6 +1084,7 @@ retframe on_octothorpe( stackpair *stkp, void *v )
 	
 	return( (retframe){ &enqueue_returns, (void*)&seq} );
 }
+	/* ( token* -- token* ) */
 retframe on_octothorpe_search( stackpair *stkp, void *v_ )
 {
 	int scratch;
@@ -1063,6 +1095,8 @@ retframe on_octothorpe_search( stackpair *stkp, void *v_ )
 	
 	uintptr_t tok;
 	STACKPEEK_UINT( &( stkp->data ), tok,  on_execable, scratch );
+	
+	??? /* We should really confirm that the token is an identifier here. */
 	
 	generic_named *found_ = bsearch1_gennamearr( table, (token*)tok );
 	
@@ -1102,7 +1136,7 @@ retframe on_octothorpe_search( stackpair *stkp, void *v_ )
 }
 
 	/* ( token*1 token*2 -- token*2 ) */
-retframe on_execable_exit( stackpair *stkp, void *v );
+retframe on_execable_exit( stackpair *stkp, void *v_ );
 	/* Note: does not necessarily return the SAME token pointer. In fact, */
 	/*  generally SHOULDN'T. */
 	/* ( token* -- ... -- token* ) */
