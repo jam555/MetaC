@@ -398,7 +398,8 @@ int discard_source( source *src )
 
 
 retframe metaC_stdinclude_argfetch1( stackpair *stkp, void *v );
-	??? /* Will we have a token* on the stack? Will that need to be deallocated? */
+	???
+	/* ( token*directiveName -- token* ) */
 retframe metaC_stdinclude( stackpair *stkp, void *v )
 {
 	int scratch;
@@ -407,12 +408,17 @@ retframe metaC_stdinclude( stackpair *stkp, void *v )
 	
 	STACKCHECK( stkp,  metaC_stdinclude );
 	
+	??? /* We should peek the token, verify it's value (identifier, */
+	/*  "_include"), and throw an error if it's the wrong one. */
+	
 	static retframe_parr
 		seq =
 			(retframe_parr)
 			{
-				3, /* Number of retframes  */
+				4, /* Number of retframes  */
 				{
+						/* ( token*directiveName -- ) */
+					(retframe){ &invoke_dealloctoken, (void*)0 },
 						/* ( -- token* ) */
 					(retframe){ &token_queue_fetch, (void*)0 },
 						/* ( token* -- ( token* 0 ) | ( tokengroup* 1 ) | ( tokengroup* 2 ) ) */
