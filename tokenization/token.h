@@ -307,6 +307,7 @@ with this program; if not, write to the:
 			/*  parse-tree building. */
 		#define TOKTYPE_PARSEBREAK ( 0x200 )
 	
+		/* Both keywords and identifiers are names. */
 	#define TOKTYPE_NAME ( 3 )
 		#define TOKTYPE_ARGVAL ( 0x300 )
 	#define TOKTYPE_NUMBER ( 4 )

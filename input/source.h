@@ -63,6 +63,7 @@ with this program; if not, write to the:
 	retframe metaC_stdinclude( stackpair *stkp, void *v );
 	
 	
+	??? /* Everything with a "prog" argument is probably using it wrong.  */
 		/* If refresh_srcname is provided, then the pointer it points to */
 		/*  MUST be NULL, as internal logic makes that assumption itself. */
 		/*  Only sets refresh_srcname if the source{} instance changes, in */

@@ -139,6 +139,11 @@ retframe vm_pushretframe_else( stackpair *stkp, void *v_ );
 
 
 
+	/* ( char_parr* --  ) */
+retframe dealloc_cparr( stackpair *stkp, void *v_ );
+
+
+
 typedef struct divertthread_info divertthread_info;
 typedef retframe (*divertthread_earlyexit_ptr)( stackpair*, divertthread_info*, unsigned );
 retframe divertthread_earlyexit_ptr_placeholder( stackpair*, divertthread_info*, unsigned );

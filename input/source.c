@@ -50,6 +50,8 @@ with this program; if not, write to the:
 	#define NOTESPACE() \
 		STDMSG_NOTESPACE_WRAPPER( &errs )
 
+	#define SIGNEDARG( val ) \
+		STDMSG_SIGNEDARG_WRAPPER( &errs, ( val ) )
 	#define DECARG( val ) \
 		STDMSG_DECARG_WRAPPER( &errs, ( val ) )
 	$define CHARARG( val ) \
@@ -162,6 +164,9 @@ struct source
 	refed_pstr *name;
 	
 		/* Max val is UINTMAX_MAX */
+		/* I'm not sure what base is for. Maybe it was in case of a */
+		/*  later inclusion version that allows starting part way */
+		/*  through a fire? */
 	uintmax_t base, progress;
 	
 } *sources = (source*)0;
@@ -397,19 +402,64 @@ int discard_source( source *src )
 
 
 
-retframe metaC_stdinclude_argfetch1( stackpair *stkp, void *v );
-	???
+retframe metaC_stdinclude_stringify( stackpair *stkp, void *v );
+retframe metaC_stdinclude_gatherhandler( stackpair *stkp, void *v );
+retframe metaC_stdinclude_body( stackpair *stkp, void *v );
 	/* ( token*directiveName -- token* ) */
 retframe metaC_stdinclude( stackpair *stkp, void *v )
 {
 	int scratch;
 	
-	uintptr_t tok;
+	uintptr_t tok_;
 	
 	STACKCHECK( stkp,  metaC_stdinclude );
 	
-	??? /* We should peek the token, verify it's value (identifier, */
-	/*  "_include"), and throw an error if it's the wrong one. */
+	STACKPEEK_UINT( &( stkp->data ), sizeof( uintptr_t ) * 0, tok_,  metaC_stdinclude, scratch );
+	token *tok = (token*)tok_;
+	if( tok->header.toktype != TOKTYPE_NAME )
+	{
+		NOTELINE();
+			STRARG( "metaC_stdinclude() encountered a name mismatch: " );
+			STRARG( "toktype wasn't TOKTYPE_NAME : " );
+			DECARG( tok->header.toktype );
+		
+		stack_ENDRETFRAME();
+	}
+	static char includetext[] = "_include";
+		/* sizeof( char ) should hopefully always == 1. */
+	static int includetextsize = sizeof( includetext ) / sizeof( char );
+	if( tok->header.length < includetextsize )
+	{
+		NOTELINE();
+			STRARG( "metaC_stdinclude() encountered a name mismatch: " );
+			STRARG( "bad length: " );
+			DECARG( tok->header.length );
+			STRARG( " >= " );
+			DECARG( includetextsize );
+		
+		stack_ENDRETFRAME();
+	}
+	if
+	(
+		memcmp
+		(
+			(const void*)includetext,
+			(const void*)tok->text,
+			tok->header.length > includetextsize ?
+				includetextsize :
+				tok->header.length
+		) != 0
+	)
+	{
+		NOTELINE();
+			STRARG( "metaC_stdinclude() encountered a name mismatch: " );
+			STRARG( "wrong text: " );
+			STRARG( includetext );
+			STRARG( " != " );
+			STRARG( tok->text );
+		
+		stack_ENDRETFRAME();
+	}
 	
 	static retframe_parr
 		seq =
@@ -423,88 +473,42 @@ retframe metaC_stdinclude( stackpair *stkp, void *v )
 					(retframe){ &token_queue_fetch, (void*)0 },
 						/* ( token* -- ( token* 0 ) | ( tokengroup* 1 ) | ( tokengroup* 2 ) ) */
 					(retframe){ &bracketgather_entry, (void*)0 },
-					(retframe){ &metaC_stdinclude_argfetch1, (void*)0 }
+					(retframe){ &metaC_stdinclude_gatherhandler, (void*)0 }
 				}
 			};
 	return( (retframe){ &enqueue_returns, (void*)&seq } );
 }
-	/* ( ??? ( ( token* 0 ) | ( tokengroup* 1 ) | ( tokengroup* 2 ) ) -- ... ) */
-retframe metaC_stdinclude_argfetch1( stackpair *stkp, void *v )
+	/* ( ( token* 0 ) | ( tokengroup* 1 ) | ( tokengroup* 2 ) -- ??? ) */
+retframe metaC_stdinclude_gatherhandler( stackpair *stkp, void *v )
 {
 	int scratch;
 	
 	uintptr_t tok;
 	
-	STACKCHECK( stkp,  metaC_stdinclude_argfetch1 );
+	STACKCHECK( stkp,  metaC_stdinclude_gatherhandler );
 	
-	STACKPEEK_UINT( &( stkp->data ), sizeof( uintptr_t ) * 0, tok,  metaC_stdinclude_argfetch1, scratch );
+	STACKPOP_UINT( &( stkp->data ), tok,  metaC_stdinclude_gatherhandler, scratch );
 	switch( tok )
 	{
 		case 0:
 			{
-				STACKPEEK_UINT( &( stkp->data ), sizeof( uintptr_t ) * 1, tok,  metaC_stdinclude_argfetch1, scratch );
+				STACKPEEK_UINT( &( stkp->data ), sizeof( uintptr_t ) * 0, tok,  metaC_stdinclude_gatherhandler, scratch );
 				
-#define metaC_stdinclude_argfetch1_BADRET( err ) \
-	MONADICFAILURE( metaC_stdinclude_argfetch1, "get_deeptoktype", ( err ) ); \
+#define metaC_stdinclude_gatherhandler_BADRET( err ) \
+	MONADICFAILURE( metaC_stdinclude_gatherhandler, "get_deeptoktype", ( err ) ); \
 	stack_ENDRETFRAME();
 				deep_toktype a;
 				deeptoktype_result deepres = get_deeptoktype( &( tok->header ) );
-				DEEPTOKTYPE_RESULT_BODYMATCH( deepres, LIB4_OP_SETa, metaC_stdinclude_argfetch1_BADRET );
-				switch( a.shallow_type )
-				{
-					case TOKTYPE_TOKENGROUP_COMNTMERGE:
-					case TOKTYPE_TOKENGROUP_WHITESPACE:
-							/* Ok, report that this happened and redo the bracket fetch. */
-						NOTELINE();
-						STRARG( "metaC_stdinclude_argfetch1() encountered a " );
-							STRARG( "whitespace-equivalent token where expecting a " );
-							STRARG( "bracket set, attempting to fetch brackets again..." );
-						
-						{
-							static retframe_parr
-								seq =
-									(retframe_parr)
-									{
-										5, /* Number of retframes  */
-										{
-												/* ( 0 -- ) */
-											(retframe){ &drop, (void*)0 },
-												/* ( token* -- ) */
-											(retframe){ &invoke_dealloctoken, (void*)0 },
-												/* ( -- token* ) */
-											(retframe){ &token_queue_fetch, (void*)0 },
-												/* ( token* -- ( token* 0 ) | ( tokengroup* 1 ) | ( tokengroup* 2 ) ) */
-											(retframe){ &bracketgather_entry, (void*)0 },
-											(retframe){ &metaC_stdinclude_argfetch1, (void*)0 }
-										}
-									};
-							return( (retframe){ &enqueue_returns, (void*)&seq } );
-						}
-					case TOKTYPE_TOKENGROUP_SAMEMERGE:
-						/* Check the deeper type. */
-						???
-					case TOKTYPE_SQSTR:
-					case TOKTYPE_DQSTR:
-					case TOKTYPE_TOKENGROUP_STRMERGE:
-						/* Wrong level: these belong inside brackets. */
-					case TOKTYPE_TOKENGROUP_MACROLINK:
-					case TOKTYPE_TOKENGROUP_MACROTOKEN:
-					case TOKTYPE_TOKENGROUP_MACROTOKEN_INDIRECTION:
-					case TOKTYPE_TOKENGROUP_MACRORUN:
-					case TOKTYPE_TOKENGROUP_MACRODIRECTIVE:
-						/* These ALL should have been resolved already. */
-					case TOKTYPE_TOKENGROUP_DELIMITED:
-						/* What DO we do with this? */
-					case TOKTYPE_TOKENGROUP_ERROREDSET:
-						/* All we can do is trickle down the error. */
-					case TOKTYPE_TOKENGROUP_EQUIVMERGE:
-						/* Wrong type: this is a (tokenbranch*), and we need a (tokengroup*). */
-					default:
-				}
+				DEEPTOKTYPE_RESULT_BODYMATCH( deepres, LIB4_OP_SETa, metaC_stdinclude_gatherhandler_BADRET );
+				NOTELINE();
+					STRARG( "metaC_stdinclude_gatherhandler() encountered a " );
+					STRARG( "non-tokengroup token when expecting a " );
+					STRARG( "bracket set. Error unrecoverable. Shallow type: " );
+					DECARG( a.shallow_type );
+					STRARG( "; Virtual type: " );
+					DECARG( a.virtual_type );
 				
-				/* 0 if not a bracket entrance, */
-				
-				???
+				RETFRAMEFUNC( metaC_stdinclude_gatherhandler, scratch );
 			}
 		case 1:
 			/* 1 if correctly formed, or */
@@ -512,12 +516,162 @@ retframe metaC_stdinclude_argfetch1( stackpair *stkp, void *v )
 		case 2:
 			/* 2 if explicitly bad syntax ( e.g. pairing an opening parenthese */
 			/*  with a closing square bracket). */
+			NOTELINE();
+				STRARG( "metaC_stdinclude_gatherhandler() encountered a " );
+				STRARG( "\'bad syntax\' result value on top of stack." );
+			
+				/* We should reprint the entire tokengroup here. */
 			???
+			
+			RETFRAMEFUNC( metaC_stdinclude_gatherhandler, scratch );
 		default:
-			???
+			NOTELINE();
+				STRARG( "metaC_stdinclude_gatherhandler() encountered an " );
+				STRARG( "unexpected result value on top of stack: " );
+				DECARG( tok );
+			
+			stack_ENDRETFRAME();
 	}
 	
-	STACKPEEK_UINT( &( stkp->data ), sizeof( uintptr_t ) * 1, tok,  metaC_stdinclude_argfetch1, scratch );
+	STACKPEEK_UINT( &( stkp->data ), sizeof( uintptr_t ) * 0, tok,  metaC_stdinclude_gatherhandler, scratch );
+	tokengroup *tg = (tokengroup*)tok;
+	
+	scratch = validate_tokengroup( tg );
+	switch( scratch )
+	{
+		case 1:
+			/* Good. */
+			break;
+		case -2:
+			/* Wrong type. */
+			NOTELINE();
+				STRARG( "metaC_stdinclude_gatherhandler() encountered a " );
+				STRARG( "non-tokengroup token type on top of stack: " );
+				DECARG( tg->header.toktype );
+			
+			stack_ENDRETFRAME();
+		case -1:
+			/* Fatal error. */
+			NOTELINE();
+				STRARG( "validate_tokengroup() in metaC_stdinclude_gatherhandler() " );
+				STRARG( "was given a null pointer: this should be impossible." );
+			
+			stack_ENDRETFRAME();
+		default:
+			/* Unknown. */
+			NOTELINE();
+				STRARG( "validate_tokengroup() in metaC_stdinclude_gatherhandler() " );
+				STRARG( "had a general error: " );
+				SIGNEDARG( scratch );
+			
+			stack_ENDRETFRAME();
+	}
+	if( tg->arr->len != 2 )
+	{
+		NOTELINE();
+			STRARG( "metaC_stdinclude_gatherhandler() encountered a " );
+			STRARG( "non-2 length in tokengroup( " );
+				DATAPTRARG( tg );
+			STRARG( " )->len == " );
+			DECARG( tg->arr->len );
+		
+		stack_ENDRETFRAME();
+	}
+	
+	token_head *a = (token_head*)0, *b = (token_head*)0;
+	tokenheadptr_result thpres = popfrom_tokengroup( tg );
+#define metaC_stdinclude_gatherhandler_TGPOP_FAIL( err ) \
+		NOTELINE(); \
+			STRARG( "metaC_stdinclude_gatherhandler() encountered a " ); \
+			STRARG( "failure in a call to popfrom_tokengroup(): " ); \
+			DECARG( __LINE__ ); \
+			STRARG( "; tokengroup: " ); \
+			DATAPTRARG( tg );
+	TOKENHEADPTR_RESULT_BODYMATCH( thpres, LIB4_OP_SETa, metaC_stdinclude_gatherhandler_TGPOP_FAIL );
+	
+	thpres = popfrom_tokengroup( tg );
+	TOKENHEADPTR_RESULT_BODYMATCH( thpres, LIB4_OP_SETb, metaC_stdinclude_gatherhandler_TGPOP_FAIL );
+	
+	STACKPUSH_UINT( &( stkp->data ), (uintptr_t)a,  metaC_stdinclude_gatherhandler, scratch );
+	STACKPUSH_UINT( &( stkp->data ), (uintptr_t)b,  metaC_stdinclude_gatherhandler, scratch );
+	
+	static retframe_parr
+		seq =
+			(retframe_parr)
+			{
+				6, /* Number of retframes  */
+				{
+						/* ( tokengroup*orig token*0 token*1 -- token*0 token*1 tokengroup*orig ) */
+					(retframe){ &raise3rd, (void*)0 },
+						/* ( tokengroup*orig -- ) */
+					(retframe){ &invoke_dealloctoken, (void*)0 },
+						/* ( token*1 -- string*1 ) */
+					(retframe){ &metaC_stdinclude_stringify, (void*)0 },
+						/* ( token*0 string*1 -- string*1 token*0 ) */
+					(retframe){ &swap2nd, (void*)0 },
+						/* ( token*0 -- string*0 ) */
+					(retframe){ &metaC_stdinclude_stringify, (void*)0 },
+					(retframe){ &metaC_stdinclude_body, (void*)0 }
+				}
+			};
+	return( (retframe){ &enqueue_returns, (void*)&seq } );
+}
+	/* ( string*1 string*0 -- ... --  ) */
+retframe metaC_stdinclude_body( stackpair *stkp, void *v )
+{
+	int scratch;
+	
+	uintptr_t tok;
+	
+	STACKCHECK( stkp,  metaC_stdinclude_body );
+	
+	uintptr_t str0, str1;
+	
+	STACKPEEK_UINT( &( stkp->data ), sizeof( uintptr_t ) * 0, str0,  metaC_stdinclude_stringify, scratch );
+	STACKPEEK_UINT( &( stkp->data ), sizeof( uintptr_t ) * 1, str1,  metaC_stdinclude_stringify, scratch );
+	
+	/* We should be "canonicalizing" the path referenced by */
+	/*  str1, and then confirming that it's relative (which is */
+	/*  mandatory). */
+	
+	/* We actually don't USE string 0, because it's a reference */
+	/*  into a list of reference directories, and that list */
+	/*  doesn't exist yet. We would do the lookup here. */
+	
+	/* This is the right place to merge the strings. */
+	
+		/* We currently are using the relative path directly, */
+		/*  just because we don't currently have alternatives. */
+	source *inclusion = build_source( (char_pascalarray*)str1, 0 );
+	inclusion->prev = sources;
+	sources = inclusion;
+	
+		/* Will need another string deallocation once this thing */
+		/*  is fleshed out. */
+	static retframe_parr
+		seq =
+			(retframe_parr)
+			{
+				2, /* Number of retframes  */
+				{
+						/* ( string*1 string*0 -- string*0 ) */
+					(retframe){ &dealloc_cparr, (void*)0 },
+						/* ( string*1 --  ) */
+					(retframe){ &dealloc_cparr, (void*)0 }
+				}
+			};
+	return( (retframe){ &enqueue_returns, (void*)&seq } );
+}
+	/* ( tokengroup* -- ) */
+retframe metaC_stdinclude_stringify( stackpair *stkp, void *v )
+{
+	int scratch;
+	
+	uintptr_t tok;
+	
+	STACKCHECK( stkp,  metaC_stdinclude_stringify );
+	
+	STACKPEEK_UINT( &( stkp->data ), sizeof( uintptr_t ) * 0, tok,  metaC_stdinclude_stringify, scratch );
 	switch( ( (token_head*)tok )->toktype )
 	{
 		case ???:
@@ -530,189 +684,6 @@ retframe metaC_stdinclude_argfetch1( stackpair *stkp, void *v )
 	
 	???
 }
-	/* ( tokengroup* retcategory -- ... ) */
-retframe metaC_stdinclude_body( stackpair *stkp, void *v )
-{
-	int scratch;
-	
-	uintptr_t tok;
-	
-	STACKCHECK( stkp,  metaC_stdinclude_body );
-	
-	uintptr_t retcategory, tok;
-		/* ( ... -- tokengroup* ) */
-	STACKPOP_UINT( &( stkp->data ), retcategory,  metaC_stdinclude_body, scratch );
-	STACKPEEK_UINT( &( stkp->data ), 0, tok,  metaC_stdinclude_body, scratch );
-		/* Note: retcategory will be the stack-topper provided by bracketgather_entry()! */
-	switch( retcategory )
-	{
-		case 1:
-			/* Success! */
-			
-			break;
-		case 0:
-			/* Bad token: not a bracket opener. */
-			
-			TRESPASSPATH( metaC_stdinclude_body, "ERROR! Bad token, was not a bracket-starter!" );
-				NOTELINE(); DATAPTRARG( tok );
-				NOTESPACE(); DECARG( ( ( (token_head*)tok )->toktype ) );
-			
-			return( (retframe){ &token_queue_seekFreshline, (void*)0 } );
-		case 2:
-			/* Bad token: failed bracket accumulation. */
-			
-			TRESPASSPATH( metaC_stdinclude_body, "ERROR! Bad token, bracket accumulation encountered a forbidden token!" );
-				NOTELINE(); DATAPTRARG( tok );
-				NOTESPACE(); DECARG( ( ( (token_head*)tok )->toktype ) );
-			
-			return( (retframe){ &token_queue_seekFreshline, (void*)0 } );
-		default:
-			/* Unknown retcategory from bracketgather_entry(): this shouldn't happen. */
-			
-			TRESPASSPATH( metaC_stdinclude_body, "ERROR! Unfamiliar result category from bracketgather_entry()!" );
-				NOTELINE(); DECARG( retcategory );
-				NOTESPACE(); DATAPTRARG( tok );
-				NOTESPACE(); DECARG( ( ( (token_head*)tok )->toktype ) );
-			
-			stack_ENDRETFRAME();
-	}
-	
-	if( ( (token_head*)tok )->toktype != ??? )
-	{
-		???
-	}
-	tokengroup *tg = (tokengroup*)tok;
-	scratch = validate_tokengroup( tg );
-	if( !scratch )
-	{
-		???
-	}
-	switch( tg->used )
-	{
-		case 0:
-			???
-		case 1:
-			???
-		case 2:
-			/* Success! */
-			
-			break;
-		default:
-			???
-	}
-	
-	
-	/* ( token* -- token* boolean ) */
-	/* boolean == 1 is token is of TOKTYPE_SQSTR or TOKTYPE_DQSTR, else 0. */
-retframe require_anystring( stackpair *stkp, void *v );
-	/* ( char_parr* token* -- char_parr* ( 1 )|( token* 0 ) ) */
-retframe grow_string( stackpair *stkp, void *v );
-	/* ( string-token* -- token* char_parr* ) */
-(retframe){ &stringtoken2char_parr, (void*)0 },
-	/* ( uintptr_t uintptr_t -- uintptr_t ) */
-retframe vm_lesser( stackpair *stkp, void *v );
-	/* ( uintptr_t uintptr_t -- uintptr_t ) */
-retframe vm_equal( stackpair *stkp, void *v );
-	/* ( uintptr_t uintptr_t -- uintptr_t ) */
-retframe vm_greater( stackpair *stkp, void *v );
-	/* ( uintptr_t -- uintptr_t ) */
-retframe vm_not( stackpair *stkp, void *v );
-retframe vm_push0( stackpair *stkp, void *v );
-retframe vm_push1( stackpair *stkp, void *v );
-retframe vm_push2( stackpair *stkp, void *v );
-retframe vm_pushmax( stackpair *stkp, void *v );
-	/* These all require a pointer to a retframe as v. */
-retframe just_run( stackpair *stkp, void *v );
-	/* ( uintptr_t -- uintptr_t ) */
-retframe run_if( stackpair *stkp, void *v );
-retframe run_else( stackpair *stkp, void *v );
-retframe run_on0( stackpair *stkp, void *v );
-retframe run_on1( stackpair *stkp, void *v );
-retframe run_on2( stackpair *stkp, void *v );
-retframe run_on3( stackpair *stkp, void *v );
-	/* ( tokengroup* -- tokengroup* token* ) */
-retframe vm_popfront_tokengroup( stackpair *stkp, void *v );
-	/* ( tokengroup* -- tokengroup* token* ) */
-retframe vm_popfrom_tokengroup( stackpair *stkp, void *v );
-	/* ( tokengroup* -- tokengroup* length ) */
-retframe vm_lengthof_tokengroup( stackpair *stkp, void *v );
-retframe invoke_dealloctoken( stackpair *stkp, void *v );
-	/* ( uintptr_t*a uintptr_t*b -- uintptr_t*b uintptr_t*a ) */
-retframe swap2nd( stackpair *stkp, void *v );
-	/* These require v_ to point to a uintptr_t, which will be used as the data */
-	/*  in question. */
-retframe vm_pushdata( stackpair *stkp, void *v_ );
-retframe vm_popdata( stackpair *stkp, void *v_ );
-	/* retframe*, not uintptr_t pointer. */
-retframe vm_pushretframe( stackpair *stkp, void *v_ );
-	/* Pops a retframe from the data stack, and returns it. */
-retframe vm_datacall( stackpair *stkp, void *v );
-retframe vm_push_noop( stackpair *stkp, void *v_ );
-	/* Runs enqueue_returns() with v_ upon condition match. */
-	/* ( uintptr_t -- uintptr_t ) */
-retframe enqueue_if( stackpair *stkp, void *v_ );
-retframe enqueue_else( stackpair *stkp, void *v_ );
-	/* Runs vm_pushretframe() with v_ upon condition match. */
-	/* ( uintptr_t -- uintptr_t ) */
-retframe vm_pushretframe_if( stackpair *stkp, void *v_ );
-	/* ( uintptr_t -- uintptr_t ) */
-retframe vm_pushretframe_else( stackpair *stkp, void *v_ );
-	
-	
-	/* Horay, we have a proper bracket set, and have clear to the end */
-	/*  of the line! Now we check the number of arguments (should be */
-	/*  2), confirm that both are strings (which may involve merging */
-	/*  them), and do some search+setup to include the designated */
-	/*  file. */
-	/* The arguments to this directive: */
-		/* 1) Root name: the program-argument assigned name of the */
-		/*  point in the directory that the next directive-argument */
-		/*  will be defined in relation to: this will currently be */
-		/*  ignored, but it'll matter later. */
-		/* 2) Inclusion path: the directory path and file name to */
-		/*  include. This MUST be converted to "cannonical form" (so */
-		/*  no ".." or "." components in it) BEFORE being combined */
-		/*  with the root. The named-root directory + the cannonical */
-		/*  form of this path specify the file to be included. */
-	
-	???
-	
-	static retframe_parr
-		seq =
-			(retframe_parr)
-			{
-				??? , /* Number of retframes  */
-				{
-						/* ( tokengroup* -- tokengroup* token* ) */
-					(retframe){ &vm_popfrom_tokengroup, (void*)0 },
-					(retframe){ &swap2nd, (void*)0 },
-						/* ( ... -- tok* tg* ) */
-						/* Need to verify that tok* is a tokengroup? */
-					
-						/* ( tokengroup* -- tokengroup* token* ) */
-					(retframe){ &vm_popfrom_tokengroup, (void*)0 },
-					(retframe){ &swap2nd, (void*)0 },
-						/* ( ... -- tok* tok* tg* ) */
-						/* Need to verify that tok* is a tokengroup? */
-					
-						/* ( tokengroup* -- ) */
-					(retframe){ &invoke_dealloctoken, (void*)0 },
-						/* ( ... -- tg*2nd tg*1st ) */
-					
-					???
-				}
-			};
-	return( (retframe){ &enqueue_returns, (void*)&seq } );
-}
-	NOTELINE()
-	NOTESPACE()
-
-	DECARG( val )
-	CHARARG( val )
-	DATAPTRARG( val )
-	STRARG( strptr )
-	
-	RETFRAMEFUNC( caller, scratch );
 
 
 

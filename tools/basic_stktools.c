@@ -838,6 +838,18 @@ retframe vm_pushretframe_else( stackpair *stkp, void *v_ )
 }
 
 
+
+	/* ( char_parr* --  ) */
+retframe dealloc_cparr( stackpair *stkp, void *v_ )
+{
+	/* Does the obvious. This is here because it doesn't */
+	/*  really belong with the token tools. Used by source.c */
+	
+	???
+}
+
+
+
 	/* ( -- 0 ) */
 retframe setjump_callstack( stackpair *stkp, void *v_ )
 {
