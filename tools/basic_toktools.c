@@ -1177,6 +1177,8 @@ retframe convert_tokengroup2string( stackpair *stkp, void *v )
 			STACKPUSH_UINT( &( stkp->data ), (uintptr_t)0,  convert_tokengroup2string, scratch );
 			RETFRAMEFUNC( stkp,  convert_tokengroup2string );
 			
+			??? /* Shouldn't this case actually result in a string copy -> success? */
+			
 		case TOKTYPE_TOKENGROUP_SAMEMERGE:
 			if( > 0 )
 			{

@@ -103,4 +103,8 @@ retframe tokengroup_dealloc( stackpair *stkp, void *v );
 	/* ( char_parr* token* -- char_parr* ( 1 )|( token* 0 ) ) */
 retframe grow_string( stackpair *stkp, void *v );
 	/* ( tokengroup* -- tokengroup* ( 0 | char_parr* ( 1 | token* 2 ) ) */
+	/* The result code on top of the stack will be: */
+		/* 0 if nothing was done, */
+		/* 1 on plain success, or */
+		/* 2 on mid-process error. */
 retframe convert_tokengroup2string( stackpair *stkp, void *v );

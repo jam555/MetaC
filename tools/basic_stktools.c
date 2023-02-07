@@ -846,6 +846,12 @@ retframe dealloc_cparr( stackpair *stkp, void *v_ )
 	/*  really belong with the token tools. Used by source.c */
 	
 	???
+#define refed_pstr_decrrefs_BADDESTROY( err ) \
+	MONADICFAILURE( init, "char_pascalarray_destroy()", ( err ).val ); \
+	NOTESPACE(); DATAPTRARG( pstr->text ); \
+	ret = -2;
+			lib4_result res = char_pascalarray_destroy( pstr->text );
+			LIB4_RESULT_BODYMATCH( res, LIB4_NULL_MACRO, refed_pstr_decrrefs_BADDESTROY );
 }
 
 

@@ -51,10 +51,14 @@ with this program; if not, write to the:
 	int is_delimited( token_head *th );
 	int was_freshline( token_head *th );
 		/* ( dest-token_head* src-token_head* -- dest-token_head* src-token_head* ) */
+		/* Just sets token_head->toktype. */
 	retframe vm_tokenhead_settoktype( stackpair *stkp, void *v_ );
 		/* ( dest-token_head* src-token_head* -- dest-token_head* src-token_head* ) */
+		/* Currently just sets token_head->is_delimited, but see the note */
+		/*  for that element... */
 	retframe vm_tokenhead_setflags( stackpair *stkp, void *v_ );
 		/* ( dest-token_head* src-token_head* -- dest-token_head* src-token_head* ) */
+		/* Sets token_head ->src, ->line, and ->column. */
 	retframe vm_tokenhead_setsource( stackpair *stkp, void *v_ );
 		typedef struct deep_toktype
 		{
@@ -134,15 +138,27 @@ with this program; if not, write to the:
 			/* The name of the source file. */
 		/* line & column */
 			/* The location within the source file where the token started. */
+		/* This should really be renamed. */
 	#define INIT_TOKENHEAD( toktype, len,  delim,  sf_name, line, column ) \
 		(token_head){ \
 			(uintptr_t)( toktype ), (int)( len ), \
 			(int)( delim ), \
 			(refed_pstr*)( sf_name ), (uintmax_t)( line ), (uintmax_t)( column ) \
 		}
+	#define NULL_TOKENHEAD() \
+		INIT_TOKENHEAD( TOKTYPE_INVALID, 0,  0,  0, 0, 0 )
 	
+		/* Will either return the previous deallocator and set the new */
+		/*  one, or report an error and return a null retframe{}: it */
+		/*  NEVER does anything else. Unless you're delinking your own */
+		/*  handler, you should ALWAYS save the return so you can use */
+		/*  it for any types your own deallocator doesn't recognize. */
 	retframe set_dealloctoken( retframe dealc_ );
+		/* ( token* --  ) */
+		/* This is the CORRECT way to deallocate a token, because it can */
+		/*  add handlers via set_dealloctoken(). */
 	retframe invoke_dealloctoken( stackpair *stkp, void *v );
+		/* Do NOT use this directly. */
 	retframe smart_dealloc_token( stackpair *stkp, void *v );
 		/* ( token*[len] len -- ) */
 	retframe bulk_dealloc_token( stackpair *stkp, void *v );
@@ -156,7 +172,7 @@ with this program; if not, write to the:
 		if( 1 ) { \
 			( scratch ) = simplify_toktype( &( src_tokhead ),  &( destvar_uintp ) ); \
 			if( !( scratch ) ) { \
-				STDMSG_FAILEDINTFUNC_WRAPPER( ( stylesetptr ), "peek_uintptr", ( caller ), ( scratch ) ); \
+				STDMSG_FAILEDINTFUNC_WRAPPER( ( stylesetptr ), "simplify_toktype", ( caller ), ( scratch ) ); \
 				( endfunc )(); } }
 	#defint TOKEN_CHECK_SIMPLETYPE( src_tokhead, desired_val, on_yes, on_no,  stylesetptr, caller, scratch, endfunc ) \
 		if( 1 ) { \

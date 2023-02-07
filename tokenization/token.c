@@ -128,14 +128,14 @@ retframe vm_tokenhead_settoktype( stackpair *stkp, void *v_ )
 	
 	uintptr_t tmp;
 	
-	STACKPEEK_UINT( &( stkp->data ), 0, tmp,  vm_tokenhead_settoktype, scratch );
+	STACKPEEK_UINT( &( stkp->data ), sizeof( uintptr_t ) * 0, tmp,  vm_tokenhead_settoktype, scratch );
 	token_head *dest, *src = (token_head*)tmp;
 	if( !src )
 	{
 		???
 	}
 	
-	STACKPEEK_UINT( &( stkp->data ), sizeof( uintptr_t ), tmp,  vm_tokenhead_settoktype, scratch );
+	STACKPEEK_UINT( &( stkp->data ), sizeof( uintptr_t ) * 1, tmp,  vm_tokenhead_settoktype, scratch );
 	dest = (token_head*)tmp;
 	if( !dest )
 	{
@@ -574,6 +574,9 @@ retframe stringtoken2char_parr( stackpair *stkp, void *v_ )
 
 retframe complexlex_dealloctoken = (retframe){ &smart_dealloc_token, (void*)0 };
 
+	/* Will either return the previous deallocator and set the new one, */
+	/*  or report an error and return a null retframe{}: it NEVER does */
+	/*  anything else. */
 retframe set_dealloctoken( retframe dealc_ )
 {
 	retframe ret = (retframe){ 0, 0 };
@@ -590,6 +593,7 @@ retframe set_dealloctoken( retframe dealc_ )
 	
 	return( ret );
 }
+	/* ( token* --  ) */
 retframe invoke_dealloctoken( stackpair *stkp, void *v )
 {
 		??? /* Isn't this... exactly the opposite of what should happen? */
