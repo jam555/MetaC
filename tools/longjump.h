@@ -137,8 +137,8 @@ retframe longjump_callstack( stackpair *stkp, void *v_ );
 			} }, \
 		prefix##_DISPATCH = \
 			(retframe_parr){ 3, { \
-				(retframe){ &run_on0, (void*)&( prefix##_ONSET ) }, \
-				(retframe){ &run_on1, (void*)&( prefix##_ONJUMP ) }, \
+				(retframe){ &enqueue_on0, (void*)&( prefix##_ONSET ) }, \
+				(retframe){ &enqueue_on1, (void*)&( prefix##_ONJUMP ) }, \
 					/* If setjump() was just run, then on0() will run. If */ \
 					/*  longjump() kicked us back to here, then on1() will run. */ \
 					/*  If onset_ptr returned normally, then the two instances */ \

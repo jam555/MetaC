@@ -124,6 +124,8 @@ retframe just_run( stackpair *stkp, void *v );
 	/* ( uintptr_t -- uintptr_t ) */
 retframe run_if( stackpair *stkp, void *v );
 retframe run_else( stackpair *stkp, void *v );
+	/* As with run_if() and run_else, but these run on exact */
+	/*  values only. */
 retframe run_on0( stackpair *stkp, void *v );
 retframe run_on1( stackpair *stkp, void *v );
 retframe run_on2( stackpair *stkp, void *v );
@@ -135,6 +137,11 @@ retframe vm_datacall( stackpair *stkp, void *v );
 retframe enqueue_if( stackpair *stkp, void *v_ );
 	/* ( uintptr_t -- uintptr_t ) */
 retframe enqueue_else( stackpair *stkp, void *v_ );
+	/* As with run_on*(), but for retframe_parr{} pointers. */
+retframe enqueue_on0( stackpair *stkp, void *v_ );
+retframe enqueue_on1( stackpair *stkp, void *v_ );
+retframe enqueue_on2( stackpair *stkp, void *v_ );
+retframe enqueue_on3( stackpair *stkp, void *v_ );
 	/* Runs vm_pushretframe() with v_ upon condition match. */
 	/* ( uintptr_t -- uintptr_t ) */
 retframe vm_pushretframe_if( stackpair *stkp, void *v_ );

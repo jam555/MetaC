@@ -626,17 +626,17 @@ retframe vm_push_placeholder( stackpair *stkp, void *v )
 }
 
 
-retframe just_run( stackpair *stkp, void *v )
+retframe just_run( stackpair *stkp, void *v_ )
 {
-	STACKCHECK2( stkp, v,  just_run );
+	STACKCHECK2( stkp, v_,  just_run );
 	
 	return( *( (retframe*)v ) );
 }
 	/* ( uintptr_t -- uintptr_t ) */
 	/* Requires a pointer to a retframe as v. */
-retframe run_if( stackpair *stkp, void *v )
+retframe run_if( stackpair *stkp, void *v_ )
 {
-	STACKCHECK2( stkp, v,  run_if );
+	STACKCHECK2( stkp, v_,  run_if );
 	
 	uintptr_t a;
 	int scratch;
@@ -645,16 +645,16 @@ retframe run_if( stackpair *stkp, void *v )
 	
 	if( a )
 	{
-		return( *( (retframe*)v ) );
+		return( *( (retframe*)v_ ) );
 		
 	} else {
 		
 		RETFRAMEFUNC( stkp,  run_if );
 	}
 }
-retframe run_else( stackpair *stkp, void *v )
+retframe run_else( stackpair *stkp, void *v_ )
 {
-	STACKCHECK2( stkp, v,  run_else );
+	STACKCHECK2( stkp, v_,  run_else );
 	
 	uintptr_t a;
 	int scratch;
@@ -663,16 +663,16 @@ retframe run_else( stackpair *stkp, void *v )
 	
 	if( !a )
 	{
-		return( *( (retframe*)v ) );
+		return( *( (retframe*)v_ ) );
 		
 	} else {
 		
 		RETFRAMEFUNC( stkp,  run_else );
 	}
 }
-retframe run_on0( stackpair *stkp, void *v )
+retframe run_on0( stackpair *stkp, void *v_ )
 {
-	STACKCHECK2( stkp, v,  run_on0 );
+	STACKCHECK2( stkp, v_,  run_on0 );
 	
 	uintptr_t a;
 	int scratch;
@@ -681,16 +681,16 @@ retframe run_on0( stackpair *stkp, void *v )
 	
 	if( a == 0 )
 	{
-		return( *( (retframe*)v ) );
+		return( *( (retframe*)v_ ) );
 		
 	} else {
 		
 		RETFRAMEFUNC( stkp,  run_on0 );
 	}
 }
-retframe run_on1( stackpair *stkp, void *v )
+retframe run_on1( stackpair *stkp, void *v_ )
 {
-	STACKCHECK2( stkp, v,  run_on1 );
+	STACKCHECK2( stkp, v_,  run_on1 );
 	
 	uintptr_t a;
 	int scratch;
@@ -699,16 +699,16 @@ retframe run_on1( stackpair *stkp, void *v )
 	
 	if( a == 1 )
 	{
-		return( *( (retframe*)v ) );
+		return( *( (retframe*)v_ ) );
 		
 	} else {
 		
 		RETFRAMEFUNC( stkp,  run_on1 );
 	}
 }
-retframe run_on2( stackpair *stkp, void *v )
+retframe run_on2( stackpair *stkp, void *v_ )
 {
-	STACKCHECK2( stkp, v,  run_on2 );
+	STACKCHECK2( stkp, v_,  run_on2 );
 	
 	uintptr_t a;
 	int scratch;
@@ -717,16 +717,16 @@ retframe run_on2( stackpair *stkp, void *v )
 	
 	if( a == 2 )
 	{
-		return( *( (retframe*)v ) );
+		return( *( (retframe*)v_ ) );
 		
 	} else {
 		
 		RETFRAMEFUNC( stkp,  run_on2 );
 	}
 }
-retframe run_on3( stackpair *stkp, void *v )
+retframe run_on3( stackpair *stkp, void *v_ )
 {
-	STACKCHECK2( stkp, v,  run_on3 );
+	STACKCHECK2( stkp, v_,  run_on3 );
 	
 	uintptr_t a;
 	int scratch;
@@ -735,7 +735,7 @@ retframe run_on3( stackpair *stkp, void *v )
 	
 	if( a == 3 )
 	{
-		return( *( (retframe*)v ) );
+		return( *( (retframe*)v_ ) );
 		
 	} else {
 		
@@ -744,7 +744,7 @@ retframe run_on3( stackpair *stkp, void *v )
 }
 retframe vm_datacall( stackpair *stkp, void *v )
 {
-	STACKCHECK2( stkp, v,  vm_datacall );
+	STACKCHECK( stkp,  vm_datacall );
 	
 	int scratch;
 	retframe rf;
@@ -762,7 +762,7 @@ retframe vm_datacall( stackpair *stkp, void *v )
 	/* ( uintptr_t -- uintptr_t ) */
 retframe enqueue_if( stackpair *stkp, void *v_ )
 {
-	STACKCHECK2( stkp, v,  enqueue_if );
+	STACKCHECK2( stkp, v_,  enqueue_if );
 	
 	uintptr_t a;
 	int scratch;
@@ -781,7 +781,7 @@ retframe enqueue_if( stackpair *stkp, void *v_ )
 	/* ( uintptr_t -- uintptr_t ) */
 retframe enqueue_else( stackpair *stkp, void *v_ )
 {
-	STACKCHECK2( stkp, v,  enqueue_else );
+	STACKCHECK2( stkp, v_,  enqueue_else );
 	
 	uintptr_t a;
 	int scratch;
@@ -797,11 +797,83 @@ retframe enqueue_else( stackpair *stkp, void *v_ )
 		RETFRAMEFUNC( stkp,  enqueue_else );
 	}
 }
+retframe enqueue_on0( stackpair *stkp, void *v_ )
+{
+	STACKCHECK2( stkp, v_,  enqueue_on0 );
+	
+	uintptr_t a;
+	int scratch;
+	
+	STACKPEEK_UINT( stkp->data, 0, a,  enqueue_on0, scratch );
+	
+	if( a == 0 )
+	{
+		return( enqueue_returns( stkp, v_ ) );
+		
+	} else {
+		
+		RETFRAMEFUNC( stkp,  enqueue_on0 );
+	}
+}
+retframe enqueue_on1( stackpair *stkp, void *v_ )
+{
+	STACKCHECK2( stkp, v_,  enqueue_on1 );
+	
+	uintptr_t a;
+	int scratch;
+	
+	STACKPEEK_UINT( stkp->data, 0, a,  enqueue_on1, scratch );
+	
+	if( a == 1 )
+	{
+		return( enqueue_returns( stkp, v_ ) );
+		
+	} else {
+		
+		RETFRAMEFUNC( stkp,  enqueue_on1 );
+	}
+}
+retframe enqueue_on2( stackpair *stkp, void *v_ )
+{
+	STACKCHECK2( stkp, v_,  enqueue_on2 );
+	
+	uintptr_t a;
+	int scratch;
+	
+	STACKPEEK_UINT( stkp->data, 0, a,  enqueue_on2, scratch );
+	
+	if( a == 2 )
+	{
+		return( enqueue_returns( stkp, v_ ) );
+		
+	} else {
+		
+		RETFRAMEFUNC( stkp,  enqueue_on2 );
+	}
+}
+retframe enqueue_on3( stackpair *stkp, void *v_ )
+{
+	STACKCHECK2( stkp, v_,  enqueue_on3 );
+	
+	uintptr_t a;
+	int scratch;
+	
+	STACKPEEK_UINT( stkp->data, 0, a,  enqueue_on3, scratch );
+	
+	if( a == 3 )
+	{
+		return( enqueue_returns( stkp, v_ ) );
+		
+	} else {
+		
+		RETFRAMEFUNC( stkp,  enqueue_on3 );
+	}
+}
 	/* Runs vm_pushretframe() with v_ upon condition match. */
 	/* ( uintptr_t -- uintptr_t ) */
 retframe vm_pushretframe_if( stackpair *stkp, void *v_ )
 {
-	STACKCHECK2( stkp, v,  vm_pushretframe_if );
+	STACKCHECK2( stkp, v_,  vm_pushretframe_if );
 	
 	uintptr_t a;
 	int scratch;
@@ -820,7 +892,7 @@ retframe vm_pushretframe_if( stackpair *stkp, void *v_ )
 	/* ( uintptr_t -- uintptr_t ) */
 retframe vm_pushretframe_else( stackpair *stkp, void *v_ )
 {
-	STACKCHECK2( stkp, v,  vm_pushretframe_else );
+	STACKCHECK2( stkp, v_,  vm_pushretframe_else );
 	
 	uintptr_t a;
 	int scratch;
