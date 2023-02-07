@@ -484,9 +484,9 @@ retframe metaC_stdinclude( stackpair *stkp, void *v )
 
 		uintptr_t tok_;
 
-		STACKCHECK( stkp,  metaC_stdinclude );
+		STACKCHECK( stkp,  metaC_stdinclude_entry );
 
-		STACKPEEK_UINT( &( stkp->data ), sizeof( uintptr_t ) * 0, tok_,  metaC_stdinclude, scratch );
+		STACKPEEK_UINT( &( stkp->data ), sizeof( uintptr_t ) * 0, tok_,  metaC_stdinclude_entry, scratch );
 		token *tok = (token*)tok_;
 		if( tok->header.toktype != TOKTYPE_NAME )
 		{
@@ -792,7 +792,7 @@ retframe metaC_stdinclude( stackpair *stkp, void *v )
 
 			case 2:
 				/* Mid-work error. */
-				TRESPASSPATH( metaC_stdinclude_gatherhandler, " ERROR: mid-work error in  convert_tokengroup2string(). " );
+				TRESPASSPATH( metaC_stdinclude_stringify_conclude, " ERROR: mid-work error in  convert_tokengroup2string(). " );
 					STRARG( "Top type: " );
 						/* Discard the result, we'll manually restore it later. */
 					STACKPOP_UINT( &( stkp->data ), res,  metaC_stdinclude_stringify_conclude, scratch );
@@ -832,7 +832,7 @@ retframe metaC_stdinclude( stackpair *stkp, void *v )
 				return( (retframe){ &enqueue_returns, (void*)&seq0 } );
 			case 0:
 				/* No work done. */
-				TRESPASSPATH( metaC_stdinclude_gatherhandler, " ERROR: convert_tokengroup2string(), did no work, Type: " );
+				TRESPASSPATH( metaC_stdinclude_stringify_conclude, " ERROR: convert_tokengroup2string(), did no work, Type: " );
 						/* We'll restore this later. */
 					STACKPOP_UINT( &( stkp->data ), res,  metaC_stdinclude_stringify_conclude, scratch );
 					STACKPEEK_UINT( &( stkp->data ), 0, res,  metaC_stdinclude_stringify_conclude, scratch );
@@ -867,7 +867,7 @@ retframe metaC_stdinclude( stackpair *stkp, void *v )
 				return( (retframe){ &enqueue_returns, (void*)&seq0 } );
 			default:
 				/* Unknown error. */
-				TRESPASSPATH( metaC_stdinclude_gatherhandler, " ERROR: unknown result from convert_tokengroup2string(): " );
+				TRESPASSPATH( metaC_stdinclude_stringify_conclude, " ERROR: unknown result from convert_tokengroup2string(): " );
 					DECARG( res );
 					STRARG( " Type: " );
 					STACKPEEK_UINT( &( stkp->data ), sizeof( uintptr_t ) * 1, res,  metaC_stdinclude_stringify_conclude, scratch );
