@@ -68,6 +68,15 @@ Will want a command line option to output license info. GPL suggestion is
 NEEDED: a file to localize the preprocessor directives that are NOT freshline
 	directives.
 
+basic_toktools.c:
+	convert_tokengroup2string() has a note for the TOKTYPE_SQSTR and
+		TOKTYPE_DQSTR errors suggesting that a string copy should be used to
+		turn them into successes instead. Double-check that.
+
+new preproc.c:
+	bracketgather_entry() has a TODO talking about checking for extraneous
+		bracket closers.
+
 token.h:
 	Need some notes on *_INVALID vs *_OTHER
 	"was_freshline" has been dropped from token_head, and "src", "line", and
@@ -79,6 +88,8 @@ token.h:
 	Add triple-ellipsis support here, then in simplelex.c, then in
 		pack_upparclose() inside eval.c.
 token.c:
+	WARNING! invoke_dealloctoken() seems to do exactly the OPPOSITE of what
+		it should, verify it's behavior!
 	Should is_stdtoken() return 0 on whitespace or not?
 
 eval.c:

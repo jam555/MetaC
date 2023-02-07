@@ -51,7 +51,16 @@ with this program; if not, write to the:
 	
 	
 		/* ( -- ) */
+		/* Returns 1 on validity. Errors: */
+			/* -1: Null argument. */
+			/* -2: Unrecognized header token type. */
+			/* -3: Uninitialized ->arr element. */
+			/* -4: ->used higher than ->arr->len. */
 	int validate_tokengroup( tokengroup *tg );
+		/* The return will have the header toktype set to samemerge, */
+		/*  header length set to the length of the non-header part, */
+		/*  subtype set to invalid, arr set to an array of the */
+		/*  specified element count, and used set to 0. */
 	tokengroup* build_tokengroup( size_t elems );
 	int regrow_tokengroup
 	(
@@ -59,6 +68,10 @@ with this program; if not, write to the:
 		size_t newlen
 	);
 		/* Pushes thd to the end of tgrp. */
+		/* Returns 1 on success. Errors: */
+			/* -1: One of the arguments was null. */
+			/* -2: Couldn't grow the group's array when needed. */
+			/* -3: The group's array supposedly grew, but still reports too small a size. */
 	int pushto_tokengroup
 	(
 		tokengroup *tgrp,
@@ -77,19 +90,55 @@ with this program; if not, write to the:
 	);
 	int lengthof_tokengroup( tokengroup *tg );
 	
+		/* ( -- tokengroup* ) */
 		/* Note: the STANDARD deallocator will release */
 		/*  tokengroup{}, no need for anything special. */
+		/* VM wrapper for build_tokengroup() with element count of 0. */
 	retframe vm_buildempty_tokengroup( stackpair *stkp, void *v );
 		/* ( tokengroup* token_head* -- tokengroup* token_head* ) */
+		/* Sets just tokengroup->subtype from token_head->toktype. */
 	retframe vm_setsubtype_tokengroup( stackpair *stkp, void *v );
 			/* ( tokengroup* token_head* -- tokengroup* ) */
+			/* VM wrapper for pushto_tokengroup(). */
 	retframe vm_pushto_tokengroup( stackpair *stkp, void *v );
 		/* ( tokengroup* -- tokengroup* token* ) */
+		/* VM wrapper for popfront_tokengroup(). */
 	retframe vm_popfront_tokengroup( stackpair *stkp, void *v );
 		/* ( tokengroup* -- tokengroup* token* ) */
+		/* VM wrapper for popfrom_tokengroup(). */
 	retframe vm_popfrom_tokengroup( stackpair *stkp, void *v );
 		/* ( tokengroup* -- tokengroup* length ) */
+		/* VM wrapper for lengthof_tokengroup(). */
 	retframe vm_lengthof_tokengroup( stackpair *stkp, void *v );
+	typedef struct vm_flexbuild_tokengroup_args
+	{
+		uintptr_t *toktype;
+		refed_pstr **src;
+		uintmax_t *line, *column;
+		
+		uintptr_t *subtype;
+		
+			/* The array will NOT be deallocated, just shallow-copied. */
+		tokhdptr_parr *arr;
+		size_t used;
+		
+	} vm_flexbuild_tokengroup_args;
+	#define FORMAT_FLEXBUILD_TOKENGROUP_ARGS( toktype,  src, line, col,  subtype,  srcarr, srccount ) \
+		(vm_flexbuild_tokengroup_args){ \
+			(uintptr_t*)(toktype), \
+			(refed_pstr**)(src), (uintmax_t*)(line), (uintmax_t*)(col), \
+			(uintptr_t*)(subtype), \
+			(tokhdptr_parr*)(srcarr), (size_t)(srccount) }
+		/* (  -- tokengroup* ) */
+		/* Note: v_ MUST BE a pointer to a vm_flexbuild_tokengroup_args{}. */
+		/*  For reasons of code cleanliness, this WILL NOT load the */
+		/*  elements from v_->arr into the tokengroup{}*. */
+	retframe vm_flexbuild_tokengroup( stackpair *stkp, void *v_ );
+		/* ( tokengroup* -- tokengroup* ) */
+		/* Note: v_ MUST BE a pointer to a vm_flexbuild_tokengroup_args{}. */
+		/* As a complement to vm_flexbuild_tokengroup(), this will ONLY load */
+		/*  the elements from v_->arr into the tokengroup{}* */
+	retframe vm_pack_tokengroup( stackpair *stkp, void *v_ )
 	
 	
 	tokenbranch* build_tokenbranch( size_t elems );

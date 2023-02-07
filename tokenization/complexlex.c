@@ -49,6 +49,7 @@ with this program; if not, write to the:
 		#define NOTELINE() STDMSG_NOTELINE_WRAPPER( &errs )
 		#define NOTESPACE() STDMSG_NOTESPACE_WRAPPER( &errs )
 		
+		#define SIGNEDARG( sint ) STDMSG_SIGNEDARG_WRAPPER( &errs, ( sint ) )
 		#define DECARG( uint ) STDMSG_DECARG_WRAPPER( &errs, ( uint ) )
 		#define STRARG( strptr ) STDMSG_STRARG_WRAPPER( &errs, ( strptr ) )
 		#define DATAPTR( ptr ) STDMSG_DATAPTRARG_WRAPPER( &errs, ( ptr ) )
@@ -82,6 +83,11 @@ with this program; if not, write to the:
 
 
 
+	/* Returns 1 on validity. Errors: */
+		/* -1: Null argument. */
+		/* -2: Unrecognized header token type. */
+		/* -3: Uninitialized ->arr element. */
+		/* -4: ->used higher than ->arr->len. */
 int validate_tokengroup( tokengroup *tg )
 {
 	if( tg )
@@ -127,6 +133,8 @@ tokengroup* build_tokengroup( size_t elems )
 	}
 	
 	ret = (tokengroup*)a;
+	*ret = (tokengroup){ NULL_TOKENHEAD(), TOKTYPE_INVALID,  0, 0 };
+	ret->header.length = sizeof( tokengroup ) - sizeof( token_head );
 			
 #define build_tokengroup_SUCCESS1( val ) ret->arr = (tokhdptr_parr*)( val );
 #define build_tokengroup_FAILURE2( err ) \
@@ -138,12 +146,8 @@ tokengroup* build_tokengroup( size_t elems )
 		res,
 		build_tokengroup_SUCCESS1,
 		build_tokengroup_FAILURE2
-	)
-	
-		ret->header.toktype = TOKTYPE_TOKENGROUP_SAMEMERGE;
-		ret->header.length = sizeof( tokengroup ) - sizeof( token_head );
-	ret->subtype = TOKTYPE_INVALID;
-	ret->used = 0;
+	);
+	ret->header.toktype = TOKTYPE_TOKENGROUP_SAMEMERGE;
 	
 	return( ret );
 }
@@ -179,6 +183,10 @@ int regrow_tokengroup
 	
 	return( 1 );
 }
+	/* Returns 1 on success. Errors: */
+		/* -1: One of the arguments was null. */
+		/* -2: Couldn't grow the group's array when needed. */
+		/* -3: The group's array supposedly grew, but still reports too small a size. */
 int pushto_tokengroup
 (
 	tokengroup *tgrp,
@@ -576,6 +584,7 @@ retframe vm_popfrom_tokengroup( stackpair *stkp, void *v )
 	/* ( tokengroup* -- tokengroup* length ) */
 retframe vm_lengthof_tokengroup( stackpair *stkp, void *v )
 {
+	int scratch;
 	STACKCHECK( stkp,  vm_lengthof_tokengroup, macroargs_ENDRETFRAME );
 	
 	uintptr_t a;
@@ -602,6 +611,303 @@ retframe vm_lengthof_tokengroup( stackpair *stkp, void *v )
 	
 	RETFRAMEFUNC( vm_popfrom_tokengroup );
 }
+
+	/* ( tokengroup* -- tokengroup* ) */
+	/* Ends execution on invalid. */
+retframe vm_flexbuild_tokengroup_validate( stackpair *stkp, void *v_ )
+{
+	int scratch, res;
+	
+	STACKCHECK( stkp, vm_flexbuild_tokengroup_validate, stack_ENDRETFRAME );
+	
+	uintptr_t tg;
+	
+	STACKPEEK_UINT(
+		&( stkp->data ), 0, &tg,
+		vm_flexbuild_tokengroup_validate, res, stack_ENDRETFRAME
+	);
+	
+		/* Returns 1 on validity. Errors: */
+			/* -1: Null argument. */
+			/* -2: Unrecognized header token type. */
+			/* -3: Uninitialized ->arr element. */
+			/* -4: ->used higher than ->arr->len. */
+	scratch = validate_tokengroup( (tokengroup*)tg );
+	if( scratch != 1 )
+	{
+		FAILEDINTFUNC( "validate_tokengroup", vm_flexbuild_tokengroup_validate, scratch );
+	}
+	switch( scratch )
+	{
+		case 1:
+			break;
+		
+		case -1:
+			TRESPASSPATH(
+				vm_flexbuild_tokengroup_validate,
+				"  ERROR CASE: validate_tokengroup() detected a null argument."
+			);
+			stack_ENDRETFRAME();
+		case -2:
+			TRESPASSPATH(
+				vm_flexbuild_tokengroup_validate,
+				"  ERROR CASE: validate_tokengroup() didn't recognize the token type: "
+			);
+				DECARG( ( (tokengroup*)tg )->header.toktype );
+			stack_ENDRETFRAME();
+		case -3:
+			BADNULL( vm_flexbuild_tokengroup_validate, &( ( (tokengroup*)tg )->arr ) );
+			stack_ENDRETFRAME();
+		case -4:
+			TRESPASSPATH(
+				vm_flexbuild_tokengroup_validate,
+				"  ERROR CASE: validate_tokengroup() detected a used size larger than the available size: used( "
+			);
+				DECARG( ( (tokengroup*)tg )->used );
+				STRARG( " ), available( " );
+				DECARG( ( (tokengroup*)tg )->arr->len );
+				STRARG( " )" );
+			stack_ENDRETFRAME();
+		default:
+			TRESPASSPATH(
+				vm_flexbuild_tokengroup_validate,
+				"  ERROR CASE: validate_tokengroup() returned an unexpected value: "
+			);
+				SIGNEDARG( scratch );
+			stack_ENDRETFRAME();
+	}
+	
+	RETFRAMEFUNC( vm_flexbuild_tokengroup_validate );
+}
+	/* (  -- tokengroup* ) */
+	/* Note: v_ MUST BE a pointer to a vm_flexbuild_tokengroup_args{}. */
+	/*  For reasons of code cleanliness, this WILL NOT load the elements */
+	/*  from v_->arr into the tokengroup{}*. */
+retframe vm_flexbuild_tokengroup( stackpair *stkp, void *v_ )
+{
+	int scratch, res;
+	
+	STACKCHECK2( stkp, v_,  vm_flexbuild_tokengroup, stack_ENDRETFRAME );
+	
+	static token_head th = NULL_TOKENHEAD();
+	vm_flexbuild_tokengroup_args *args = (vm_flexbuild_tokengroup_args*)v_;
+	
+	
+	res = 0;
+	
+	
+	if( args->subtype )
+	{
+			/* Because we need the POINTER to the subtype. */
+		STACKPUSH_UINT( &( stkp->data ),  (uintptr_t)( args->subtype ),
+			vm_flexbuild_tokengroup, scratch, stack_ENDRETFRAME );
+		res |= 4;
+	}
+	
+	if( args->src )
+	{
+		th.src = *( args->src );
+		res |= 2;
+	}
+	if( args->line )
+	{
+		th.line = *( args->line );
+		res |= 2;
+	}
+	if( args->column )
+	{
+		th.column = *( args->column );
+		res |= 2;
+	}
+	
+	if( args->toktype )
+	{
+		th.toktype = *( args->toktype );
+		res |= 1;
+	}
+	
+	if( res & 3 )
+	{
+			/* Because we need the POINTER. */
+		STACKPUSH_UINT( &( stkp->data ),  (uintptr_t)&th,
+			vm_flexbuild_tokengroup, scratch, stack_ENDRETFRAME );
+	}
+	
+	
+	
+	static retframe_parr
+			/* ( token* tokengroup* -- tokengroup* ) */
+		thbranch =
+#define vm_flexbuild_tokengroup_ALLOWTOKTYPE( boolflag ) \
+	thbranch.body[ 1 ].handler = ( ( boolflag ) ? &vm_tokenhead_settoktype : &noop );
+		/* Note that because of the string type used, vm_tokenhead_setsource() will */
+		/*  handle all reference counting stuff. */
+#define vm_flexbuild_tokengroup_ALLOWSOURCE( boolflag ) \
+	thbranch.body[ 2 ].handler = ( ( boolflag ) ? &vm_tokenhead_setsource : &noop );
+			(retframe_parr)
+			{
+				4, /* Number of retframes  */
+				{
+						/* ( token* tokengroup* -- tokengroup* token* ) */
+					(retframe){ &swap2nd, (void*)0 },
+					
+						/* ( dest-token_head* src-token_head* -- dest-token_head* src-token_head* ) */
+					(retframe){ &vm_placeholder, (void*)0 },
+						/* ( dest-token_head* src-token_head* -- dest-token_head* src-token_head* ) */
+						/* Sets token_head ->src, ->line, and ->column. */
+					(retframe){ &vm_placeholder, (void*)0 },
+					
+						/* ( token* -- ) */
+						/* The token is a static allocation, so we musn't */
+						/*  deallocate it. */
+					(retframe){ &drop, (void*)0 }
+				}
+			},
+			/* ( uintptr_t* tokengroup* -- tokengroup* ) */
+		setsubtype =
+			(retframe_parr)
+			{
+				3, /* Number of retframes  */
+				{
+						/* ( uintptr_t* tokengroup* -- tokengroup* uintptr_t* ) */
+					(retframe){ &swap2nd, (void*)0 },
+						/* ( tokengroup* token_head* -- tokengroup* token_head* ) */
+						/* Note that we have a uintptr_t* instead of a token*: we */
+						/*  only need the top element, so we can cheat. */
+					(retframe){ &vm_setsubtype_tokengroup, (void*)0 },
+						/* ( uintptr_t* -- ) */
+					(retframe){ &drop, (void*)0 }
+				}
+			};
+	static retframe_parr
+			/* Push two tokengroup{}s onto the stack for use as things go along. */
+			/* ( (uintptr_t*) (token*) -- tokengroup* ) */
+		seq =
+#define vm_flexbuild_tokengroup_ALLOWTH( boolflag ) \
+	seq.body[ 1 ].handler = ( ( boolflag ) ? &enqueue_returns : &noop );
+#define vm_flexbuild_tokengroup_ALLOWSUBTYPE( boolflag ) \
+	seq.body[ 2 ].handler = ( ( boolflag ) ? &enqueue_returns : &noop );
+			(retframe_parr)
+			{
+				4, /* Number of retframes  */
+				{
+						/* The return will have the header toktype set to samemerge, */
+						/*  header length set to the length of the non-header part, */
+						/*  subtype set to invalid, arr set to an array of the */
+						/*  specified element count, and used set to 0. */
+					(retframe){ &vm_buildempty_tokengroup, (void*)0 },
+					
+						/* ( ( token* ) tokengroup* -- tokengroup* ) */
+					(retframe){ &vm_placeholder, (void*)&thbranch },
+						/* ( ( uintptr_t* ) tokengroup* -- tokengroup* ) */
+					(retframe){ &vm_placeholder, (void*)&setsubtype },
+					
+						/* ( tokengroup* -- tokengroup* ) */
+					(retframe){ &vm_flexbuild_tokengroup_validate, (void*)0 }
+				}
+			};
+	
+	
+	
+	/* Pathing control. */
+	
+	/* th dependants. */
+	
+	vm_flexbuild_tokengroup_ALLOWTOKTYPE( ( res & 1 ) == 1 );
+	vm_flexbuild_tokengroup_ALLOWSOURCE( ( res & 2 ) == 2 );
+	
+	vm_flexbuild_tokengroup_ALLOWTH( ( res & 3 ) > 0 );
+	
+	
+	vm_flexbuild_tokengroup_ALLOWSUBTYPE( ( res & 4 ) == 4 );
+	
+	
+	
+	return( (retframe){ &enqueue_returns, (void*)&seq } );
+}
+	/* ( tokengroup* -- tokengroup* ) */
+	/* Note: v_ MUST BE a pointer to a vm_flexbuild_tokengroup_args{}. */
+	/* As a complement to vm_flexbuild_tokengroup(), this will ONLY load */
+	/*  the elements from v_->arr into the tokengroup{}* */
+retframe vm_pack_tokengroup( stackpair *stkp, void *v_ )
+{
+	int scratch;
+	
+	STACKCHECK2( stkp, v_,  vm_pack_tokengroup, stack_ENDRETFRAME );
+	
+	vm_flexbuild_tokengroup_args *args = (vm_flexbuild_tokengroup_args*)v_;
+	
+	if( !( args->arr ) && args->used )
+	{
+		TRESPASSPATH(
+			vm_pack_tokengroup,
+			"ERROR: vm_pack_tokengroup() was given a null ->arr element with a non-null ->used argument: "
+		);
+		DECARG( ( (tokengroup*)tg )->used );
+	}
+	
+	uintptr_t tg;
+	STACKPEEK_UINT(
+		&( stkp->data ), 0, &tg,
+		vm_pack_tokengroup, res, stack_ENDRETFRAME
+	);
+	
+	
+	token_head **thsrc = args->arr->body;
+	size_t len = args->used;
+	while( len )
+	{
+		scratch = pushto_tokengroup( (tokengroup*)tg, *thsrc );
+		switch( scratch )
+		{
+			case 1:
+				/* Success! */
+				break;
+			
+			case -1:
+				TRESPASSPATH(
+					vm_pack_tokengroup,
+					" ERROR: pushto_tokengroup() detected a null argument: group pointer( "
+				);
+					DATAPTR( (tokengroup*)tg );
+					STRARG( " ), header pointer( " );
+					DATAPTR( ( *thsrc ) );
+					STRARG( " )" );
+				stack_ENDRETFRAME();
+			case -2:
+				TRESPASSPATH(
+					vm_pack_tokengroup,
+					" ERROR: pushto_tokengroup() couldn't grow the tokengroup{}'s elements array."
+				);
+				stack_ENDRETFRAME();
+			case -3:
+				TRESPASSPATH(
+					vm_pack_tokengroup,
+					" ERROR: pushto_tokengroup() grew the array, but detected the size was still too small: used( "
+				);
+					DECARG( ( (tokengroup*)tg )->used );
+					STRARG( " ), available( " );
+					DECARG( ( (tokengroup*)tg )->arr->len );
+					STRARG( " )" );
+					);
+				stack_ENDRETFRAME();
+			default:
+				TRESPASSPATH(
+					vm_pack_tokengroup,
+					"  ERROR CASE: pushto_tokengroup() returned an unexpected value: "
+				);
+					SIGNEDARG( scratch );
+				stack_ENDRETFRAME();
+		}
+		
+		--len;
+		++thsrc;
+	}
+	
+	
+	RETFRAMEFUNC( vm_pack_tokengroup );
+}
+
 
 
 tokenbranch* build_tokenbranch( size_t elems )

@@ -773,6 +773,16 @@ retframe bracketgather_exit( stackpair *stkp, void *v )
 		/* ( token* -- ( token* 0 ) | ( tokengroup* 1 ) | ( tokengroup* 2 ) ) */
 reframe bracketgather_entry( stackpair *stkp, void *v )
 {
+	vm_flexbuild_tokengroup_args buildtg =
+		FORMAT_FLEXBUILD_TOKENGROUP_ARGS(
+			&( argset->toktype ),
+			0, 0, 0,
+			
+				/* Gets set from the stack... so where do we find it? */
+			subtype,
+			
+			0, 0
+		);
 		/* This provides common behavior for the *script retframe_parr{}s. */
 	static retframe_parr
 			/* Push two tokengroup{}s onto the stack for use as things go along. */
@@ -780,29 +790,34 @@ reframe bracketgather_entry( stackpair *stkp, void *v )
 		preprep_arglist =
 			(retframe_parr)
 			{
-				8, /* Number of retframes  */
+				5, /* Number of retframes  */
 				{
 					/* WARNING: if you make any changes, then adjust the */
 					/*  "subordinate function" sigs, and thus details! */
 					
-					(retframe){ &vm_buildempty_tokengroup, (void*)0 },
-							/* v_ = &uintptr_t; uintptr_t = data; (  -- data ) */
-						(retframe){ &vm_pushdata, (void*) &argset },
-								/* ( dest-token_head* src-token_head* -- dest-token_head* src-token_head* ) */
-							(retframe){ &vm_tokenhead_settoktype, (void*)0 },
-								/* The token* from vm_pushdata() will be a static */
-								/*  allocation, so deallocation would likely segfault... */
-						(retframe){ &drop, (void*)0 },
-							/* ( token* tokengroup* -- tokengroup* token* ) */
-						(retframe){ &swap2nd, (void*)0 },
-								/* ( tokengroup* token_head* -- tokengroup* token_head* ) */
-							(retframe){ &vm_setsubtype_tokengroup, (void*)0 },
-						(retframe){ &invoke_dealloctoken, (void*)0 },
+						/* (  -- tokengroup* ) */
+						/* Note: v_ MUST BE a pointer to a vm_flexbuild_tokengroup_args{}. */
+						/*  For reasons of code cleanliness, this WILL NOT load the */
+						/*  elements from v_->arr into the tokengroup{}*. */
+					(retframe){ &vm_flexbuild_tokengroup, (void*)&buildtg },
 					
+						/* ( token* tokengroup* -- tokengroup* token* ) */
+					(retframe){ &swap2nd, (void*)0 },
+							/* ( tokengroup* token* -- tokengroup* token* ) */
+						(retframe){ &vm_setsubtype_tokengroup, (void*)0 },
+						/* ( token* --  ) */
+					(retframe){ &invoke_dealloctoken, (void*)0 },
+					
+						/* (  -- tokengroup* ) */
+						/* This same pattern of tokengroup{} also gets built elsewhere, so */
+						/*  the code's been abstracted out into a generic retframe_parr{}. */
 					(retframe){ &enqueue_returns, (void*)&build_argcontainer }
 				}
 			};
 	
+		/* I think the sig is wrong: notes elsewhere say that divertthread() will put a */
+		/*  bookmark on top of the stack, which these scripts SHOULD see ABOVE token{}*, */
+		/*  and that it needs to be there when this series of scripts EXITS as well. */
 		/* All have the same sig: ( token* -- tokengroup* tokengroup* token* -- ... ) */
 	static retframe_parr
 		plainscript =
@@ -897,6 +912,9 @@ reframe bracketgather_entry( stackpair *stkp, void *v )
 		case TOKTYPE_OPSQRUP:
 			break;
 		default:
+			/* Not a bracket opener, so we just return. */
+			/* TODO: Should we check for extraneous closers? */
+			
 			STACKPUSH_UINT( &( stkp->data ), tok,  bracketgather_entry, scratch );
 			STACKPUSH_UINT( &( stkp->data ), 0,  bracketgather_entry, scratch );
 			
