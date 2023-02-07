@@ -404,32 +404,8 @@ int discard_source( source *src )
 
 
 
-static uintptr_t metaC_stdinclude_divertid;
-uintptr_t metaC_stdinclude_divertid = (uintptr_t)&metaC_stdinclude_divertid;
-divertthread_info metaC_stdinclude_dti;
-divertthread_callerinfo metaC_stdinclude_dtci;
-#define metaC_stdinclude_INIT_DIVTHREADINFO() \
-	metaC_stdinclude_dtci = \
-		(divertthread_callerinfo){ \
-			(uintptr_t)&metaC_stdinclude_divertid, \
-			{ &divertthread_earlyexit_ptr_placeholder, (divertthread_info*)0 }, \
-			(retframe){ &vm_placeholder, (void*)0 } \
-		}; \
-	metaC_stdinclude_dti = \
-		(divertthread_info){ \
-			0, \
-			(retframe){ &vm_placeholder, (void*)0 }, (retframe){ &vm_placeholder, (void*)0 }, \
-			&metaC_stdinclude_dtci \
-		};
-static divertthread_callerinfo escapeinfo =
-	{
-		(uintptr_t)&callerinfo_typeid,
-		{
-			&divertthread_earlyexit_ptr_placeholder,
-			(divertthread_info*)0
-		},
-		(retframe){ &vm_placeholder, (void*)0 }
-	};
+static uintptr_t metaC_stdinclude_jumpref;
+
 retframe metaC_stdinclude_stringify( stackpair *stkp, void *v );
 retframe metaC_stdinclude_gatherhandler( stackpair *stkp, void *v );
 retframe metaC_stdinclude_body( stackpair *stkp, void *v );
@@ -488,9 +464,6 @@ retframe metaC_stdinclude( stackpair *stkp, void *v )
 		/*  BE on top upon entry, and MUST BE on top AND UNALTERED upon */
 		/*  exit, lest the entire system break. This is NOT a small thing, */
 		/*  it can completely screw up the stack. */
-		metaC_stdinclude_dtci.setfunc = (retframe){ &enqueue_returns, (void*)&plainscript };
-		metaC_stdinclude_dtci.jumpfunc = (retframe){ &enqueue_returns, (void*)&errhandler };
-	(retframe){ &divertthread, (void*)&metaC_stdinclude_dtci }
 }
 		/* ( token*directiveName -- token* ) */
 	retframe metaC_stdinclude_entry( stackpair *stkp, void *v )
@@ -852,7 +825,7 @@ retframe metaC_stdinclude( stackpair *stkp, void *v )
 									/* This will get replaced. */
 								(retframe){ &vm_push_placeholder, (void*)0 },
 									/* Requires a pointer to a retframe as v. */
-								(retframe){ &just_run, (void*)&( metaC_stdinclude_dtci.longjump ) }
+								(retframe){ &longjump_callstack, (void*)&metaC_stdinclude_jumpref }
 							}
 						};
 				seq0.arr[ 1 ].hand = ( depth ? &vm_push1 : &vm_push0 );
