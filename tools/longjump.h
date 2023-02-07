@@ -59,7 +59,7 @@ with this program; if not, write to the:
 						(retframe){ &longjump_callstack, &bookmarkname }
 					}
 				},
-			onjump_ = (retframe_parr){ element count, { some other instructions } );
+			onjump_ = (retframe_parr){ element count, { some other instructions } };
 		static const retframe
 			onset = (retframe){ &enqueue_returns, (void*)&onset_ },
 			onjump = (retframe){ &enqueue_returns, (void*)&onjump_ };
@@ -82,13 +82,16 @@ with this program; if not, write to the:
 	/*  for that retframe, so that you can properly handle that. */
 		/* ( -- 0 ); the next function will be the next retframe on stkp->ret, but */
 		/*  as an exception to the norm it WILL NOT be popped, so that it can later */
-		/*  be executed by longjump(). */
+		/*  be executed by longjump(). setjump() otherwise leaves the data stack */
+		/*  untouched, and does only normal things to anything else.*/
 retframe setjump_callstack( stackpair *stkp, void *v_ );
 		/* (  -- 1 ); additionally, stkp->ret will be rewound to the location */
 		/*  indicated by *( (uintptr_t*)v_ ), before the usual */
 		/*  pop-retstack-for-next-instruction behavior (which is why setjump() */
 		/*  doesn't pop: longjump() will execute the same code as the corresponding */
-		/*  setjump() did, but with a 1 on top of the data stack). */
+		/*  setjump() did, but with a 1 on top of the data stack). longjump() */
+		/*  otherwise leaves the return and data stacks untouched, and doesn't */
+		/*  touch any of the other scattered stacks at all. */
 retframe longjump_callstack( stackpair *stkp, void *v_ );
 	/* bookmark needs to be the name for a uintptr_t, localname will be the name for */
 	/*  a retframe_parr that can be used with enqueue_returns(). onset_ptr and */

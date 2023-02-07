@@ -59,7 +59,11 @@ with this program; if not, write to the:
 	source* build_source( char_pascalarray *name, uintmax_t inclusionpoint );
 	int discard_source( source *src );
 	
-	
+		/* ( token*directiveName --  ) */
+		??? /* Note: this MIGHT need to provide a token* on the stack. I don't */
+		/*  think it SHOULD, but it might. Make certain to review that. */
+		/* Will ultimately result in a call to token_queue_seekFreshline(), */
+		/*  to clear the remainder of the consumed line. */
 	retframe metaC_stdinclude( stackpair *stkp, void *v );
 	
 	

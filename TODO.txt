@@ -174,11 +174,16 @@ lexalike.h:
 
 extrachar.c:
 
+source.h:
+	I have a note saying that everything with a "prog" argument is
+		probably using it wrong. Review that.
 source.c:
 	deinit() doesn't clear any non-root_src instances of source{} from
 		"sources": this needs to be changed, particularly since
 		discard_source() should do most of the work already..
 	The final RETURNFAILURE() in charin() needs a proper failure value.
+	What SHOULD metaC_stdinclude() leave on the stack? I'm assuming nothing,
+		but maybe it needs to leave something?
 
 basics.c:
 	Line 249 has a bit of error reporting that's probably worthy of it's own
