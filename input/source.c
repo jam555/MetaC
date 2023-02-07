@@ -113,6 +113,8 @@ int refed_pstr_decrrefs( refed_pstr *pstr )
 			
 			if( pstr->refs )
 			{
+					/* We're done, everything below this is */
+					/*  dedicated to deallocation. */
 				return( 1 );
 			}
 			
@@ -130,7 +132,7 @@ int refed_pstr_decrrefs( refed_pstr *pstr )
 	MONADICFAILURE( init, "lib4_stdmemfuncs.dealloc()", ( err ).val ); \
 	NOTESPACE(); DATAPTRARG( pstr->text ); \
 	ret = -3;
-			res = lib4_stdmemfuncs.dealloc( lib4_stdmemfuncs.data, a );
+			res = lib4_stdmemfuncs.dealloc( lib4_stdmemfuncs.data, pstr );
 			LIB4_RESULT_BODYMATCH( res, LIB4_NULL_MACRO, refed_pstr_decrrefs_BADDEALLOC );
 			
 			return( ret );
@@ -402,286 +404,486 @@ int discard_source( source *src )
 
 
 
+static uintptr_t metaC_stdinclude_divertid;
+uintptr_t metaC_stdinclude_divertid = (uintptr_t)&metaC_stdinclude_divertid;
+divertthread_info metaC_stdinclude_dti;
+divertthread_callerinfo metaC_stdinclude_dtci;
+#define metaC_stdinclude_INIT_DIVTHREADINFO() \
+	metaC_stdinclude_dtci = \
+		(divertthread_callerinfo){ \
+			(uintptr_t)&metaC_stdinclude_divertid, \
+			{ &divertthread_earlyexit_ptr_placeholder, (divertthread_info*)0 }, \
+			(retframe){ &vm_placeholder, (void*)0 } \
+		}; \
+	metaC_stdinclude_dti = \
+		(divertthread_info){ \
+			0, \
+			(retframe){ &vm_placeholder, (void*)0 }, (retframe){ &vm_placeholder, (void*)0 }, \
+			&metaC_stdinclude_dtci \
+		};
+static divertthread_callerinfo escapeinfo =
+	{
+		(uintptr_t)&callerinfo_typeid,
+		{
+			&divertthread_earlyexit_ptr_placeholder,
+			(divertthread_info*)0
+		},
+		(retframe){ &vm_placeholder, (void*)0 }
+	};
 retframe metaC_stdinclude_stringify( stackpair *stkp, void *v );
 retframe metaC_stdinclude_gatherhandler( stackpair *stkp, void *v );
 retframe metaC_stdinclude_body( stackpair *stkp, void *v );
 	/* ( token*directiveName -- token* ) */
+retframe metaC_stdinclude_entry( stackpair *stkp, void *v );
+	/* ( token*directiveName -- token* ) */
 retframe metaC_stdinclude( stackpair *stkp, void *v )
 {
-	int scratch;
+	static uintptr_t
 	
-	uintptr_t tok_;
 	
-	STACKCHECK( stkp,  metaC_stdinclude );
+	/* SWITCH TO LONGJUMP! It has everything that should be needed in this particular system. */
 	
-	STACKPEEK_UINT( &( stkp->data ), sizeof( uintptr_t ) * 0, tok_,  metaC_stdinclude, scratch );
-	token *tok = (token*)tok_;
-	if( tok->header.toktype != TOKTYPE_NAME )
+
+/* This is the setjump/longjump facility. It's usage can be approximated as the following: */
+/*
+	retframe example_function( stackpair *stkp, void *v_ )
 	{
-		NOTELINE();
-			STRARG( "metaC_stdinclude() encountered a name mismatch: " );
-			STRARG( "toktype wasn't TOKTYPE_NAME : " );
-			DECARG( tok->header.toktype );
-		
-		stack_ENDRETFRAME();
-	}
-	static char includetext[] = "_include";
-		/* sizeof( char ) should hopefully always == 1. */
-	static int includetextsize = sizeof( includetext ) / sizeof( char );
-	if( tok->header.length < includetextsize )
-	{
-		NOTELINE();
-			STRARG( "metaC_stdinclude() encountered a name mismatch: " );
-			STRARG( "bad length: " );
-			DECARG( tok->header.length );
-			STRARG( " >= " );
-			DECARG( includetextsize );
-		
-		stack_ENDRETFRAME();
-	}
-	if
-	(
-		memcmp
-		(
-			(const void*)includetext,
-			(const void*)tok->text,
-			tok->header.length > includetextsize ?
-				includetextsize :
-				tok->header.length
-		) != 0
-	)
-	{
-		NOTELINE();
-			STRARG( "metaC_stdinclude() encountered a name mismatch: " );
-			STRARG( "wrong text: " );
-			STRARG( includetext );
-			STRARG( " != " );
-			STRARG( tok->text );
-		
-		stack_ENDRETFRAME();
-	}
-	
-	static retframe_parr
-		seq =
-			(retframe_parr)
-			{
-				4, /* Number of retframes  */
+		uintptr_t bookmarkname;
+		static const retframe_parr
+			onset_ =
+				(retframe_parr)
 				{
-						/* ( token*directiveName -- ) */
-					(retframe){ &invoke_dealloctoken, (void*)0 },
-						/* ( -- token* ) */
-					(retframe){ &token_queue_fetch, (void*)0 },
-						/* ( token* -- ( token* 0 ) | ( tokengroup* 1 ) | ( tokengroup* 2 ) ) */
-					(retframe){ &bracketgather_entry, (void*)0 },
-					(retframe){ &metaC_stdinclude_gatherhandler, (void*)0 }
-				}
-			};
-	return( (retframe){ &enqueue_returns, (void*)&seq } );
+					element count,
+					{
+						some instructions,
+						
+						(retframe){ &longjump_callstack, &bookmarkname }
+					}
+				},
+			onjump_ = (retframe_parr){ element count, { some other instructions } );
+		static const retframe
+			onset = (retframe){ &enqueue_returns, (void*)&onset_ },
+			onjump = (retframe){ &enqueue_returns, (void*)&onjump_ };
+		
+		LOCALIZE_SETJUMP( bookmarkname, someprefix, enqueable,  &onset, &onjump );
+		
+		return( (retframe){ &enqueue_returns, (void*)&enqueable } );
+	}
+*/
+/* It's worth noting that neither onset{} nor onjump{} will be exposed to the */
+/*  bookmark values used. Instead, LOCALIZE_SETJUMP() keeps those values nicely */
+/*  contained inside the scripts that it generates, which is much nicer than what */
+/*  divertthread currently does. The greatest complication comes in that there is no */
+/*  good way to handle things like destructors, deinitializers, nor other such */
+/*  constructs within this system. */
+	
+	
+	
+	
+	
+		/* Both of these functions MUST comply with the following function */
+		/*  signature: */
+			/* ( ???1 bookmark -- ???2 bookmark ) */
+		/*  What is under "bookmark" DOES NOT matter, but "bookmark" WILL */
+		/*  BE on top upon entry, and MUST BE on top AND UNALTERED upon */
+		/*  exit, lest the entire system break. This is NOT a small thing, */
+		/*  it can completely screw up the stack. */
+		metaC_stdinclude_dtci.setfunc = (retframe){ &enqueue_returns, (void*)&plainscript };
+		metaC_stdinclude_dtci.jumpfunc = (retframe){ &enqueue_returns, (void*)&errhandler };
+	(retframe){ &divertthread, (void*)&metaC_stdinclude_dtci }
 }
-	/* ( ( token* 0 ) | ( tokengroup* 1 ) | ( tokengroup* 2 ) -- ??? ) */
-retframe metaC_stdinclude_gatherhandler( stackpair *stkp, void *v )
-{
-	int scratch;
-	
-	uintptr_t tok;
-	
-	STACKCHECK( stkp,  metaC_stdinclude_gatherhandler );
-	
-	STACKPOP_UINT( &( stkp->data ), tok,  metaC_stdinclude_gatherhandler, scratch );
-	switch( tok )
+		/* ( token*directiveName -- token* ) */
+	retframe metaC_stdinclude_entry( stackpair *stkp, void *v )
 	{
-		case 0:
-			{
-				STACKPEEK_UINT( &( stkp->data ), sizeof( uintptr_t ) * 0, tok,  metaC_stdinclude_gatherhandler, scratch );
-				
-#define metaC_stdinclude_gatherhandler_BADRET( err ) \
-	MONADICFAILURE( metaC_stdinclude_gatherhandler, "get_deeptoktype", ( err ) ); \
-	stack_ENDRETFRAME();
-				deep_toktype a;
-				deeptoktype_result deepres = get_deeptoktype( &( tok->header ) );
-				DEEPTOKTYPE_RESULT_BODYMATCH( deepres, LIB4_OP_SETa, metaC_stdinclude_gatherhandler_BADRET );
+		int scratch;
+
+		uintptr_t tok_;
+
+		STACKCHECK( stkp,  metaC_stdinclude );
+
+		STACKPEEK_UINT( &( stkp->data ), sizeof( uintptr_t ) * 0, tok_,  metaC_stdinclude, scratch );
+		token *tok = (token*)tok_;
+		if( tok->header.toktype != TOKTYPE_NAME )
+		{
+			NOTELINE();
+				STRARG( "metaC_stdinclude() encountered a name mismatch: " );
+				STRARG( "toktype wasn't TOKTYPE_NAME : " );
+				DECARG( tok->header.toktype );
+
+			stack_ENDRETFRAME();
+		}
+		static char includetext[] = "_include";
+			/* sizeof( char ) should hopefully always == 1. */
+		static int includetextsize = sizeof( includetext ) / sizeof( char );
+		if( tok->header.length < includetextsize )
+		{
+			NOTELINE();
+				STRARG( "metaC_stdinclude() encountered a name mismatch: " );
+				STRARG( "bad length: " );
+				DECARG( tok->header.length );
+				STRARG( " >= " );
+				DECARG( includetextsize );
+
+			stack_ENDRETFRAME();
+		}
+		if
+		(
+			memcmp
+			(
+				(const void*)includetext,
+				(const void*)tok->text,
+				tok->header.length > includetextsize ?
+					includetextsize :
+					tok->header.length
+			) != 0
+		)
+		{
+			NOTELINE();
+				STRARG( "metaC_stdinclude() encountered a name mismatch: " );
+				STRARG( "wrong text: " );
+				STRARG( includetext );
+				STRARG( " != " );
+				STRARG( tok->text );
+
+			stack_ENDRETFRAME();
+		}
+
+		static retframe_parr
+			seq =
+				(retframe_parr)
+				{
+					4, /* Number of retframes  */
+					{
+							/* ( token*directiveName -- ) */
+						(retframe){ &invoke_dealloctoken, (void*)0 },
+							/* ( -- token* ) */
+						(retframe){ &token_queue_fetch, (void*)0 },
+							/* ( token* -- ( token* 0 ) | ( tokengroup* 1 ) | ( tokengroup* 2 ) ) */
+						(retframe){ &bracketgather_entry, (void*)0 },
+						(retframe){ &metaC_stdinclude_gatherhandler, (void*)0 }
+					}
+				};
+		return( (retframe){ &enqueue_returns, (void*)&seq } );
+	}
+		/* ( ( token* 0 ) | ( tokengroup* 1 ) | ( tokengroup* 2 ) -- ??? ) */
+	retframe metaC_stdinclude_gatherhandler( stackpair *stkp, void *v )
+	{
+		int scratch;
+
+		uintptr_t tok;
+
+		STACKCHECK( stkp,  metaC_stdinclude_gatherhandler );
+
+		STACKPOP_UINT( &( stkp->data ), tok,  metaC_stdinclude_gatherhandler, scratch );
+		switch( tok )
+		{
+			case 0:
+				{
+					STACKPEEK_UINT( &( stkp->data ), sizeof( uintptr_t ) * 0, tok,  metaC_stdinclude_gatherhandler, scratch );
+
+	#define metaC_stdinclude_gatherhandler_BADRET( err ) \
+		MONADICFAILURE( metaC_stdinclude_gatherhandler, "get_deeptoktype", ( err ) ); \
+		stack_ENDRETFRAME();
+					deep_toktype a;
+					deeptoktype_result deepres = get_deeptoktype( &( tok->header ) );
+					DEEPTOKTYPE_RESULT_BODYMATCH( deepres, LIB4_OP_SETa, metaC_stdinclude_gatherhandler_BADRET );
+					NOTELINE();
+						STRARG( "metaC_stdinclude_gatherhandler() encountered a " );
+						STRARG( "non-tokengroup token when expecting a " );
+						STRARG( "bracket set. Error unrecoverable. Shallow type: " );
+						DECARG( a.shallow_type );
+						STRARG( "; Virtual type: " );
+						DECARG( a.virtual_type );
+
+					RETFRAMEFUNC( metaC_stdinclude_gatherhandler, scratch );
+				}
+			case 1:
+				/* 1 if correctly formed, or */
+				break;
+			case 2:
+				/* 2 if explicitly bad syntax ( e.g. pairing an opening parenthese */
+				/*  with a closing square bracket). */
 				NOTELINE();
 					STRARG( "metaC_stdinclude_gatherhandler() encountered a " );
-					STRARG( "non-tokengroup token when expecting a " );
-					STRARG( "bracket set. Error unrecoverable. Shallow type: " );
-					DECARG( a.shallow_type );
-					STRARG( "; Virtual type: " );
-					DECARG( a.virtual_type );
-				
+					STRARG( "\'bad syntax\' result value on top of stack." );
+
+					/* We should reprint the entire tokengroup here. */
+				???
+
 				RETFRAMEFUNC( metaC_stdinclude_gatherhandler, scratch );
-			}
-		case 1:
-			/* 1 if correctly formed, or */
-			break;
-		case 2:
-			/* 2 if explicitly bad syntax ( e.g. pairing an opening parenthese */
-			/*  with a closing square bracket). */
+			default:
+				NOTELINE();
+					STRARG( "metaC_stdinclude_gatherhandler() encountered an " );
+					STRARG( "unexpected result value on top of stack: " );
+					DECARG( tok );
+
+				stack_ENDRETFRAME();
+		}
+
+		STACKPEEK_UINT( &( stkp->data ), sizeof( uintptr_t ) * 0, tok,  metaC_stdinclude_gatherhandler, scratch );
+		tokengroup *tg = (tokengroup*)tok;
+
+		scratch = validate_tokengroup( tg );
+		switch( scratch )
+		{
+			case 1:
+				/* Good. */
+				break;
+			case -2:
+				/* Wrong type. */
+				NOTELINE();
+					STRARG( "metaC_stdinclude_gatherhandler() encountered a " );
+					STRARG( "non-tokengroup token type on top of stack: " );
+					DECARG( tg->header.toktype );
+
+				stack_ENDRETFRAME();
+			case -1:
+				/* Fatal error. */
+				NOTELINE();
+					STRARG( "validate_tokengroup() in metaC_stdinclude_gatherhandler() " );
+					STRARG( "was given a null pointer: this should be impossible." );
+
+				stack_ENDRETFRAME();
+			default:
+				/* Unknown. */
+				NOTELINE();
+					STRARG( "validate_tokengroup() in metaC_stdinclude_gatherhandler() " );
+					STRARG( "had a general error: " );
+					SIGNEDARG( scratch );
+
+				stack_ENDRETFRAME();
+		}
+		if( tg->arr->len != 2 )
+		{
 			NOTELINE();
 				STRARG( "metaC_stdinclude_gatherhandler() encountered a " );
-				STRARG( "\'bad syntax\' result value on top of stack." );
-			
-				/* We should reprint the entire tokengroup here. */
-			???
-			
-			RETFRAMEFUNC( metaC_stdinclude_gatherhandler, scratch );
-		default:
-			NOTELINE();
-				STRARG( "metaC_stdinclude_gatherhandler() encountered an " );
-				STRARG( "unexpected result value on top of stack: " );
-				DECARG( tok );
-			
+				STRARG( "non-2 length in tokengroup( " );
+					DATAPTRARG( tg );
+				STRARG( " )->len == " );
+				DECARG( tg->arr->len );
+
 			stack_ENDRETFRAME();
-	}
-	
-	STACKPEEK_UINT( &( stkp->data ), sizeof( uintptr_t ) * 0, tok,  metaC_stdinclude_gatherhandler, scratch );
-	tokengroup *tg = (tokengroup*)tok;
-	
-	scratch = validate_tokengroup( tg );
-	switch( scratch )
-	{
-		case 1:
-			/* Good. */
-			break;
-		case -2:
-			/* Wrong type. */
-			NOTELINE();
-				STRARG( "metaC_stdinclude_gatherhandler() encountered a " );
-				STRARG( "non-tokengroup token type on top of stack: " );
-				DECARG( tg->header.toktype );
-			
-			stack_ENDRETFRAME();
-		case -1:
-			/* Fatal error. */
-			NOTELINE();
-				STRARG( "validate_tokengroup() in metaC_stdinclude_gatherhandler() " );
-				STRARG( "was given a null pointer: this should be impossible." );
-			
-			stack_ENDRETFRAME();
-		default:
-			/* Unknown. */
-			NOTELINE();
-				STRARG( "validate_tokengroup() in metaC_stdinclude_gatherhandler() " );
-				STRARG( "had a general error: " );
-				SIGNEDARG( scratch );
-			
-			stack_ENDRETFRAME();
-	}
-	if( tg->arr->len != 2 )
-	{
-		NOTELINE();
-			STRARG( "metaC_stdinclude_gatherhandler() encountered a " );
-			STRARG( "non-2 length in tokengroup( " );
+		}
+
+		token_head *a = (token_head*)0, *b = (token_head*)0;
+		tokenheadptr_result thpres = popfrom_tokengroup( tg );
+	#define metaC_stdinclude_gatherhandler_TGPOP_FAIL( err ) \
+			NOTELINE(); \
+				STRARG( "metaC_stdinclude_gatherhandler() encountered a " ); \
+				STRARG( "failure in a call to popfrom_tokengroup(): " ); \
+				DECARG( __LINE__ ); \
+				STRARG( "; tokengroup: " ); \
 				DATAPTRARG( tg );
-			STRARG( " )->len == " );
-			DECARG( tg->arr->len );
-		
-		stack_ENDRETFRAME();
+		TOKENHEADPTR_RESULT_BODYMATCH( thpres, LIB4_OP_SETa, metaC_stdinclude_gatherhandler_TGPOP_FAIL );
+
+		thpres = popfrom_tokengroup( tg );
+		TOKENHEADPTR_RESULT_BODYMATCH( thpres, LIB4_OP_SETb, metaC_stdinclude_gatherhandler_TGPOP_FAIL );
+
+		STACKPUSH_UINT( &( stkp->data ), (uintptr_t)a,  metaC_stdinclude_gatherhandler, scratch );
+		STACKPUSH_UINT( &( stkp->data ), (uintptr_t)b,  metaC_stdinclude_gatherhandler, scratch );
+
+		static retframe_parr
+			seq =
+				(retframe_parr)
+				{
+					6, /* Number of retframes  */
+					{
+							/* ( tokengroup*orig token*0 token*1 -- token*0 token*1 tokengroup*orig ) */
+						(retframe){ &raise3rd, (void*)0 },
+							/* ( tokengroup*orig -- ) */
+						(retframe){ &invoke_dealloctoken, (void*)0 },
+							/* ( token*1 -- string*1 ) */
+						(retframe){ &metaC_stdinclude_stringify, (void*)0 },
+							/* ( token*0 string*1 -- string*1 token*0 ) */
+						(retframe){ &swap2nd, (void*)0 },
+							/* ( token*0 -- string*0 ) */
+						(retframe){ &metaC_stdinclude_stringify, (void*)1 },
+						(retframe){ &metaC_stdinclude_body, (void*)0 }
+					}
+				};
+		return( (retframe){ &enqueue_returns, (void*)&seq } );
 	}
-	
-	token_head *a = (token_head*)0, *b = (token_head*)0;
-	tokenheadptr_result thpres = popfrom_tokengroup( tg );
-#define metaC_stdinclude_gatherhandler_TGPOP_FAIL( err ) \
-		NOTELINE(); \
-			STRARG( "metaC_stdinclude_gatherhandler() encountered a " ); \
-			STRARG( "failure in a call to popfrom_tokengroup(): " ); \
-			DECARG( __LINE__ ); \
-			STRARG( "; tokengroup: " ); \
-			DATAPTRARG( tg );
-	TOKENHEADPTR_RESULT_BODYMATCH( thpres, LIB4_OP_SETa, metaC_stdinclude_gatherhandler_TGPOP_FAIL );
-	
-	thpres = popfrom_tokengroup( tg );
-	TOKENHEADPTR_RESULT_BODYMATCH( thpres, LIB4_OP_SETb, metaC_stdinclude_gatherhandler_TGPOP_FAIL );
-	
-	STACKPUSH_UINT( &( stkp->data ), (uintptr_t)a,  metaC_stdinclude_gatherhandler, scratch );
-	STACKPUSH_UINT( &( stkp->data ), (uintptr_t)b,  metaC_stdinclude_gatherhandler, scratch );
-	
-	static retframe_parr
-		seq =
-			(retframe_parr)
-			{
-				6, /* Number of retframes  */
-				{
-						/* ( tokengroup*orig token*0 token*1 -- token*0 token*1 tokengroup*orig ) */
-					(retframe){ &raise3rd, (void*)0 },
-						/* ( tokengroup*orig -- ) */
-					(retframe){ &invoke_dealloctoken, (void*)0 },
-						/* ( token*1 -- string*1 ) */
-					(retframe){ &metaC_stdinclude_stringify, (void*)0 },
-						/* ( token*0 string*1 -- string*1 token*0 ) */
-					(retframe){ &swap2nd, (void*)0 },
-						/* ( token*0 -- string*0 ) */
-					(retframe){ &metaC_stdinclude_stringify, (void*)0 },
-					(retframe){ &metaC_stdinclude_body, (void*)0 }
-				}
-			};
-	return( (retframe){ &enqueue_returns, (void*)&seq } );
-}
-	/* ( string*1 string*0 -- ... --  ) */
-retframe metaC_stdinclude_body( stackpair *stkp, void *v )
-{
-	int scratch;
-	
-	uintptr_t tok;
-	
-	STACKCHECK( stkp,  metaC_stdinclude_body );
-	
-	uintptr_t str0, str1;
-	
-	STACKPEEK_UINT( &( stkp->data ), sizeof( uintptr_t ) * 0, str0,  metaC_stdinclude_stringify, scratch );
-	STACKPEEK_UINT( &( stkp->data ), sizeof( uintptr_t ) * 1, str1,  metaC_stdinclude_stringify, scratch );
-	
-	/* We should be "canonicalizing" the path referenced by */
-	/*  str1, and then confirming that it's relative (which is */
-	/*  mandatory). */
-	
-	/* We actually don't USE string 0, because it's a reference */
-	/*  into a list of reference directories, and that list */
-	/*  doesn't exist yet. We would do the lookup here. */
-	
-	/* This is the right place to merge the strings. */
-	
-		/* We currently are using the relative path directly, */
-		/*  just because we don't currently have alternatives. */
-	source *inclusion = build_source( (char_pascalarray*)str1, 0 );
-	inclusion->prev = sources;
-	sources = inclusion;
-	
-		/* Will need another string deallocation once this thing */
-		/*  is fleshed out. */
-	static retframe_parr
-		seq =
-			(retframe_parr)
-			{
-				2, /* Number of retframes  */
-				{
-						/* ( string*1 string*0 -- string*0 ) */
-					(retframe){ &dealloc_cparr, (void*)0 },
-						/* ( string*1 --  ) */
-					(retframe){ &dealloc_cparr, (void*)0 }
-				}
-			};
-	return( (retframe){ &enqueue_returns, (void*)&seq } );
-}
-	/* ( tokengroup* -- ) */
-retframe metaC_stdinclude_stringify( stackpair *stkp, void *v )
-{
-	int scratch;
-	
-	uintptr_t tok;
-	
-	STACKCHECK( stkp,  metaC_stdinclude_stringify );
-	
-	STACKPEEK_UINT( &( stkp->data ), sizeof( uintptr_t ) * 0, tok,  metaC_stdinclude_stringify, scratch );
-	switch( ( (token_head*)tok )->toktype )
+		/* ( string*1 string*0 -- ... --  ) */
+	retframe metaC_stdinclude_body( stackpair *stkp, void *v )
 	{
-		case ???:
+		int scratch;
+
+		uintptr_t tok;
+
+		STACKCHECK( stkp,  metaC_stdinclude_body );
+
+		uintptr_t rootname, relapath;
+
+		STACKPEEK_UINT( &( stkp->data ), sizeof( uintptr_t ) * 0, rootname,  metaC_stdinclude_body, scratch );
+		STACKPEEK_UINT( &( stkp->data ), sizeof( uintptr_t ) * 1, relapath,  metaC_stdinclude_body, scratch );
+
+		/* We should be "canonicalizing" the path referenced by */
+		/*  str1, and then confirming that it's relative (which is */
+		/*  mandatory). */
+
+		/* We actually don't USE string 0, because it's a reference */
+		/*  into a list of reference directories, and that list */
+		/*  doesn't exist yet. We would do the lookup here. */
+
+		/* This is the right place to merge the strings. */
+
+			/* We currently are using the relative path directly, */
+			/*  just because we don't currently have alternatives. */
+		source *inclusion = build_source( (char_pascalarray*)relapath, 0 );
+		inclusion->prev = sources;
+		sources = inclusion;
+
+			/* Will need another string deallocation once this thing */
+			/*  is fleshed out, but the merged string doesn't yet exist. */
+		static retframe_parr
+			seq =
+				(retframe_parr)
+				{
+					2, /* Number of retframes  */
+					{
+							/* ( relapath-string rootname-string -- rootname-string ) */
+						(retframe){ &dealloc_cparr, (void*)0 },
+							/* ( relapath-string --  ) */
+						(retframe){ &dealloc_cparr, (void*)0 }
+					}
+				};
+		return( (retframe){ &enqueue_returns, (void*)&seq } );
 	}
-	
-	???
-	
-		/* ( tokengroup* -- tokengroup* ( 0 | char_parr* ( 1 | token* 2 ) ) */
-	retframe convert_tokengroup2string( stackpair *stkp, void *v );
-	
+		/* ( tokengroup* ( 0 | char_parr* ( 1 | token* 2 ) -- ) */
+	retframe metaC_stdinclude_stringify_conclude( stackpair *stkp, void *v );
+		/* ( tokengroup* -- ... -- ) */
+	retframe metaC_stdinclude_stringify( stackpair *stkp, void *v_ )
+	{
+		int scratch;
+
+		uintptr_t tok;
+		
+		STACKCHECK( stkp,  metaC_stdinclude_stringify );
+		
+		STACKPEEK_UINT( &( stkp->data ), sizeof( uintptr_t ) * 0, tok,  metaC_stdinclude_stringify, scratch );
+		switch( ( (token_head*)tok )->toktype )
+		{
+			case ???:
+		}
+
+		???
+
+		static retframe_parr
+			seq =
+				(retframe_parr)
+				{
+					2, /* Number of retframes  */
+					{
+							/* ( tokengroup* -- tokengroup* ( 0 | char_parr* ( 1 | token* 2 ) ) */
+						(retframe){ &convert_tokengroup2string, (void*)0 },
+							/* ( tokengroup* ( 0 | char_parr* ( 1 | token* 2 ) -- ) */
+						(retframe){ &metaC_stdinclude_stringify_conclude, (void*)0 }
+					}
+				};
+		seq.arr[ 1 ].data = v_;
+		return( (retframe){ &enqueue_returns, (void*)&seq } );
+	}
+		/* ( tokengroup* ( 0 | char_parr* ( 1 | token* 2 ) -- char_parr* | error path execution ) */
+	retframe metaC_stdinclude_stringify_conclude( stackpair *stkp, void *v_ )
+	{
+		int scratch;
+
+		uintptr_t res, depth;
+
+		STACKCHECK( stkp,  metaC_stdinclude_stringify_conclude );
+		depth = (uintptr_t)v_;
+
+		STACKPEEK_UINT( &( stkp->data ), sizeof( uintptr_t ) * 0, res,  metaC_stdinclude_stringify_conclude, scratch );
+			/* ( tokengroup* ( 0 | char_parr* ( 1 | token* 2 ) -- tokengroup* ( char_parr* ( token* ) ) */
+		/* The result code on top of the stack will be: */
+			/* 0 if nothing was done, */
+			/* 1 on plain success, or */
+			/* 2 on mid-process error. */
+		switch( res )
+		{
+			case 1:
+				/* Good case. */
+				break;
+
+			case 2:
+				/* Mid-work error. */
+				STRARG( "ERROR: convert_tokengroup2string() had a mid-work error in metaC_stdinclude_stringify() sequence. " );
+					STRARG( "Top type: " );
+					STACKPOP_UINT( &( stkp->data ), res,  metaC_stdinclude_stringify_conclude, scratch );
+					STACKPEEK_UINT( &( stkp->data ), sizeof( uintptr_t ) * 0, res,  metaC_stdinclude_stringify_conclude, scratch );
+					DECARG( ( (token_head*)res )->toktype );
+					STRARG( "; Bottom type: " );
+					STACKPEEK_UINT( &( stkp->data ), sizeof( uintptr_t ) * 3, res,  metaC_stdinclude_stringify_conclude, scratch );
+					DECARG( ( (token_head*)res )->toktype );
+				static retframe_parr
+					seq0 =
+						(retframe_parr)
+						{
+							5, /* Number of retframes  */
+							{
+									/* ( err-token* -- ) */
+								(retframe){ &invoke_dealloctoken, (void*)0 },
+									/* ( string* --  ) */
+								(retframe){ &dealloc_cparr, (void*)0 },
+									/* ( tokengroup* -- ) */
+								(retframe){ &invoke_dealloctoken, (void*)0 },
+									/* This will get replaced. */
+								(retframe){ &vm_push_placeholder, (void*)0 },
+									/* Requires a pointer to a retframe as v. */
+								(retframe){ &just_run, (void*)&( metaC_stdinclude_dtci.longjump ) }
+							}
+						};
+				seq0.arr[ 3 ].hand = ( depth ? &vm_push1 : &vm_push0 );
+				return( (retframe){ &enqueue_returns, (void*)&seq0 } );
+			case 0:
+				/* No work done. */
+				STRARG( "ERROR: convert_tokengroup2string() did no work in metaC_stdinclude_stringify() sequence. Type: " );
+					STACKPOP_UINT( &( stkp->data ), res,  metaC_stdinclude_stringify_conclude, scratch );
+					STACKPEEK_UINT( &( stkp->data ), 0, res,  metaC_stdinclude_stringify_conclude, scratch );
+					DECARG( ( (token_head*)res )->toktype );
+				static retframe_parr
+					seq0 =
+						(retframe_parr)
+						{
+							3, /* Number of retframes  */
+							{
+									/* ( tokengroup* -- ) */
+								(retframe){ &invoke_dealloctoken, (void*)0 },
+									/* This will get replaced. */
+								(retframe){ &vm_push_placeholder, (void*)0 },
+									/* Requires a pointer to a retframe as v. */
+								(retframe){ &just_run, (void*)&( metaC_stdinclude_dtci.longjump ) }
+							}
+						};
+				seq0.arr[ 1 ].hand = ( depth ? &vm_push1 : &vm_push0 );
+				return( (retframe){ &enqueue_returns, (void*)&seq0 } );
+			default:
+				/* Unknown error. */
+				STRARG( "ERROR: convert_tokengroup2string() returned unknown value: ( " );
+					DECARG( res );
+					STRARG( " ) during metaC_stdinclude_stringify() sequence. Type: " );
+					STACKPEEK_UINT( &( stkp->data ), sizeof( uintptr_t ) * 1, res,  metaC_stdinclude_stringify_conclude, scratch );
+					DECARG( ( (token_head*)res )->toktype );
+				stack_ENDRETFRAME();
+		}
+
+		static retframe_parr
+			seq =
+				(retframe_parr)
+				{
+					2, /* Number of retframes  */
+					{
+							/* ( tokengroup* char_parr* -- char_parr* tokengroup* ) */
+						(retframe){ &swap2nd, (void*)0 },
+							/* ( char_parr* tokengroup* -- char_parr* ) */
+						(retframe){ &invoke_dealloctoken, (void*)0 }
+					}
+				};
+		return( (retframe){ &enqueue_returns, (void*)&seq } );
+	}
+	/* ( ??? -- ??? ) */
+retframe metaC_stdinclude_conclude( stackpair *stkp, void *v )
+{
 	???
 }
 
