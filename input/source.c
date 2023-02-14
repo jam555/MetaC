@@ -734,11 +734,12 @@ retframe metaC_stdinclude( stackpair *stkp, void *v )
 				/* 2 if explicitly bad syntax ( e.g. pairing an opening parenthese */
 				/*  with a closing square bracket). */
 				TRESPASSPATH( metaC_stdinclude_gatherhandler, " ERROR: Bad syntax: " );
-
+				
 					/* We should reprint the entire tokengroup here. */
 				???
-					/* And then we should discard it. */
-
+				
+					/* And then we should discard the tokengroup, which we */
+					/*  currently don't even attempt. */
 				RETFRAMEFUNC( metaC_stdinclude_gatherhandler, scratch );
 			default:
 				TRESPASSPATH( metaC_stdinclude_gatherhandler, " ERROR: unexpected result value: " );
@@ -899,7 +900,7 @@ retframe metaC_stdinclude( stackpair *stkp, void *v )
 					stringerr_ =
 						(retframe_parr)
 						{
-							??? , /* Number of retframes  */
+							3, /* Number of retframes  */
 							{
 								/*
 									(
