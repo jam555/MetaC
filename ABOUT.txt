@@ -1,3 +1,19 @@
-This is a project to create a reimagined version of the common C and C++ preprocessors.
-It is run solely by Jared A. Maddox <absinthdraco@gmail.com>, and is not yet in a
-usable state.
+	This is a project to create a reimagined version of the common C and C++
+preprocessors. It is run solely by Jared A. Maddox <absinthdraco@gmail.com>, and
+is not yet in a usable state.
+
+	If you're trying to compile with Microsoft tools, then just run "make.bat",
+which'll properly call nmake for you. Otherwise just run whatever your make tool
+is directly.
+
+	The "root" directory "overrides" is tasked with containing... overrides. It
+is ignored by Git, because it's meant to be used by individual users, instead of
+by the project as a whole; it's simply a place to look for per-user build-time
+hooks in.
+	A file called "overrides/rootoverride.make" will provide overriding
+variables to the directly-executed makefile, while "overrides/override.make"
+will provide overriding variables to the "common.make" file that contains
+platform-specific "tool" variables (such as the invocation command for the
+actual make tool itself).
+	Additional override capabilities may be defined at some later point in time,
+but currently they're all used by the makefile system only.
