@@ -1,0 +1,5 @@
+	The string below precisely measures out 80 columns. 'E' is the character in
+the 80th column. Copy & paste as reference where needed. It only has a file
+because my current editor doesn't provide row & column info...
+
+1234567890    10s   1234567890    30s   1234567890    50s   1234567890   70s   E
