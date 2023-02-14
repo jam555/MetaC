@@ -1,1 +1,4 @@
-/reference_file_list.txt
+# The overrides directory is meant for per-user overrides of... whatever can
+#  sensibly be overridden by files inside of it. So, we should NEVER track it
+#  from this project, as the user is expected to do that themselves if desired.
+/overrides/
