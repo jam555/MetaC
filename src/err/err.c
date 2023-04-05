@@ -18,25 +18,38 @@ with this program; if not, write to the:
 	Boston, MA 02111-1307 USA
 */
 
+
+	/* size_t I think. */
+#include <stddef.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <errno.h>
+	/* memcpy() or something? */
+#include <string.h>
+#include <ctype.h>
 	/* For the varargs stuff. */
 #include <stdarg.h>
-#include <string.h>
-#include <stdio.h>
 
-	/* All the stuff below should probably be included via this, but it's */
-	/*  best to make dependencies explicit. */
-#include "../headers.h"
 
-#include "../pascalarray.h"
-#include "../macrotime/arraccess.h"
+#include "../../external_dependencies/libandria4/basic/commonerrvals.h"
+#include "../../external_dependencies/libandria4/basic/commontypes.h"
+#include "../../external_dependencies/libandria4/basic/simpleops.h"
+#include "../../external_dependencies/libandria4/basic/monads.h"
+#include "../../external_dependencies/libandria4/basic/stdmonads.h"
+#include "../../external_dependencies/libandria4/basic/pascalarray.h"
+#include "../../external_dependencies/libandria4/basic/arraccess.h"
 
-#include "stdmonads.h"
+	/* For the sake of abbreviated names. */
+#include "../../external_dependencies/libandria4/stdabbrevs/metaCabbrevs.h"
+
+
+#include "err.h"
 #include "inner_err.h"
-#include "../input/lexalike.h"
+#include "../input/char2num.h"
 
 
 
-lib4_result err_chout( int character )
+LIB4_RESULT err_chout( int character )
 {
 	errno = 0;
 	
@@ -51,7 +64,7 @@ lib4_result err_chout( int character )
 	{
 		if( errno == 0 )
 		{
-			return( lib4_errno_2result() );
+			return( LIB4_ERRNO_2RESULT() );
 		}
 		
 		if( res == EOF )
@@ -64,7 +77,7 @@ lib4_result err_chout( int character )
 	
 	return( LIB4_RESULT_BUILDSUCCESS( LIB4_RESULT_GENERIC ) );
 }
-lib4_result err_clearout()
+LIB4_RESULT err_clearout()
 {
 	clearerr( stderr );
 	
@@ -145,8 +158,8 @@ struct printf_spec
 {
 	printf_spec_flags flags;
 	
-	ssize_t width;
-	ssize_t precision;
+	LIB4_SSIZE width;
+	LIB4_SSIZE precision;
 	
 	printf_spec_length length;
 	
@@ -155,7 +168,7 @@ struct printf_spec
 
 int parse_printfspec( char **text,  printf_spec *ps )
 {
-	lib4_intresult res;
+	LIB4_INTRESULT res;
 	
 	if( !text || !( *text ) || !ps )
 	{
@@ -246,7 +259,7 @@ int parse_printfspec( char **text,  printf_spec *ps )
 		
 		if( isdigit( **text ) != 0 )
 		{
-			ssize_t acc = 0, b = 0;
+			LIB4_SSIZE acc = 0, b = 0;
 			while( **text != '\0' && isdigit( **text ) != 0 )
 			{
 #define parse_printfspec_FAIL2( err ) return( -6 );
@@ -977,7 +990,7 @@ static int msg_inner( msg_style *style, va_list vals )
 	msg_inner_exitpoint:
 	if( a )
 	{
-		lib4_result res = dynchar_pascalarray_destroy( a );
+		LIB4_RESULT res = dynchar_pascalarray_destroy( a );
 		
 #define msg_inner_ERREXIT23( err ) return( -23 );
 		LIB4_MONAD_EITHER_BODYMATCH( res, LIB4_OP_SETa, msg_inner_ERREXIT23 );

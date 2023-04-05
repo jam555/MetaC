@@ -20,8 +20,10 @@ with this program; if not, write to the:
 
 #include "char2num.h"
 
+#include "../../external_dependencies/libandria4/stdabbrevs/metaCabbrevs.h"
 
-lib4_intresult bin2num( char c )
+
+LIB4_INTRESULT bin2num( char c )
 {
 	if( c == '0' )
 	{
@@ -36,7 +38,7 @@ lib4_intresult bin2num( char c )
 		LIB4_INTRESULT_RETURNFAILURE( (int)c );
 	}
 }
-lib4_intresult oct2num( char c )
+LIB4_INTRESULT oct2num( char c )
 {
 	if( c < '0' )
 	{
@@ -51,7 +53,7 @@ lib4_intresult oct2num( char c )
 		LIB4_INTRESULT_RETURNSUCCESS( ( c - '0' ) );
 	}
 }
-lib4_intresult dec2num( char c )
+LIB4_INTRESULT dec2num( char c )
 {
 	if( c < '0' )
 	{
@@ -66,7 +68,7 @@ lib4_intresult dec2num( char c )
 		LIB4_INTRESULT_RETURNSUCCESS( ( c - '0' ) );
 	}
 }
-lib4_intresult hexa2num( char c )
+LIB4_INTRESULT hexa2num( char c )
 {
 	if( c >= '0' && c <= '9' )
 	{
@@ -90,7 +92,7 @@ lib4_intresult hexa2num( char c )
 	/*  and the letters may have started as abbreviations. */
 	/* Probably worth noting that this isn't actually used: I just put it in */
 	/*  because it came to mind (blame Dave's Garage on Youtube). */
-lib4_intresult sexa2num( char c )
+LIB4_INTRESULT sexa2num( char c )
 {
 	if( c >= '0' && c <= '9' )
 	{

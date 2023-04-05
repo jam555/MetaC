@@ -23,8 +23,7 @@ with this program; if not, write to the:
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "err.h"
-#include "inner_err.h"
+#include "commons.incl"
 
 
 
@@ -34,7 +33,7 @@ with this program; if not, write to the:
 		static msg_styleset this_set;
 	};
 #elif defined( __STDC__ ) && __STDC_VERSION__ >= 199901L
-	static msg_styleset errs;
+	static msg_styleset this_set;
 #else
 	#error "The file " __FILE__ " requires at least C99 or C++98."
 #endif

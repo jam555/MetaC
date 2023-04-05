@@ -25,6 +25,18 @@ with this program; if not, write to the:
 	/* err/inner_err.h */
 	
 	
+	#include <stdint.h>
+	#include <stddef.h>
+	#include < ??? >
+	
+	#include "../../external_dependencies/libandria4/basic/pascalarray.h"
+	#include "../../external_dependencies/libandria4/basic/commontypes.h"
+	#include "../../external_dependencies/libandria4/basic/stdmonads.h"
+	#include " ??? "
+	
+	#include "../../external_dependencies/libandria4/stdabbrevs/metaCabbrevs.h"
+	
+	
 	
 	typedef struct msg_styleset msg_styleset;
 	typedef struct msg_style msg_style;
@@ -51,7 +63,7 @@ with this program; if not, write to the:
 		/* The void* is (presumably a pointer to) the data that needs to be */
 		/*  printed: this pointer is to be found BEFORE the pointer to the */
 		/*  custom printing function. */
-		/* The first size_t is the "width" from the printf() specifier, */
+		/* The first LIB4_SSIZE is the "width" from the printf() specifier, */
 		/*  while the second is the "precision" value. These should be */
 		/*  either ignored, or interpreted in line with their interpretation */
 		/*  for standard printf() behavior. */
@@ -61,7 +73,7 @@ with this program; if not, write to the:
 		/* The intmax_t pointer is optional, and returns the number of */
 		/*  printed characters. If it is non-null, then the function is */
 		/*  REQUIRED to populate it via set (not addition). */
-	int (*customprint_signature)( void*, ssize_t, ssize_t,  char_receiver,  intmax* );
+	int (*customprint_signature)( void*, LIB4_SSIZE, LIB4_SSIZE,  char_receiver,  intmax_t* );
 	
 	
 	typedef struct msg_piece
@@ -84,7 +96,7 @@ with this program; if not, write to the:
 		msg_piece_result,
 		
 		msg_piece,
-		lib4_failure_uipresult
+		LIB4_F_UIPRES
 	);
 	
 	#define MSG_PIECE_RESULT_BUILDSUCCESS( val ) \
@@ -93,7 +105,7 @@ with this program; if not, write to the:
 		)
 	#define MSG_PIECE_RESULT_BUILDFAILURE( val ) \
 		LIB4_MONAD_EITHER_BUILDRIGHT( \
-			msg_piece_result, lib4_failure_uipresult, (val) \
+			msg_piece_result, LIB4_F_UIPRES, (val) \
 		)
 	
 		/* The *BODY* version takes statements, *EXPR* takes expressions. */
@@ -110,7 +122,7 @@ with this program; if not, write to the:
 			msg_piece_result, msg_piece, val )
 	#define MSG_PIECE_RESULT_RETURNFAILURE( val ) \
 		LIB4_MONAD_EITHER_RETURNRIGHT( \
-			msg_piece_result, lib4_failure_uipresult, val )
+			msg_piece_result, LIB4_F_UIPRES, val )
 	
 	
 	struct msg_styleset

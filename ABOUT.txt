@@ -6,6 +6,12 @@ is not yet in a usable state.
 which'll properly call nmake for you. Otherwise just run whatever your make tool
 is directly.
 
+	The "root" directory "external_dependencies" is tasked with containing the
+external dependencies, currently limited to version 4 of LibAndria. All
+dependencies must have THEIR OWN directory inside of "external_dependencies",
+they MUST NOT be extracted/downloaded directly into it for the sake of never
+stomping on other dependencies.
+
 	The "root" directory "overrides" is tasked with containing... overrides. It
 is ignored by Git, because it's meant to be used by individual users, instead of
 by the project as a whole; it's simply a place to look for per-user build-time
