@@ -76,11 +76,11 @@ LIB4_INTRESULT hexa2num( char c )
 		
 	} else if( c >= 'a' && c <= 'f' )
 	{
-		LIB4_INTRESULT_RETURNSUCCESS( ( c - 'a' ) );
+		LIB4_INTRESULT_RETURNSUCCESS( ( c - 'a' ) + 10 );
 		
 	} else if( c >= 'A' && c <= 'F' )
 	{
-		LIB4_INTRESULT_RETURNSUCCESS( ( c - 'A' ) );
+		LIB4_INTRESULT_RETURNSUCCESS( ( c - 'A' ) + 10 );
 		
 	} else {
 		

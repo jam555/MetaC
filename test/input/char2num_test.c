@@ -48,20 +48,20 @@ void success_func( int val, int goal )
 {
 	int flag = 1;
 	
-	printf( "listed success, %i;", val );
+	printf( "listed success, %i", val );
 	if( val < 0 )
 	{
-		printf( " val was reported as negative, testing failure;" );
+		printf( "; val was reported as negative, testing failure" );
 		flag = 0;
 	}
 	if( goal < 0 )
 	{
-		printf( " goal was reported as negative ( %i ), testing failure;", goal );
+		printf( "; goal was reported as negative ( %i ), testing failure", goal );
 		flag = 0;
 	}
 	if( val != goal )
 	{
-		printf( " value and goal weren't identical, testing failure;" );
+		printf( "; value ( %i ) and goal ( %i ) weren't identical, testing failure", val, goal );
 		flag = 0;
 	}
 	
@@ -82,22 +82,22 @@ void failure_func( uintptr_t err, int goal )
 	printf( "listed failure, %c", (int)err );
 	if( goal >= 0 )
 	{
-		printf( " goal was reported as non-negative ( %i ), listed success expected;" );
+		printf( "; goal was reported as non-negative ( %i ), listed success expected" );
 		flag = 0;
 	}
 	if( ( goal >= 0 ? goal : -goal ) != err )
 	{
-		printf( " error didn't equal absolute( goal: %i ), testing failure;", goal );
+		printf( "; error didn't equal absolute( goal: %i ), testing failure", goal );
 		flag = 0;
 	}
 	
 	if( flag )
 	{
-		printf( "\n    Testing pitch succeeded.\n" );
+		printf( "\n\tTesting pitch succeeded.\n" );
 		
 	} else {
 		
-		printf( "\n    Testing pitch failed.\n" );
+		printf( "\n\tTesting pitch failed.\n" );
 		result = EXIT_FAILURE;
 	}
 }
@@ -137,7 +137,7 @@ int test_set( size_t pitchcount, testpitch *pitches, LIB4_INTRESULT (*func)( cha
 		
 		printf( pitches[ iter ].descriptor );
 		goal = pitches[ iter ].goal;
-		testres = bin2num( pitches[ iter ].input );
+		testres = func( pitches[ iter ].input );
 		LIB4_INTRESULT_BODYMATCH( testres, SUCCESS_PATH, FAILURE_PATH );
 		
 		++iter;
@@ -159,19 +159,25 @@ int test_batch( testbatch *batch )
 {
 	if( !batch )
 	{
-		printf( "\n   Error: test_batch( %p ) was given an illegal null.\n", (void*)batch );
+		printf( "   Error: test_batch( %p ) was given an illegal null.\n", (void*)batch );
 		return( -1 );
 	}
 	if( !( batch->funcname ) )
 	{
 		printf
 		(
-			"\n   Error: test_batch() was given a null (testbatch*)->funcname.\n"
+			"   Error: test_batch() was given a null (testbatch*)->funcname.\n"
 		);
 		return( -2 );
 	}
 	
-	printf( "\n Testing %s( * ):\n", batch->funcname );
+	printf
+	(
+		" Testing %s( * ), pitchcount: %i, converter: %p\n",
+		batch->funcname,
+		(int)( batch->pitchcount ),
+		(void*)( batch->func )
+	);
 	
 	if( test_set( batch->pitchcount, batch->pitches, batch->func ) > 0 )
 	{
@@ -181,7 +187,7 @@ int test_batch( testbatch *batch )
 		
 		printf( "  %s() test failed.\n", batch->funcname );
 		result = EXIT_FAILURE;
-	}			
+	}
 	
 	return( 1 );
 }
@@ -404,34 +410,47 @@ int main( int argn, char *argc[] )
 	
 	testbatch batches[] =
 		{
-			{ sizeof( binpitch ), binpitch, &bin2num, "bin2num" },
-			{ sizeof( octpitch ), octpitch, &oct2num, "oct2num" },
-			{ sizeof( decpitch ), decpitch, &dec2num, "dec2num" },
-			{ sizeof( hexapitch ), hexapitch, &hexa2num, "hexa2num" },
-			{ sizeof( sexapitch ), sexapitch, &sexa2num, "sexa2num" }
+			{ sizeof( binpitch ) / sizeof( testpitch ), binpitch, &bin2num, "bin2num" },
+			{ sizeof( octpitch ) / sizeof( testpitch ), octpitch, &oct2num, "oct2num" },
+			{ sizeof( decpitch ) / sizeof( testpitch ), decpitch, &dec2num, "dec2num" },
+			{ sizeof( hexapitch ) / sizeof( testpitch ), hexapitch, &hexa2num, "hexa2num" },
+			{ sizeof( sexapitch ) / sizeof( testpitch ), sexapitch, &sexa2num, "sexa2num" }
 		};
 	
 	int test = 1;
 	size_t iter = 0;
 	
-	printf( "Simple *2num() test program.\n\n" );
+	printf( "Simple *2num() test program.\n" );
+	printf( " Pitch counts:\n" );
+	printf( "  bin: %i;\n", (int)( sizeof( binpitch ) / sizeof( testpitch ) ) );
+	printf( "  oct: %i;\n", (int)sizeof( octpitch ) / sizeof( testpitch ) );
+	printf( "  dec: %i;\n", (int)sizeof( decpitch ) / sizeof( testpitch ) );
+	printf( "  hexa: %i;\n", (int)sizeof( hexapitch ) / sizeof( testpitch ) );
+	printf( "  sexa: %i;\n", (int)sizeof( sexapitch ) / sizeof( testpitch ) );
+	printf( " Converter pointers:\n" );
+	printf( "  bin: %p;\n", (void*)( batches[ 0 ].func ) );
+	printf( "  oct: %p;\n", (void*)( batches[ 1 ].func ) );
+	printf( "  dec: %p;\n", (void*)( batches[ 2 ].func ) );
+	printf( "  hexa: %p;\n", (void*)( batches[ 3 ].func ) );
+	printf( "  sexa: %p;\n", (void*)( batches[ 4 ].func ) );
+	printf( " Batches: %i\n", (int)( sizeof( batches ) / sizeof( testbatch ) ) );
+	printf( "\n" );
 	
 	
-	while( test && iter < sizeof( batches ) )
+	while( test && iter < ( sizeof( batches ) / sizeof( testbatch ) ) )
 	{
 		test = test_batch( &( batches[ iter ] ) );
 		++iter;
-		printf( "\n" );
 	}
 	
 	
 	if( result == EXIT_SUCCESS )
 	{
-		printf( " Testing done, all tests passed.\n" );
+		printf( " Simple *2num() testing done, all tests passed.\n" );
 		
 	} else {
 		
-		printf( " Testing done, failures encountered.\n" );
+		printf( " Simple *2num() testing done, failures encountered.\n" );
 	}
 	
 	
