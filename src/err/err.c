@@ -27,6 +27,7 @@ with this program; if not, write to the:
 	/* memcpy() or something? */
 #include <string.h>
 #include <ctype.h>
+#include <wchar.h>
 	/* For the varargs stuff. */
 #include <stdarg.h>
 
@@ -271,7 +272,7 @@ int parse_printfspec( char **text,  printf_spec *ps )
 				++( *text );
 			}
 			
-			ps->precision = a;
+			ps->precision = acc;
 			
 		} else if( **text == '*' )
 		{
@@ -344,7 +345,7 @@ int parse_printfspec( char **text,  printf_spec *ps )
 		/* Specifier. */
 	switch( **text )
 	{
-		case "%":
+		case '%':
 			ps->specifier = pss_percent;
 			++( *text );
 			break;
@@ -352,100 +353,100 @@ int parse_printfspec( char **text,  printf_spec *ps )
 		
 			/* These only differ when reading data from a source, not when */
 			/*  outputing. */
-		case "d":
+		case 'd':
 			ps->specifier = pss_dint;
 			++( *text );
 			break;
-		case "i":
+		case 'i':
 			ps->specifier = pss_iint;
 			++( *text );
 			break;
 		
 		
-		case "b":
+		case 'b':
 			ps->specifier = pss_bin;
 			++( *text );
 			break;
-		case "B":
+		case 'B':
 			ps->specifier = pss_BIN;
 			++( *text );
 			break;
 		
-		case "o":
-			ps->specifier = ;pss_oct
+		case 'o':
+			ps->specifier = pss_oct;
 			++( *text );
 			break;
 		
-		case "u":
+		case 'u':
 			ps->specifier = pss_dec;
 			++( *text );
 			break;
 		
-		case "x":
+		case 'x':
 			ps->specifier = pss_hex;
 			++( *text );
 			break;
-		case "X":
+		case 'X':
 			ps->specifier = pss_HEX;
 			++( *text );
 			break;
 		
 		
-		case "f":
+		case 'f':
 			ps->specifier = pss_fix;
 			++( *text );
 			break;
-		case "F":
+		case 'F':
 			ps->specifier = pss_FIX;
 			++( *text );
 			break;
 		
-		case "e":
+		case 'e':
 			ps->specifier = pss_exp;
 			++( *text );
 			break;
-		case "E":
+		case 'E':
 			ps->specifier = pss_EXP;
 			++( *text );
 			break;
 		
-		case "g":
+		case 'g':
 			ps->specifier = pss_dyn;
 			++( *text );
 			break;
-		case "G":
+		case 'G':
 			ps->specifier = pss_DYN;
 			++( *text );
 			break;
 		
-		case "a":
+		case 'a':
 			ps->specifier = pss_dex;
 			++( *text );
 			break;
-		case "A":
+		case 'A':
 			ps->specifier = pss_DEX;
 			++( *text );
 			break;
 		
 		
-		case "s":
+		case 's':
 			ps->specifier = pss_str;
 			++( *text );
 			break;
 		
-		case "c":
+		case 'c':
 			ps->specifier = pss_char;
 			++( *text );
 			break;
 		
-		case "p":
+		case 'p':
 			ps->specifier = pss_ptr;
 			++( *text );
 			break;
 		
 		
 		
-		case "n":
+		case 'n':
 			ps->specifier = pss_printed;
 			++( *text );
 			break;
@@ -603,7 +604,7 @@ static int charprint( printf_spec *ps, char *tspec, intmax_t *progress,  va_list
 		case psl_normal:
 			res = fprintf( stderr,  tspec, va_arg( *vals, int ), &change );
 			break;
-		case psl_long:
+		case psl_long: /* Note: wint_t is specified in wchar.h */
 			res = fprintf( stderr,  tspec, va_arg( *vals, wint_t ), &change );
 			break;
 		
@@ -684,10 +685,10 @@ static int ptrprint( printf_spec *ps, char *tspec, intmax_t *progress,  va_list 
 				
 				char_receiver cr = (char_receiver){ (void*)stderr, &ptrprint_tool };
 				
-				void *data = va_arg( vals, void* );
+				void *data = va_arg( *vals, void* );
 				customprint_signature printer = va_arg( vals, customprint_signature );
 				
-				int (*customprint_signature)( void*, size_t, size_t,  char_receiver,  intmax* );
+				int (*customprint_signature)( void*, size_t, size_t,  char_receiver,  intmax_t* );
 				res = printer( data, ps->width, ps->precision,  cr,  &change );
 			}
 			break;
@@ -749,7 +750,7 @@ static int countprint( printf_spec *ps, char *tspec, intmax_t *progress,  va_lis
 
 
 
-LIB4_DEFINE_PASCALARRAY_STDDEFINE( msgstyleptr_, msg_style* );
+LIB4_DEFINE_PASCALARRAY_STDDEFINE( msgstyleptr_ , msg_style*  );
 static msgstyleptr_pascalarray std_messages;
 
 
@@ -1063,38 +1064,38 @@ void msg_interface( msg_styleset *source, ERR_KEYTYPE first_key, ... )
 
 
 static msg_style
-	stdmsg_badnull = { LIB4_RETURN_2ND( STDMSG_BADNULL ) },
-	stdmsg_badnonnull = { LIB4_RETURN_2ND( STDMSG_BADNONNULL ) },
+	stdmsg_badnull = { LIBANDRIA4_APPLY( LIB4_RETURN_2ND, STDMSG_BADNULL ) },
+	stdmsg_badnonnull = { LIBANDRIA4_APPLY( LIB4_RETURN_2ND, STDMSG_BADNONNULL ) },
 	
-	stdmsg_badnull2 = { LIB4_RETURN_2ND( STDMSG_BADNULL2 ) },
-	stdmsg_badnonnull2 = { LIB4_RETURN_2ND( STDMSG_BADNONNULL2 ) },
+	stdmsg_badnull2 = { LIBANDRIA4_APPLY( LIB4_RETURN_2ND, STDMSG_BADNULL2 ) },
+	stdmsg_badnonnull2 = { LIBANDRIA4_APPLY( LIB4_RETURN_2ND, STDMSG_BADNONNULL2 ) },
 	
-	stdmsg_monadicfailure = { LIB4_RETURN_2ND( STDMSG_MONADICFAILURE ) },
-		stdmsg_noteline = { LIB4_RETURN_2ND( STDMSG_NOTELINE ) },
-		stdmsg_notespace = { LIB4_RETURN_2ND( STDMSG_NOTESPACE ) },
-		stdmsg_signedarg = { LIB4_RETURN_2ND( STDMSG_SIGNEDARG ) },
-		stdmsg_decarg = { LIB4_RETURN_2ND( STDMSG_DECARG ) },
-		stdmsg_hexarg = { LIB4_RETURN_2ND( STDMSG_HEXARG ) },
-		stdmsg_ldoublearg = { LIB4_RETURN_2ND( STDMSG_LDOUBLEARG ) },
-		stdmsg_chararg = { LIB4_RETURN_2ND( STDMSG_CHARARG ) },
-		stdmsg_strarg = { LIB4_RETURN_2ND( STDMSG_STRARG ) },
-		stdmsg_dataptrarg = { LIB4_RETURN_2ND( STDMSG_DATAPTRARG ) },
+	stdmsg_monadicfailure = { LIBANDRIA4_APPLY( LIB4_RETURN_2ND, STDMSG_MONADICFAILURE ) },
+		stdmsg_noteline = { LIBANDRIA4_APPLY( LIB4_RETURN_2ND, STDMSG_NOTELINE ) },
+		stdmsg_notespace = { LIBANDRIA4_APPLY( LIB4_RETURN_2ND, STDMSG_NOTESPACE ) },
+		stdmsg_signedarg = { LIBANDRIA4_APPLY( LIB4_RETURN_2ND, STDMSG_SIGNEDARG ) },
+		stdmsg_decarg = { LIBANDRIA4_APPLY( LIB4_RETURN_2ND, STDMSG_DECARG ) },
+		stdmsg_hexarg = { LIBANDRIA4_APPLY( LIB4_RETURN_2ND, STDMSG_HEXARG ) },
+		stdmsg_ldoublearg = { LIBANDRIA4_APPLY( LIB4_RETURN_2ND, STDMSG_LDOUBLEARG ) },
+		stdmsg_chararg = { LIBANDRIA4_APPLY( LIB4_RETURN_2ND, STDMSG_CHARARG ) },
+		stdmsg_strarg = { LIBANDRIA4_APPLY( LIB4_RETURN_2ND, STDMSG_STRARG ) },
+		stdmsg_dataptrarg = { LIBANDRIA4_APPLY( LIB4_RETURN_2ND, STDMSG_DATAPTRARG ) },
 	
-	stdmsg_failedintfunc = { LIB4_RETURN_2ND( STDMSG_FAILEDINTFUNC ) },
-	stdmsg_faileduintfunc = { LIB4_RETURN_2ND( STDMSG_FAILEDUINTFUNC ) },
-	stdmsg_failedptrfunc = { LIB4_RETURN_2ND( STDMSG_FAILEDPTRFUNC ) },
+	stdmsg_failedintfunc = { LIBANDRIA4_APPLY( LIB4_RETURN_2ND, STDMSG_FAILEDINTFUNC ) },
+	stdmsg_faileduintfunc = { LIBANDRIA4_APPLY( LIB4_RETURN_2ND, STDMSG_FAILEDUINTFUNC ) },
+	stdmsg_failedptrfunc = { LIBANDRIA4_APPLY( LIB4_RETURN_2ND, STDMSG_FAILEDPTRFUNC ) },
 	
-	stdmsg_trespasspath = { LIB4_RETURN_2ND( STDMSG_TRESPASSPATH ) },
+	stdmsg_trespasspath = { LIBANDRIA4_APPLY( LIB4_RETURN_2ND, STDMSG_TRESPASSPATH ) },
 	
-	stdmsg_badchar = { LIB4_RETURN_2ND( STDMSG_BADCHAR ) },
-	stdmsg_badint = { LIB4_RETURN_2ND( STDMSG_BADINT ) },
-	stdmsg_baduint = { LIB4_RETURN_2ND( STDMSG_BADUINT ) },
+	stdmsg_badchar = { LIBANDRIA4_APPLY( LIB4_RETURN_2ND, STDMSG_BADCHAR ) },
+	stdmsg_badint = { LIBANDRIA4_APPLY( LIB4_RETURN_2ND, STDMSG_BADINT ) },
+	stdmsg_baduint = { LIBANDRIA4_APPLY( LIB4_RETURN_2ND, STDMSG_BADUINT ) },
 	
-	stdmsg_i_underflow = { LIB4_RETURN_2ND( STDMSG_I_UNDERFLOW ) },
-	stdmsg_i_overflow = { LIB4_RETURN_2ND( STDMSG_I_OVERFLOW ) };
+	stdmsg_i_underflow = { LIBANDRIA4_APPLY( LIB4_RETURN_2ND, STDMSG_I_UNDERFLOW ) },
+	stdmsg_i_overflow = { LIBANDRIA4_APPLY( LIB4_RETURN_2ND, STDMSG_I_OVERFLOW ) };
 
 static msgstyleptr_pascalarray std_messages =
-	LIB4_DEFINE_PASCALARRAY_LITERAL2(
+	LIBANDRIA4_DEFINE_PASCALARRAY_LITERAL2(
 		msgstyleptr_,
 		msg_style*,
 		
@@ -1127,4 +1128,10 @@ static msgstyleptr_pascalarray std_messages =
 		
 		&stdmsg_i_underflow,
 		&stdmsg_i_overflow
+	);
+static msgstyleptr_pascalarray testset =
+	LIBANDRIA4_DEFINE_PASCALARRAY_LITERAL(
+		msgstyleptr_,
+		2,
+		( (msg_style*[]) { &stdmsg_badnull, &stdmsg_badnonnull } )
 	);

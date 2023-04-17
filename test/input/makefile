@@ -36,8 +36,6 @@ $(BUILDDIR)srctest/input/char2num.o: $(SOURCEDIR)input/char2num.c
 
 build-sourcecheck: $(BUILDDIR)srctest/input/char2num_test.exe
 
-c2ntest: $(BUILDDIR)srctest/input/char2num.o
-
 $(BUILDDIR)srctest/input/char2num_test.o: char2num_test.c
 	$(genericcompileCcommand) $(BUILDDIR)srctest/input/char2num_test.o char2num_test.c -c
 
@@ -63,6 +61,8 @@ maintainer-clean:
 check: 
 	echo "Error: test/input/makefile has not implemented the check target."
 
-# Test the source files; unit testing
-sourcecheck: build-sourcecheck
+c2ntest: $(BUILDDIR)srctest/input/char2num_test.exe
 	$(BUILDDIR)srctest/input/char2num_test.exe
+
+# Test the source files; unit testing
+sourcecheck: build-sourcecheck c2ntest

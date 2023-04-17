@@ -27,12 +27,10 @@ with this program; if not, write to the:
 	
 	#include <stdint.h>
 	#include <stddef.h>
-	#include < ??? >
 	
 	#include "../../external_dependencies/libandria4/basic/pascalarray.h"
 	#include "../../external_dependencies/libandria4/basic/commontypes.h"
 	#include "../../external_dependencies/libandria4/basic/stdmonads.h"
-	#include " ??? "
 	
 	#include "../../external_dependencies/libandria4/stdabbrevs/metaCabbrevs.h"
 	
@@ -92,12 +90,7 @@ with this program; if not, write to the:
 	#define BUILD_MSGPIECE_SET( setdef ) ( (msg_piece){ ( .set = ( setdef ) ), 1 } )
 	
 	
-	LIB4_MONAD_EITHER_BUILDTYPE_DEFINITION(
-		msg_piece_result,
-		
-		msg_piece,
-		LIB4_F_UIPRES
-	);
+	LIB4_MONAD_EITHER_BUILDTYPE_DEFINITION( msg_piece_result, msg_piece, LIB4_F_UIPRES );
 	
 	#define MSG_PIECE_RESULT_BUILDSUCCESS( val ) \
 		LIB4_MONAD_EITHER_BUILDLEFT( \

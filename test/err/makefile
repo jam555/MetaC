@@ -30,13 +30,13 @@ default_rule:
 
 
 $(BUILDDIR)/srctest/err/err.o: $(SOURCEDIR)err/err.c
-	$(compileCcommand) $(csrcflag) $(SOURCEDIR)err/err.c $(coutflag) $(BUILDDIR)/srctest/err/err.o $(ccompileonlyflag)
+	$(compileonlyCcommand) $(SOURCEDIR)err/err.c $(BUILDDIR)/srctest/err/err.o
 
 build-sourcecheck: $(BUILDDIR)/srctest/err/simple_test.exe
 
 $(BUILDDIR)/srctest/err/simple_test.exe: $(BUILDDIR)/srctest/err/err.o simple_test.c
-	$(compileCcommand) $(csrcflag) simple_test.c $(coutflag) $(BUILDDIR)/srctest/err/simple_test.o $(ccompileonlyflag)
-	$(compileCcommand) $(coutflag) $(BUILDDIR)/srctest/err/build-simple_test.exe $(coutflag) $(BUILDDIR)/srctest/err/err.o $(BUILDDIR)/srctest/err/simple_test.o
+	$(compileonlyCcommand) simple_test.c $(BUILDDIR)/srctest/err/simple_test.o
+	$(genericcompileCcommand) $(BUILDDIR)/srctest/err/build-simple_test.exe $(BUILDDIR)/srctest/err/err.o $(BUILDDIR)/srctest/err/simple_test.o
 
 
 clean: 
