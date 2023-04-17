@@ -1129,9 +1129,3 @@ static msgstyleptr_pascalarray std_messages =
 		&stdmsg_i_underflow,
 		&stdmsg_i_overflow
 	);
-static msgstyleptr_pascalarray testset =
-	LIBANDRIA4_DEFINE_PASCALARRAY_LITERAL(
-		msgstyleptr_,
-		2,
-		( (msg_style*[]) { &stdmsg_badnull, &stdmsg_badnonnull } )
-	);
