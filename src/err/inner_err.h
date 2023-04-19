@@ -71,7 +71,7 @@ with this program; if not, write to the:
 		/* The intmax_t pointer is optional, and returns the number of */
 		/*  printed characters. If it is non-null, then the function is */
 		/*  REQUIRED to populate it via set (not addition). */
-	int (*customprint_signature)( void*, LIB4_SSIZE, LIB4_SSIZE,  char_receiver,  intmax_t* );
+	typedef int (*customprint_signature)( void*, LIB4_SSIZE, LIB4_SSIZE,  char_receiver,  intmax_t* );
 	
 	
 	typedef struct msg_piece

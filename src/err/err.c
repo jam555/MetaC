@@ -35,6 +35,7 @@ with this program; if not, write to the:
 #include "../../external_dependencies/libandria4/basic/commonerrvals.h"
 #include "../../external_dependencies/libandria4/basic/commontypes.h"
 #include "../../external_dependencies/libandria4/basic/simpleops.h"
+#include "../../external_dependencies/libandria4/basic/nulls.h"
 #include "../../external_dependencies/libandria4/basic/monads.h"
 #include "../../external_dependencies/libandria4/basic/stdmonads.h"
 #include "../../external_dependencies/libandria4/basic/pascalarray.h"
@@ -473,10 +474,14 @@ static int intprint( printf_spec *ps, char *tspec, intmax_t *progress,  va_list 
 	switch( ps->length )
 	{
 		case psl_dshort:
-			res = fprintf( stderr,  tspec, va_arg( *vals, signed char ), &change );
+				/* The type for va_arg() would properly be "signed char", but argument */
+				/*  promotion rules mean that we need to request an int to maintain */
+				/*  alignment. */
+			res = fprintf( stderr,  tspec, (signed char)( va_arg( *vals, int ) ), &change );
 			break;
 		case psl_short:
-			res = fprintf( stderr,  tspec, va_arg( *vals, short int ), &change );
+				/* As with psl_dshort. */
+			res = fprintf( stderr,  tspec, (short int)( va_arg( *vals, int ) ), &change );
 			break;
 		case psl_normal:
 			res = fprintf( stderr,  tspec, va_arg( *vals, int ), &change );
@@ -522,10 +527,14 @@ static int unsignedprint( printf_spec *ps, char *tspec, intmax_t *progress,  va_
 	switch( ps->length )
 	{
 		case psl_dshort:
-			res = fprintf( stderr,  tspec, va_arg( *vals, unsigned char ), &change );
+				/* The type for va_arg() would properly be "unsigned char", but */
+				/*  argument promotion rules mean that we need to request an int to */
+				/*  maintain alignment. */
+			res = fprintf( stderr,  tspec, (unsigned char)( va_arg( *vals, int ) ), &change );
 			break;
 		case psl_short:
-			res = fprintf( stderr,  tspec, va_arg( *vals, unsigned short int ), &change );
+				/* As with psl_dshort. */
+			res = fprintf( stderr,  tspec, (unsigned short int)( va_arg( *vals, int ) ), &change );
 			break;
 		case psl_normal:
 			res = fprintf( stderr,  tspec, va_arg( *vals, unsigned int ), &change );
@@ -686,9 +695,8 @@ static int ptrprint( printf_spec *ps, char *tspec, intmax_t *progress,  va_list 
 				char_receiver cr = (char_receiver){ (void*)stderr, &ptrprint_tool };
 				
 				void *data = va_arg( *vals, void* );
-				customprint_signature printer = va_arg( vals, customprint_signature );
+				customprint_signature printer = va_arg( *vals, customprint_signature );
 				
-				int (*customprint_signature)( void*, size_t, size_t,  char_receiver,  intmax_t* );
 				res = printer( data, ps->width, ps->precision,  cr,  &change );
 			}
 			break;
@@ -755,26 +763,30 @@ static msgstyleptr_pascalarray std_messages;
 
 
 
-static int msg_inner( msg_style *style, va_list vals )
+static int msg_inner( msg_style *style, va_list *vals )
 {
 	LIB4_DEFINE_PASCALARRAY_STDDEFINE( dynchar_, char );
 	
 	int ret = 1;
 	
 #define msg_inner_ERREXIT( ret_ ) ret = ( ret_ ); goto msg_inner_exitpoint;
-	if( !style )
+	if( !style || !vals )
 	{
 		msg_inner_ERREXIT( -1 );
 	}
 	
 	char *txt = style->layout, *bookmark;
 	int res;
-	intmax_t progress = 0, scratch = 0
+	intmax_t progress = 0, scratch = 0;
 	printf_spec spec;
 	dynchar_pascalarray *a = (dynchar_pascalarray*)0;
 	
 	{
-		dynchar_pascalarray_result res = dynchar_pascalarray_build( size_t len );
+			/* TODO: figure out an actual, coherent number of elements */
+			/*  to allocate. */
+			/* I have no idea how large a string to allocate, so let's */
+			/*  just use something fairly large for a specifier. */
+		dynchar_pascalarray_result res = dynchar_pascalarray_build( 8 );
 		
 #define msg_inner_ERREXIT2( err ) msg_inner_ERREXIT( -2 );
 		LIB4_MONAD_EITHER_BODYMATCH( res, LIB4_OP_SETa, msg_inner_ERREXIT2 );
@@ -782,7 +794,7 @@ static int msg_inner( msg_style *style, va_list vals )
 	
 	
 		/* Travel the provided layout. */
-	while( txt != '\0' )
+	while( *txt != '\0' )
 	{
 		if( *txt == '%' )
 		{
@@ -825,7 +837,7 @@ static int msg_inner( msg_style *style, va_list vals )
 			
 			
 				/* Let's handle the various possible options. */
-			switch( spec->specifier )
+			switch( spec.specifier )
 			{
 				case pss_null:
 						/* Error! But how to report it? */
@@ -841,7 +853,7 @@ static int msg_inner( msg_style *style, va_list vals )
 					/*  source, not when outputing. */
 				case pss_dint:
 				case pss_iint:
-					if( !intprint( &spec, ( a->body ), &scratch,  &vals ) )
+					if( !intprint( &spec, ( a->body ), &scratch,  vals ) )
 					{
 						msg_inner_ERREXIT( -7 );
 					}
@@ -862,7 +874,7 @@ static int msg_inner( msg_style *style, va_list vals )
 				case pss_dec:
 				case pss_hex:
 				case pss_HEX:
-					if( !unsignedprint( &spec, ( a->body ), &scratch,  &vals ) )
+					if( !unsignedprint( &spec, ( a->body ), &scratch,  vals ) )
 					{
 						msg_inner_ERREXIT( -9 );
 					}
@@ -889,7 +901,7 @@ static int msg_inner( msg_style *style, va_list vals )
 				case pss_DEX:
 						/* Double in hexadecimal form. Starts with 0x or 0X, but past that I */
 						/*  have no idea. */
-					if( !floatprint( &spec, ( a->body ), &scratch,  &vals ) )
+					if( !floatprint( &spec, ( a->body ), &scratch,  vals ) )
 					{
 						msg_inner_ERREXIT( -11 );
 					}
@@ -904,7 +916,7 @@ static int msg_inner( msg_style *style, va_list vals )
 					break;
 					
 				case pss_str:
-					if( !strprint( &spec, ( a->body ), &scratch,  &vals ) )
+					if( !strprint( &spec, ( a->body ), &scratch,  vals ) )
 					{
 						msg_inner_ERREXIT( -13 );
 					}
@@ -918,7 +930,7 @@ static int msg_inner( msg_style *style, va_list vals )
 					
 					break;
 				case pss_char:
-					if( !charprint( &spec, ( a->body ), &scratch,  &vals ) )
+					if( !charprint( &spec, ( a->body ), &scratch,  vals ) )
 					{
 						msg_inner_ERREXIT( -15 );
 					}
@@ -932,7 +944,7 @@ static int msg_inner( msg_style *style, va_list vals )
 					
 					break;
 				case pss_ptr:
-					if( !ptrprint( &spec, ( a->body ), &scratch,  &vals ) )
+					if( !ptrprint( &spec, ( a->body ), &scratch,  vals ) )
 					{
 						msg_inner_ERREXIT( -17 );
 					}
@@ -950,7 +962,7 @@ static int msg_inner( msg_style *style, va_list vals )
 						/* Print nothing, store number of written characters */
 						/*  via an integer pointer (Java printf() prints a */
 						/*  newline). */
-					if( !countprint( &spec, ( a->body ), &scratch,  &vals ) )
+					if( !countprint( &spec, ( a->body ), &scratch,  vals ) )
 					{
 						msg_inner_ERREXIT( -19 );
 					}
@@ -982,7 +994,7 @@ static int msg_inner( msg_style *style, va_list vals )
 				msg_inner_ERREXIT( -22 );
 			}
 			progress += 1;
-			++( *text );
+			++( *txt );
 		}
 	}
 	
@@ -994,7 +1006,9 @@ static int msg_inner( msg_style *style, va_list vals )
 		LIB4_RESULT res = dynchar_pascalarray_destroy( a );
 		
 #define msg_inner_ERREXIT23( err ) return( -23 );
-		LIB4_MONAD_EITHER_BODYMATCH( res, LIB4_OP_SETa, msg_inner_ERREXIT23 );
+		LIB4_MONAD_EITHER_BODYMATCH( res, LIBANDRIA4_NULL_MACRO, msg_inner_ERREXIT23 );
+		
+		/* b.val will be the errno-contained result of the deallocation. Probably doesn't even get set, so we'll just ignore it. */
 	}
 	return( ret );
 }
@@ -1021,7 +1035,7 @@ void msg_interface( msg_styleset *source, ERR_KEYTYPE first_key, ... )
 				/* It's a set of styles, so climb it. */
 				
 				source = source->members[ curkey - 1 ].data.set;
-				curkey = va_arg( vals, ERR_KEYTYPE );
+				curkey = va_arg( args, ERR_KEYTYPE );
 				
 				if( !source )
 				{
@@ -1033,7 +1047,7 @@ void msg_interface( msg_styleset *source, ERR_KEYTYPE first_key, ... )
 				
 				/* It's a "leaf" style, so execute it directly. */
 				
-				if( !msg_inner( source->members[ curkey - 1 ].data.style, args ) )
+				if( !msg_inner( source->members[ curkey - 1 ].data.style, &args ) )
 				{
 					/* Error, but how to report it? */
 				}
@@ -1044,7 +1058,7 @@ void msg_interface( msg_styleset *source, ERR_KEYTYPE first_key, ... )
 		{
 			/* Standard hardwired handlers. */
 			
-			if( !msg_inner( std_messages.body[ -curkey ], va_list vals ) )
+			if( !msg_inner( std_messages.body[ -curkey ], &args ) )
 			{
 				/* Error, but how to report it? */
 			}
