@@ -759,14 +759,13 @@ static int countprint( printf_spec *ps, char *tspec, intmax_t *progress,  va_lis
 
 
 LIB4_DEFINE_PASCALARRAY_STDDEFINE( msgstyleptr_ , msg_style*  );
-static msgstyleptr_pascalarray std_messages;
+static msgstyleptr_pascalarray *std_messages;
 
+LIB4_DEFINE_PASCALARRAY_STDDEFINE( dynchar_, char );
 
 
 static int msg_inner( msg_style *style, va_list *vals )
 {
-	LIB4_DEFINE_PASCALARRAY_STDDEFINE( dynchar_, char );
-	
 	int ret = 1;
 	
 #define msg_inner_ERREXIT( ret_ ) ret = ( ret_ ); goto msg_inner_exitpoint;
@@ -1054,11 +1053,11 @@ void msg_interface( msg_styleset *source, ERR_KEYTYPE first_key, ... )
 				source = (msg_styleset*)0;
 			}
 			
-		} else if( -curkey < std_messages.len )
+		} else if( -curkey < std_messages->len )
 		{
 			/* Standard hardwired handlers. */
 			
-			if( !msg_inner( std_messages.body[ -curkey ], &args ) )
+			if( !msg_inner( std_messages->body[ -curkey ], &args ) )
 			{
 				/* Error, but how to report it? */
 			}
@@ -1108,38 +1107,41 @@ static msg_style
 	stdmsg_i_underflow = { LIBANDRIA4_APPLY( LIB4_RETURN_2ND, STDMSG_I_UNDERFLOW ) },
 	stdmsg_i_overflow = { LIBANDRIA4_APPLY( LIB4_RETURN_2ND, STDMSG_I_OVERFLOW ) };
 
-static msgstyleptr_pascalarray std_messages =
-	LIBANDRIA4_DEFINE_PASCALARRAY_LITERAL2(
-		msgstyleptr_,
-		msg_style*,
-		
-		&stdmsg_badnull,
-		&stdmsg_badnonnull,
-		
-		&stdmsg_badnull2,
-		&stdmsg_badnonnull2,
-		
-		&stdmsg_monadicfailure,
-			&stdmsg_noteline,
-			&stdmsg_notespace,
-			&stdmsg_signedarg,
-			&stdmsg_decarg,
-			&stdmsg_hexarg,
-			&stdmsg_ldoublearg,
-			&stdmsg_chararg,
-			&stdmsg_strarg,
-			&stdmsg_dataptrarg,
-		
-		&stdmsg_failedintfunc,
-		&stdmsg_faileduintfunc,
-		&stdmsg_failedptrfunc,
-		
-		&stdmsg_trespasspath,
-		
-		&stdmsg_badchar,
-		&stdmsg_badint,
-		&stdmsg_baduint,
-		
-		&stdmsg_i_underflow,
-		&stdmsg_i_overflow
-	);
+LIBANDRIA4_DEFINE_PASCALARRAY_STATICBUILD(
+	msg_set,
+	std_messages,
+	
+	msgstyleptr_,
+	msg_style*,
+	
+	&stdmsg_badnull,
+	&stdmsg_badnonnull,
+	
+	&stdmsg_badnull2,
+	&stdmsg_badnonnull2,
+	
+	&stdmsg_monadicfailure,
+		&stdmsg_noteline,
+		&stdmsg_notespace,
+		&stdmsg_signedarg,
+		&stdmsg_decarg,
+		&stdmsg_hexarg,
+		&stdmsg_ldoublearg,
+		&stdmsg_chararg,
+		&stdmsg_strarg,
+		&stdmsg_dataptrarg,
+	
+	&stdmsg_failedintfunc,
+	&stdmsg_faileduintfunc,
+	&stdmsg_failedptrfunc,
+	
+	&stdmsg_trespasspath,
+	
+	&stdmsg_badchar,
+	&stdmsg_badint,
+	&stdmsg_baduint,
+	
+	&stdmsg_i_underflow,
+	&stdmsg_i_overflow
+);
+static msgstyleptr_pascalarray *std_messages = &( msg_set.std_messages );
