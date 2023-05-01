@@ -51,7 +51,11 @@ with this program; if not, write to the:
 
 
 
-#define METAC_DEBUG 1
+#if defined( DEBUG ) && DEBUG
+	#define METAC_DEBUG 1
+#else
+	#define METAC_DEBUG 0
+#endif
 
 
 
