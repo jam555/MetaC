@@ -309,14 +309,6 @@ int parse_printfspec( char **text,  printf_spec *ps )
 		
 		ps->width = acc;
 		
-	} else if( **text == '*' )
-	{
-		#if defined( METAC_DEBUG ) && METAC_DEBUG
-			printf( "\t\t**text == *;\n" );
-		#endif
-		
-		ps->width = -1;
-		++( *text );
 	}
 	
 	#if defined( METAC_DEBUG ) && METAC_DEBUG
