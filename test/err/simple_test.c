@@ -41,15 +41,22 @@ with this program; if not, write to the:
 
 
 static msg_style this_style = (msg_style){ "\tHello, this is a printf-link style message." };
-static msg_piece this_piece = (msg_piece){ { .style = &this_style }, 0 };
+/* static msg_piece this_piece = (msg_piece); */
+static msg_style bad_style = (msg_style){ "\tError, this should be impossible to print!" };
+static msg_piece pieces[] =
+	{
+		{ { .style = &this_style }, 0 },
+		{ { .style = &bad_style }, 0 }
+	};
 
 int main( int argn, char *argc[] )
 {
 	
 	printf( "Simple msg_interface test.\n" );
 	
-	msg_interface( &this_set, 0 );
+	msg_interface( &this_set, 1 );
 	
+	printf( "\n\n" );
 	printf( "Test concluded.\n" );
 	
 		/* Note: on error, exit with EXIT_FAILURE instead. */
@@ -60,8 +67,8 @@ int main( int argn, char *argc[] )
 #if defined( __cplusplus ) && __cplusplus >= 199711L
 	namespace
 	{
-		msg_styleset this_set = { &this_piece, 1 };
+		msg_styleset this_set = { pieces, sizeof( pieces ) / sizeof( msg_piece ) };
 	};
 #elif defined( __STDC__ ) && __STDC_VERSION__ >= 199901L
-	static msg_styleset this_set = (msg_styleset){ &this_piece, 1 };
+	static msg_styleset this_set = (msg_styleset){ pieces, sizeof( pieces ) / sizeof( msg_piece ) };
 #endif

@@ -1199,12 +1199,27 @@ void msg_interface( msg_styleset *source, ERR_KEYTYPE first_key, ... )
 	{
 		if( !( source->members ) || source->count <= curkey )
 		{
+			#if defined( METAC_DEBUG ) && METAC_DEBUG
+				printf( "\t\tmsg_interface(): Error, log and exit!\n" );
+				printf
+				(
+					"\t\t\tmembers: %p; count: %i; curkey: %i;\n",
+						(void*)( source->members ),
+						(int)( source->count ),
+						(int)( curkey )
+				);
+			#endif
+			
 			/* Error, log & exit! Not that we have a method for the first */
 			/*  two. */
 			source = (msg_styleset*)0;
 			
 		} else if( curkey )
 		{
+			#if defined( METAC_DEBUG ) && METAC_DEBUG
+				printf( "\t\tmsg_interface(): non-null curkey, using caller message.\n" );
+			#endif
+			
 			if( source->members[ curkey - 1 ].is_set )
 			{
 				/* It's a set of styles, so climb it. */
@@ -1235,6 +1250,10 @@ void msg_interface( msg_styleset *source, ERR_KEYTYPE first_key, ... )
 			
 		} else if( -curkey < std_messages->len )
 		{
+			#if defined( METAC_DEBUG ) && METAC_DEBUG
+				printf( "\t\tmsg_interface(): Hardwired handlers.\n" );
+			#endif
+			
 			/* Standard hardwired handlers. */
 			
 	#if defined( METAC_DEBUG ) && METAC_DEBUG
@@ -1249,6 +1268,9 @@ void msg_interface( msg_styleset *source, ERR_KEYTYPE first_key, ... )
 			
 		} else {
 			
+			#if defined( METAC_DEBUG ) && METAC_DEBUG
+				printf( "\t\tmsg_interface(): Error, this should never happen!\n" );
+			#endif
 			/* ERROR! This should never happen. */
 			
 			source = (msg_styleset*)0;
