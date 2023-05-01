@@ -50,6 +50,8 @@ int main( int argn, char *argc[] )
 	
 	msg_interface( &this_set, 0 );
 	
+	printf( "Test concluded.\n" );
+	
 		/* Note: on error, exit with EXIT_FAILURE instead. */
 	return( EXIT_SUCCESS );
 }

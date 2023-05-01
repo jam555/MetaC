@@ -51,6 +51,10 @@ with this program; if not, write to the:
 
 
 
+#define METAC_DEBUG 1
+
+
+
 LIB4_RESULT err_chout( int character )
 {
 	errno = 0;
@@ -170,6 +174,10 @@ struct printf_spec
 
 int parse_printfspec( char **text,  printf_spec *ps )
 {
+	#if defined( METAC_DEBUG ) && METAC_DEBUG
+		printf( "\tInside parse_printfspec( %i );\n", (int)( __LINE__ ) );
+	#endif
+	
 	LIB4_INTRESULT res;
 	
 	if( !text || !( *text ) || !ps )
@@ -182,6 +190,10 @@ int parse_printfspec( char **text,  printf_spec *ps )
 	}
 	++( *text );
 	
+	#if defined( METAC_DEBUG ) && METAC_DEBUG
+		printf( "\t\tpassing specifier \'%\';\n" );
+	#endif
+	
 	ps->flags = psf_null;
 	ps->width = 0;
 	ps->precision = 0;
@@ -190,46 +202,99 @@ int parse_printfspec( char **text,  printf_spec *ps )
 	
 	while( **text != '\0' )
 	{
+		#if defined( METAC_DEBUG ) && METAC_DEBUG
+			printf
+			(
+				"\t\tlooping( %i ), **text == %c ( %i );\n",
+					__LINE__,
+					(char)( **text ),
+					(int)( **text )
+			);
+		#endif
+		
 		switch( **text )
 		{
 			case '-':
+				#if defined( METAC_DEBUG ) && METAC_DEBUG
+					printf( "\t\t\t- case;\n" );
+				#endif
 				ps->flags |= psf_leftjust;
 				++( *text );
 				break;
 			case '+':
+				#if defined( METAC_DEBUG ) && METAC_DEBUG
+					printf( "\t\t\t+ case;\n" );
+				#endif
 				ps->flags |= psf_signall;
 				++( *text );
 				break;
 			case ' ':
+				#if defined( METAC_DEBUG ) && METAC_DEBUG
+					printf( "\t\t\t\' \' case;\n" );
+				#endif
 				ps->flags |= psf_signspace;
 				++( *text );
 				break;
 			case '#':
+				#if defined( METAC_DEBUG ) && METAC_DEBUG
+					printf( "\t\t\t# case;\n" );
+				#endif
 				ps->flags |= psf_elaborate;
 				++( *text );
 				break;
 			case '0':
+				#if defined( METAC_DEBUG ) && METAC_DEBUG
+					printf( "\t\t\t0 case;\n" );
+				#endif
 				ps->flags |= psf_zerospad;
 				++( *text );
 				break;
 			
 			default:
+				#if defined( METAC_DEBUG ) && METAC_DEBUG
+					printf
+					(
+						"\t\t\tdefault case, goto width;\n",
+							(char)( **text ),
+							(int)( **text )
+					);
+				#endif
 				goto width;
 		}
 	}
 	
 	width:
+	#if defined( METAC_DEBUG ) && METAC_DEBUG
+		printf
+		(
+			"\t\tchecking width( %i ), **text == %c ( %i );\n",
+				__LINE__,
+				(char)( **text ),
+				(int)( **text )
+		);
+	#endif
 	if( **text == '\0' )
 	{
 		return( -3 );
 	}
-	if( **text = '*' )
+	#if defined( METAC_DEBUG ) && METAC_DEBUG
+		printf( "\t\tstring continues;\n" );
+	#endif
+	if( **text == '*' )
 	{
+		#if defined( METAC_DEBUG ) && METAC_DEBUG
+			printf( "\t\t**text == *;\n" );
+		#endif
+		
 		ps->width = -1;
 		++( *text );
 		
 	} else if( isdigit( **text ) != 0 )
 	{
+		#if defined( METAC_DEBUG ) && METAC_DEBUG
+			printf( "\t\tisdigit( **text ) != 0;\n" );
+		#endif
+		
 		ssize_t acc = 0, b = 0;
 		while( **text != '\0' && isdigit( **text ) != 0 )
 		{
@@ -244,15 +309,32 @@ int parse_printfspec( char **text,  printf_spec *ps )
 		
 		ps->width = acc;
 		
-	} else if( **text = '*' )
+	} else if( **text == '*' )
 	{
+		#if defined( METAC_DEBUG ) && METAC_DEBUG
+			printf( "\t\t**text == *;\n" );
+		#endif
+		
 		ps->width = -1;
 		++( *text );
 	}
 	
+	#if defined( METAC_DEBUG ) && METAC_DEBUG
+		printf
+		(
+			"\t\tchecking precision( %i ), **text == %c ( %i );\n",
+				__LINE__,
+				(char)( **text ),
+				(int)( **text )
+		);
+	#endif
 		/* Precision. */
 	if( **text == '.' )
 	{
+		#if defined( METAC_DEBUG ) && METAC_DEBUG
+			printf( "\t\t**text == .;\n" );
+		#endif
+		
 		++( *text );
 		if( **text == '\0' )
 		{
@@ -286,6 +368,15 @@ int parse_printfspec( char **text,  printf_spec *ps )
 		}
 	}
 	
+	#if defined( METAC_DEBUG ) && METAC_DEBUG
+		printf
+		(
+			"\t\tchecking length modifier( %i ), **text == %c ( %i );\n",
+				__LINE__,
+				(char)( **text ),
+				(int)( **text )
+		);
+	#endif
 		/* Length modifier. Indicates the data size of the value that was */
 		/*  provided as an argument. Note that "L" is the equivalent of "l", */
 		/*  but for doubles; while "l" works for both characters and */
@@ -343,6 +434,15 @@ int parse_printfspec( char **text,  printf_spec *ps )
 		++( *text );
 	}
 	
+	#if defined( METAC_DEBUG ) && METAC_DEBUG
+		printf
+		(
+			"\t\tchecking specifier( %i ), **text == %c ( %i );\n",
+				__LINE__,
+				(char)( **text ),
+				(int)( **text )
+		);
+	#endif
 		/* Specifier. */
 	switch( **text )
 	{
@@ -457,6 +557,10 @@ int parse_printfspec( char **text,  printf_spec *ps )
 		default:
 			return( -8 );
 	}
+	
+	#if defined( METAC_DEBUG ) && METAC_DEBUG
+		printf( "\tExiting parse_printfspec( %i );\n", (int)( __LINE__ ) );
+	#endif
 	
 	return( 1 );
 }
@@ -768,11 +872,19 @@ static int msg_inner( msg_style *style, va_list *vals )
 {
 	int ret = 1;
 	
+	#if defined( METAC_DEBUG ) && METAC_DEBUG
+		printf( "\tInside msg_inner( %i );\n", (int)( __LINE__ ) );
+	#endif
+	
 #define msg_inner_ERREXIT( ret_ ) ret = ( ret_ ); goto msg_inner_exitpoint;
 	if( !style || !vals )
 	{
 		msg_inner_ERREXIT( -1 );
 	}
+	
+	#if defined( METAC_DEBUG ) && METAC_DEBUG
+		printf( "\tInside msg_inner( %i );\n", (int)( __LINE__ ) );
+	#endif
 	
 	char *txt = style->layout, *bookmark;
 	int res;
@@ -791,12 +903,30 @@ static int msg_inner( msg_style *style, va_list *vals )
 		LIB4_MONAD_EITHER_BODYMATCH( res, LIB4_OP_SETa, msg_inner_ERREXIT2 );
 	}
 	
+	#if defined( METAC_DEBUG ) && METAC_DEBUG
+		printf( "\tInside msg_inner( %i );\n", (int)( __LINE__ ) );
+	#endif
+	
 	
 		/* Travel the provided layout. */
 	while( *txt != '\0' )
 	{
+		#if defined( METAC_DEBUG ) && METAC_DEBUG
+			printf
+			(
+				"\tInside msg_inner( %i ) looping: char( %c )==%i;\n",
+					(int)( __LINE__ ),
+					(char)( *txt ),
+					(int)( *txt )
+			);
+		#endif
+		
 		if( *txt == '%' )
 		{
+			#if defined( METAC_DEBUG ) && METAC_DEBUG
+				printf( "\t\tEntering format specifier handling;\n" );
+			#endif
+			
 			bookmark = txt;
 				/* We only need to parse in one place. Note that this */
 				/*  progresses *txt by itself, so "bookmark" is enough to */
@@ -806,6 +936,9 @@ static int msg_inner( msg_style *style, va_list *vals )
 			{
 				msg_inner_ERREXIT( -3 );
 			}
+			#if defined( METAC_DEBUG ) && METAC_DEBUG
+				printf( "\t\tFormat specifier parsed;\n" );
+			#endif
 			
 			
 				/* Let's verify our string length... */
@@ -817,6 +950,9 @@ static int msg_inner( msg_style *style, va_list *vals )
 #define msg_inner_ERREXIT4( ret_ ) msg_inner_ERREXIT( -4 );
 				LIB4_MONAD_EITHER_BODYMATCH( res, LIB4_OP_SETa, msg_inner_ERREXIT4 );
 			}
+			#if defined( METAC_DEBUG ) && METAC_DEBUG
+				printf( "\t\tLength verified;\n" );
+			#endif
 				/* Copy the specifier: we'll be needing it for these calls. */
 			if
 			(
@@ -833,8 +969,14 @@ static int msg_inner( msg_style *style, va_list *vals )
 				msg_inner_ERREXIT( -5 );
 			}
 			a->body[ txt - bookmark ] = '\0';
+			#if defined( METAC_DEBUG ) && METAC_DEBUG
+				printf( "\t\tFormat specifier copied;\n" );
+			#endif
 			
 			
+			#if defined( METAC_DEBUG ) && METAC_DEBUG
+				printf( "\t\tFormat specifier id==%i;\n", (int)( spec.specifier ) );
+			#endif
 				/* Let's handle the various possible options. */
 			switch( spec.specifier )
 			{
@@ -986,20 +1128,58 @@ static int msg_inner( msg_style *style, va_list *vals )
 			
 		} else {
 			
+			#if defined( METAC_DEBUG ) && METAC_DEBUG
+				printf( "\t\tCalling fputc( %i );\n", __LINE__ );
+			#endif
+			
 			/* Plain text, so just print it. */
 			
-			if( fputc( *txt, (FILE*)stderr ) == EOF )
+			char c = *txt;
+			#if defined( METAC_DEBUG ) && METAC_DEBUG
+				printf( "\t\tCalling fputc( %i );\n", __LINE__ );
+			#endif
+			res = fputc( *txt, stdout );
+			#if defined( METAC_DEBUG ) && METAC_DEBUG
+				printf( "\t\tCalled fputc( %i ), result==EOF? %i ;\n", __LINE__, (int)( res == EOF ) );
+			#endif
+			if( res == EOF )
 			{
+				#if defined( METAC_DEBUG ) && METAC_DEBUG
+					printf( "\t\t\tfputc() returned EOF;\n" );
+				#endif
+				
 				msg_inner_ERREXIT( -22 );
 			}
+			
+			#if defined( METAC_DEBUG ) && METAC_DEBUG
+				printf( "\t\tIncrementing variables;\n" );
+			#endif
+			
 			progress += 1;
-			++( *txt );
+			
+			#if defined( METAC_DEBUG ) && METAC_DEBUG
+				printf( "\t\tIncrementing txt;\n" );
+			#endif
+			++( txt );
+			
+			#if defined( METAC_DEBUG ) && METAC_DEBUG
+				printf( "\t\tBranch complete;\n" );
+			#endif
 		}
 	}
+	
+	#if defined( METAC_DEBUG ) && METAC_DEBUG
+		printf( "\tInside msg_inner( %i );\n", (int)( __LINE__ ) );
+	#endif
 	
 	
 		/* Time to exit. */
 	msg_inner_exitpoint:
+	
+	#if defined( METAC_DEBUG ) && METAC_DEBUG
+		printf( "\tInside msg_inner( %i ) exiting;\n", (int)( __LINE__ ) );
+	#endif
+	
 	if( a )
 	{
 		LIB4_RESULT res = dynchar_pascalarray_destroy( a );
@@ -1046,6 +1226,10 @@ void msg_interface( msg_styleset *source, ERR_KEYTYPE first_key, ... )
 				
 				/* It's a "leaf" style, so execute it directly. */
 				
+	#if defined( METAC_DEBUG ) && METAC_DEBUG
+		printf( "\tEntering msg_inner( %i );\n", (int)( __LINE__ ) );
+	#endif
+				
 				if( !msg_inner( source->members[ curkey - 1 ].data.style, &args ) )
 				{
 					/* Error, but how to report it? */
@@ -1056,6 +1240,10 @@ void msg_interface( msg_styleset *source, ERR_KEYTYPE first_key, ... )
 		} else if( -curkey < std_messages->len )
 		{
 			/* Standard hardwired handlers. */
+			
+	#if defined( METAC_DEBUG ) && METAC_DEBUG
+		printf( "\tEntering msg_inner( %i );\n", (int)( __LINE__ ) );
+	#endif
 			
 			if( !msg_inner( std_messages->body[ -curkey ], &args ) )
 			{
