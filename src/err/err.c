@@ -178,6 +178,8 @@ struct printf_spec
 
 int parse_printfspec( char **text,  printf_spec *ps )
 {
+#define METAC_parse_printfspec_DEBUG 0
+	
 	#if defined( METAC_DEBUG ) && METAC_DEBUG
 		printf( "\tInside parse_printfspec( %i );\n", (int)( __LINE__ ) );
 	#endif
@@ -186,10 +188,16 @@ int parse_printfspec( char **text,  printf_spec *ps )
 	
 	if( !text || !( *text ) || !ps )
 	{
+		#if ( defined( METAC_DEBUG ) && METAC_DEBUG ) || METAC_parse_printfspec_DEBUG
+			printf( "\t\t return( -1 );\n" );
+		#endif
 		return( -1 );
 	}
 	if( **text != '%' )
 	{
+		#if ( defined( METAC_DEBUG ) && METAC_DEBUG ) || METAC_parse_printfspec_DEBUG
+			printf( "\t\t return( -2 );\n" );
+		#endif
 		return( -2 );
 	}
 	++( *text );
@@ -219,35 +227,35 @@ int parse_printfspec( char **text,  printf_spec *ps )
 		switch( **text )
 		{
 			case '-':
-				#if defined( METAC_DEBUG ) && METAC_DEBUG
+				#if ( defined( METAC_DEBUG ) && METAC_DEBUG ) || METAC_parse_printfspec_DEBUG
 					printf( "\t\t\t- case;\n" );
 				#endif
 				ps->flags |= psf_leftjust;
 				++( *text );
 				break;
 			case '+':
-				#if defined( METAC_DEBUG ) && METAC_DEBUG
+				#if ( defined( METAC_DEBUG ) && METAC_DEBUG ) || METAC_parse_printfspec_DEBUG
 					printf( "\t\t\t+ case;\n" );
 				#endif
 				ps->flags |= psf_signall;
 				++( *text );
 				break;
 			case ' ':
-				#if defined( METAC_DEBUG ) && METAC_DEBUG
+				#if ( defined( METAC_DEBUG ) && METAC_DEBUG ) || METAC_parse_printfspec_DEBUG
 					printf( "\t\t\t\' \' case;\n" );
 				#endif
 				ps->flags |= psf_signspace;
 				++( *text );
 				break;
 			case '#':
-				#if defined( METAC_DEBUG ) && METAC_DEBUG
+				#if ( defined( METAC_DEBUG ) && METAC_DEBUG ) || METAC_parse_printfspec_DEBUG
 					printf( "\t\t\t# case;\n" );
 				#endif
 				ps->flags |= psf_elaborate;
 				++( *text );
 				break;
 			case '0':
-				#if defined( METAC_DEBUG ) && METAC_DEBUG
+				#if ( defined( METAC_DEBUG ) && METAC_DEBUG ) || METAC_parse_printfspec_DEBUG
 					printf( "\t\t\t0 case;\n" );
 				#endif
 				ps->flags |= psf_zerospad;
@@ -255,10 +263,10 @@ int parse_printfspec( char **text,  printf_spec *ps )
 				break;
 			
 			default:
-				#if defined( METAC_DEBUG ) && METAC_DEBUG
+				#if ( defined( METAC_DEBUG ) && METAC_DEBUG ) || METAC_parse_printfspec_DEBUG
 					printf
 					(
-						"\t\t\tdefault case, goto width;\n",
+						"\t\t\tdefault case ( %c == %i ), goto width;\n",
 							(char)( **text ),
 							(int)( **text )
 					);
@@ -268,7 +276,7 @@ int parse_printfspec( char **text,  printf_spec *ps )
 	}
 	
 	width:
-	#if defined( METAC_DEBUG ) && METAC_DEBUG
+	#if ( defined( METAC_DEBUG ) && METAC_DEBUG ) || METAC_parse_printfspec_DEBUG
 		printf
 		(
 			"\t\tchecking width( %i ), **text == %c ( %i );\n",
@@ -279,14 +287,17 @@ int parse_printfspec( char **text,  printf_spec *ps )
 	#endif
 	if( **text == '\0' )
 	{
+		#if ( defined( METAC_DEBUG ) && METAC_DEBUG ) || METAC_parse_printfspec_DEBUG
+			printf( "\t\t return( -3 );\n" );
+		#endif
 		return( -3 );
 	}
-	#if defined( METAC_DEBUG ) && METAC_DEBUG
+	#if ( defined( METAC_DEBUG ) && METAC_DEBUG ) || METAC_parse_printfspec_DEBUG
 		printf( "\t\tstring continues;\n" );
 	#endif
 	if( **text == '*' )
 	{
-		#if defined( METAC_DEBUG ) && METAC_DEBUG
+		#if ( defined( METAC_DEBUG ) && METAC_DEBUG ) || METAC_parse_printfspec_DEBUG
 			printf( "\t\t**text == *;\n" );
 		#endif
 		
@@ -295,13 +306,16 @@ int parse_printfspec( char **text,  printf_spec *ps )
 		
 	} else if( isdigit( **text ) != 0 )
 	{
-		#if defined( METAC_DEBUG ) && METAC_DEBUG
-			printf( "\t\tisdigit( **text ) != 0;\n" );
+		#if ( defined( METAC_DEBUG ) && METAC_DEBUG ) || METAC_parse_printfspec_DEBUG
+			printf( "\t\tisdigit( %c ) != 0;\n",  (char)( **text ) );
 		#endif
 		
 		ssize_t acc = 0, b = 0;
 		while( **text != '\0' && isdigit( **text ) != 0 )
 		{
+			#if ( defined( METAC_DEBUG ) && METAC_DEBUG ) || METAC_parse_printfspec_DEBUG
+				printf( "\t\t\tlooping: ( %c ) != 0;\n",  (char)( **text ) );
+			#endif
 #define parse_printfspec_FAIL1( err ) return( -4 );
 			acc *= 10;
 			res = dec2num( **text );
@@ -315,7 +329,7 @@ int parse_printfspec( char **text,  printf_spec *ps )
 		
 	}
 	
-	#if defined( METAC_DEBUG ) && METAC_DEBUG
+	#if ( defined( METAC_DEBUG ) && METAC_DEBUG ) || METAC_parse_printfspec_DEBUG
 		printf
 		(
 			"\t\tchecking precision( %i ), **text == %c ( %i );\n",
@@ -327,13 +341,16 @@ int parse_printfspec( char **text,  printf_spec *ps )
 		/* Precision. */
 	if( **text == '.' )
 	{
-		#if defined( METAC_DEBUG ) && METAC_DEBUG
+		#if ( defined( METAC_DEBUG ) && METAC_DEBUG ) || METAC_parse_printfspec_DEBUG
 			printf( "\t\t**text == .;\n" );
 		#endif
 		
 		++( *text );
 		if( **text == '\0' )
 		{
+			#if ( defined( METAC_DEBUG ) && METAC_DEBUG ) || METAC_parse_printfspec_DEBUG
+				printf( "\t\t return( -5 );\n" );
+			#endif
 			return( -5 );
 		}
 		
@@ -342,6 +359,9 @@ int parse_printfspec( char **text,  printf_spec *ps )
 			LIB4_SSIZE acc = 0, b = 0;
 			while( **text != '\0' && isdigit( **text ) != 0 )
 			{
+				#if ( defined( METAC_DEBUG ) && METAC_DEBUG ) || METAC_parse_printfspec_DEBUG
+					printf( "\t\t\tlooping: ( %c ) != 0;\n",  (char)( **text ) );
+				#endif
 #define parse_printfspec_FAIL2( err ) return( -6 );
 				acc *= 10;
 				res = dec2num( **text );
@@ -360,11 +380,14 @@ int parse_printfspec( char **text,  printf_spec *ps )
 			
 		} else {
 			
+			#if ( defined( METAC_DEBUG ) && METAC_DEBUG ) || METAC_parse_printfspec_DEBUG
+				printf( "\t\t return( -7 );\n" );
+			#endif
 			return( -7 );
 		}
 	}
 	
-	#if defined( METAC_DEBUG ) && METAC_DEBUG
+	#if ( defined( METAC_DEBUG ) && METAC_DEBUG ) || METAC_parse_printfspec_DEBUG
 		printf
 		(
 			"\t\tchecking length modifier( %i ), **text == %c ( %i );\n",
@@ -381,6 +404,9 @@ int parse_printfspec( char **text,  printf_spec *ps )
 	switch( **text )
 	{
 		case 'h':
+			#if ( defined( METAC_DEBUG ) && METAC_DEBUG ) || METAC_parse_printfspec_DEBUG
+				printf( "\t\t\th case;\n" );
+			#endif
 			if( ( *text )[ 1 ] == 'h' )
 			{
 				ps->length = psl_dshort;
@@ -393,6 +419,9 @@ int parse_printfspec( char **text,  printf_spec *ps )
 			++( *text );
 			break;
 		case 'l':
+			#if ( defined( METAC_DEBUG ) && METAC_DEBUG ) || METAC_parse_printfspec_DEBUG
+				printf( "\t\t\tl case;\n" );
+			#endif
 			if( ( *text )[ 1 ] == 'l' )
 			{
 				ps->length = psl_long;
@@ -405,32 +434,57 @@ int parse_printfspec( char **text,  printf_spec *ps )
 			++( *text );
 			break;
 		case 'L':
+			#if ( defined( METAC_DEBUG ) && METAC_DEBUG ) || METAC_parse_printfspec_DEBUG
+				printf( "\t\t\tL case;\n" );
+			#endif
 			ps->length = psl_fraclong;
 			++( *text );
 			break;
 		case 'j':
+			#if ( defined( METAC_DEBUG ) && METAC_DEBUG ) || METAC_parse_printfspec_DEBUG
+				printf( "\t\t\tj case;\n" );
+			#endif
 			ps->length = psl_maxt;
 			++( *text );
 			break;
 		case 'z':
+			#if ( defined( METAC_DEBUG ) && METAC_DEBUG ) || METAC_parse_printfspec_DEBUG
+				printf( "\t\t\tz case;\n" );
+			#endif
 			ps->length = psl_sizet;
 			++( *text );
 			break;
 		case 't':
+			#if ( defined( METAC_DEBUG ) && METAC_DEBUG ) || METAC_parse_printfspec_DEBUG
+				printf( "\t\t\tt case;\n" );
+			#endif
 			ps->length = psl_ptrdiff;
 			++( *text );
 			break;
 		
 		default:
+			#if ( defined( METAC_DEBUG ) && METAC_DEBUG ) || METAC_parse_printfspec_DEBUG
+				printf( "\t\t\tdefault case;\n" );
+			#endif
 			ps->length = psl_normal;
 			break;
 	}
-	if( ps->length != 0 )
+	if( ps->length == 0 )
 	{
+		#if ( defined( METAC_DEBUG ) && METAC_DEBUG ) || METAC_parse_printfspec_DEBUG
+			printf( "\t\t return( -8 );\n" );
+		#endif
+		return( -8 );
+	}
+	if( ps->length != psl_normal )
+	{
+		#if ( defined( METAC_DEBUG ) && METAC_DEBUG ) || METAC_parse_printfspec_DEBUG
+			printf( "\t\tps->length( %i ) != psl_normal, incrementing *text;\n", (int)( ps->length ) );
+		#endif
 		++( *text );
 	}
 	
-	#if defined( METAC_DEBUG ) && METAC_DEBUG
+	#if ( defined( METAC_DEBUG ) && METAC_DEBUG ) || METAC_parse_printfspec_DEBUG
 		printf
 		(
 			"\t\tchecking specifier( %i ), **text == %c ( %i );\n",
@@ -443,6 +497,9 @@ int parse_printfspec( char **text,  printf_spec *ps )
 	switch( **text )
 	{
 		case '%':
+			#if ( defined( METAC_DEBUG ) && METAC_DEBUG ) || METAC_parse_printfspec_DEBUG
+				printf( "\t\t\tpercent case;\n" );
+			#endif
 			ps->specifier = pss_percent;
 			++( *text );
 			break;
@@ -451,92 +508,149 @@ int parse_printfspec( char **text,  printf_spec *ps )
 			/* These only differ when reading data from a source, not when */
 			/*  outputing. */
 		case 'd':
+			#if ( defined( METAC_DEBUG ) && METAC_DEBUG ) || METAC_parse_printfspec_DEBUG
+				printf( "\t\t\td case;\n" );
+			#endif
 			ps->specifier = pss_dint;
 			++( *text );
 			break;
 		case 'i':
+			#if ( defined( METAC_DEBUG ) && METAC_DEBUG ) || METAC_parse_printfspec_DEBUG
+				printf( "\t\t\ti case;\n" );
+			#endif
 			ps->specifier = pss_iint;
 			++( *text );
 			break;
 		
 		
 		case 'b':
+			#if ( defined( METAC_DEBUG ) && METAC_DEBUG ) || METAC_parse_printfspec_DEBUG
+				printf( "\t\t\tb case;\n" );
+			#endif
 			ps->specifier = pss_bin;
 			++( *text );
 			break;
 		case 'B':
+			#if ( defined( METAC_DEBUG ) && METAC_DEBUG ) || METAC_parse_printfspec_DEBUG
+				printf( "\t\t\tB case;\n" );
+			#endif
 			ps->specifier = pss_BIN;
 			++( *text );
 			break;
 		
 		case 'o':
+			#if ( defined( METAC_DEBUG ) && METAC_DEBUG ) || METAC_parse_printfspec_DEBUG
+				printf( "\t\t\to case;\n" );
+			#endif
 			ps->specifier = pss_oct;
 			++( *text );
 			break;
 		
 		case 'u':
+			#if ( defined( METAC_DEBUG ) && METAC_DEBUG ) || METAC_parse_printfspec_DEBUG
+				printf( "\t\t\tu case;\n" );
+			#endif
 			ps->specifier = pss_dec;
 			++( *text );
 			break;
 		
 		case 'x':
+			#if ( defined( METAC_DEBUG ) && METAC_DEBUG ) || METAC_parse_printfspec_DEBUG
+				printf( "\t\t\tx case;\n" );
+			#endif
 			ps->specifier = pss_hex;
 			++( *text );
 			break;
 		case 'X':
+			#if ( defined( METAC_DEBUG ) && METAC_DEBUG ) || METAC_parse_printfspec_DEBUG
+				printf( "\t\t\tX case;\n" );
+			#endif
 			ps->specifier = pss_HEX;
 			++( *text );
 			break;
 		
 		
 		case 'f':
+			#if ( defined( METAC_DEBUG ) && METAC_DEBUG ) || METAC_parse_printfspec_DEBUG
+				printf( "\t\t\tf case;\n" );
+			#endif
 			ps->specifier = pss_fix;
 			++( *text );
 			break;
 		case 'F':
+			#if ( defined( METAC_DEBUG ) && METAC_DEBUG ) || METAC_parse_printfspec_DEBUG
+				printf( "\t\t\tF case;\n" );
+			#endif
 			ps->specifier = pss_FIX;
 			++( *text );
 			break;
 		
 		case 'e':
+			#if ( defined( METAC_DEBUG ) && METAC_DEBUG ) || METAC_parse_printfspec_DEBUG
+				printf( "\t\t\te case;\n" );
+			#endif
 			ps->specifier = pss_exp;
 			++( *text );
 			break;
 		case 'E':
+			#if ( defined( METAC_DEBUG ) && METAC_DEBUG ) || METAC_parse_printfspec_DEBUG
+				printf( "\t\t\tE case;\n" );
+			#endif
 			ps->specifier = pss_EXP;
 			++( *text );
 			break;
 		
 		case 'g':
+			#if ( defined( METAC_DEBUG ) && METAC_DEBUG ) || METAC_parse_printfspec_DEBUG
+				printf( "\t\t\tg case;\n" );
+			#endif
 			ps->specifier = pss_dyn;
 			++( *text );
 			break;
 		case 'G':
+			#if ( defined( METAC_DEBUG ) && METAC_DEBUG ) || METAC_parse_printfspec_DEBUG
+				printf( "\t\t\tG case;\n" );
+			#endif
 			ps->specifier = pss_DYN;
 			++( *text );
 			break;
 		
 		case 'a':
+			#if ( defined( METAC_DEBUG ) && METAC_DEBUG ) || METAC_parse_printfspec_DEBUG
+				printf( "\t\t\ta case;\n" );
+			#endif
 			ps->specifier = pss_dex;
 			++( *text );
 			break;
 		case 'A':
+			#if ( defined( METAC_DEBUG ) && METAC_DEBUG ) || METAC_parse_printfspec_DEBUG
+				printf( "\t\t\tA case;\n" );
+			#endif
 			ps->specifier = pss_DEX;
 			++( *text );
 			break;
 		
 		
 		case 's':
+			#if ( defined( METAC_DEBUG ) && METAC_DEBUG ) || METAC_parse_printfspec_DEBUG
+				printf( "\t\t\ts case;\n" );
+			#endif
 			ps->specifier = pss_str;
 			++( *text );
 			break;
 		
 		case 'c':
+			#if ( defined( METAC_DEBUG ) && METAC_DEBUG ) || METAC_parse_printfspec_DEBUG
+				printf( "\t\t\tc case;\n" );
+			#endif
 			ps->specifier = pss_char;
 			++( *text );
 			break;
 		
 		case 'p':
+			#if ( defined( METAC_DEBUG ) && METAC_DEBUG ) || METAC_parse_printfspec_DEBUG
+				printf( "\t\t\tp case;\n" );
+			#endif
 			ps->specifier = pss_ptr;
 			++( *text );
 			break;
@@ -544,6 +658,9 @@ int parse_printfspec( char **text,  printf_spec *ps )
 		
 		
 		case 'n':
+			#if ( defined( METAC_DEBUG ) && METAC_DEBUG ) || METAC_parse_printfspec_DEBUG
+				printf( "\t\t\tn case;\n" );
+			#endif
 			ps->specifier = pss_printed;
 			++( *text );
 			break;
@@ -551,7 +668,10 @@ int parse_printfspec( char **text,  printf_spec *ps )
 		
 		
 		default:
-			return( -8 );
+			#if ( defined( METAC_DEBUG ) && METAC_DEBUG ) || METAC_parse_printfspec_DEBUG
+				printf( "\t\t return( -9 );\n" );
+			#endif
+			return( -9 );
 	}
 	
 	#if defined( METAC_DEBUG ) && METAC_DEBUG
@@ -565,6 +685,10 @@ static int intprint( printf_spec *ps, char *tspec, intmax_t *progress,  va_list 
 {
 	intmax_t change;
 	int res;
+	
+	#if ( defined( METAC_DEBUG ) && METAC_DEBUG ) || 0
+		printf( "\tInside intprint( %i );\n", (int)( __LINE__ ) );
+	#endif
 	
 	if( !ps || !tspec || !vals )
 	{
@@ -612,12 +736,20 @@ static int intprint( printf_spec *ps, char *tspec, intmax_t *progress,  va_list 
 		*progress += change;
 	}
 	
+	#if defined( METAC_DEBUG ) && METAC_DEBUG
+		printf( "\tExiting intprint( %i );\n", (int)( __LINE__ ) );
+	#endif
+	
 	return( 1 );
 }
 static int unsignedprint( printf_spec *ps, char *tspec, intmax_t *progress,  va_list *vals )
 {
 	int res;
 	intmax_t change;
+	
+	#if ( defined( METAC_DEBUG ) && METAC_DEBUG ) || 0
+		printf( "\tInside unsignedprint( %i );\n", (int)( __LINE__ ) );
+	#endif
 	
 	if( !ps || !tspec || !vals )
 	{
@@ -665,12 +797,20 @@ static int unsignedprint( printf_spec *ps, char *tspec, intmax_t *progress,  va_
 		*progress += change;
 	}
 	
+	#if defined( METAC_DEBUG ) && METAC_DEBUG
+		printf( "\tExiting unsignedprint( %i );\n", (int)( __LINE__ ) );
+	#endif
+	
 	return( 1 );
 }
 static int floatprint( printf_spec *ps, char *tspec, intmax_t *progress,  va_list *vals )
 {
 	int res;
 	intmax_t change;
+	
+	#if ( defined( METAC_DEBUG ) && METAC_DEBUG ) || 0
+		printf( "\tInside floatprint( %i );\n", (int)( __LINE__ ) );
+	#endif
 	
 	if( !ps || !tspec || !vals )
 	{
@@ -696,12 +836,20 @@ static int floatprint( printf_spec *ps, char *tspec, intmax_t *progress,  va_lis
 		*progress += change;
 	}
 	
+	#if defined( METAC_DEBUG ) && METAC_DEBUG
+		printf( "\tExiting foatprint( %i );\n", (int)( __LINE__ ) );
+	#endif
+	
 	return( 1 );
 }
 static int charprint( printf_spec *ps, char *tspec, intmax_t *progress,  va_list *vals )
 {
 	int res;
 	intmax_t change;
+	
+	#if ( defined( METAC_DEBUG ) && METAC_DEBUG ) || 0
+		printf( "\tInside charprint( %i );\n", (int)( __LINE__ ) );
+	#endif
 	
 	if( !ps || !tspec || !vals )
 	{
@@ -727,12 +875,20 @@ static int charprint( printf_spec *ps, char *tspec, intmax_t *progress,  va_list
 		*progress += change;
 	}
 	
+	#if defined( METAC_DEBUG ) && METAC_DEBUG
+		printf( "\tExiting charprint( %i );\n", (int)( __LINE__ ) );
+	#endif
+	
 	return( 1 );
 }
 static int strprint( printf_spec *ps, char *tspec, intmax_t *progress,  va_list *vals )
 {
 	int res;
 	intmax_t change;
+	
+	#if ( defined( METAC_DEBUG ) && METAC_DEBUG ) || 0
+		fprintf( stderr,  "\tInside strprint( %i );\n", (int)( __LINE__ ) );
+	#endif
 	
 	if( !ps || !tspec || !vals )
 	{
@@ -758,6 +914,10 @@ static int strprint( printf_spec *ps, char *tspec, intmax_t *progress,  va_list 
 		*progress += change;
 	}
 	
+	#if defined( METAC_DEBUG ) && METAC_DEBUG
+		printf( "\tExiting strprint( %i );\n", (int)( __LINE__ ) );
+	#endif
+	
 	return( 1 );
 }
 		/* There's no guarantee that fputc() has the right ABI... */
@@ -769,6 +929,10 @@ static int ptrprint( printf_spec *ps, char *tspec, intmax_t *progress,  va_list 
 {
 	int res;
 	intmax_t change;
+	
+	#if ( defined( METAC_DEBUG ) && METAC_DEBUG ) || 0
+		printf( "\tInside ptrprint( %i );\n", (int)( __LINE__ ) );
+	#endif
 	
 	if( !ps || !tspec || !vals )
 	{
@@ -810,11 +974,19 @@ static int ptrprint( printf_spec *ps, char *tspec, intmax_t *progress,  va_list 
 		*progress += change;
 	}
 	
+	#if defined( METAC_DEBUG ) && METAC_DEBUG
+		printf( "\tExiting ptrprint( %i );\n", (int)( __LINE__ ) );
+	#endif
+	
 	return( 1 );
 }
 static int countprint( printf_spec *ps, char *tspec, intmax_t *progress,  va_list *vals )
 {
 	int res;
+	
+	#if ( defined( METAC_DEBUG ) && METAC_DEBUG ) || 0
+		printf( "\tInside countprint( %i );\n", (int)( __LINE__ ) );
+	#endif
 	
 	if( !ps || !progress || !vals )
 	{
@@ -852,6 +1024,10 @@ static int countprint( printf_spec *ps, char *tspec, intmax_t *progress,  va_lis
 		default:
 			return( -2 );
 	}
+	
+	#if defined( METAC_DEBUG ) && METAC_DEBUG
+		printf( "\tExiting countprint( %i );\n", (int)( __LINE__ ) );
+	#endif
 	
 	return( 1 );
 }
@@ -1134,7 +1310,7 @@ static int msg_inner( msg_style *style, va_list *vals )
 			#if defined( METAC_DEBUG ) && METAC_DEBUG
 				printf( "\t\tCalling fputc( %i );\n", __LINE__ );
 			#endif
-			res = fputc( *txt, stdout );
+			res = fputc( *txt, stderr );
 			#if defined( METAC_DEBUG ) && METAC_DEBUG
 				printf( "\t\tCalled fputc( %i ), result==EOF? %i ;\n", __LINE__, (int)( res == EOF ) );
 			#endif
@@ -1213,6 +1389,7 @@ void msg_interface( msg_styleset *source, ERR_KEYTYPE first_key, ... )
 			/* Error, log & exit! Not that we have a method for the first */
 			/*  two. */
 			source = (msg_styleset*)0;
+			#warning "WARNING! msg_interface() in src/err/err.c doesn't log & exit on bounds check!\n"
 			
 		} else if( curkey )
 		{
@@ -1231,6 +1408,7 @@ void msg_interface( msg_styleset *source, ERR_KEYTYPE first_key, ... )
 				{
 					/* Error, but how to report it? Regardless, we'll soon */
 					/*  be returning... */
+					#warning "WARNING! msg_interface() in src/err/err.c doesn't log & exit on !source!\n"
 				}
 				
 			} else {
@@ -1244,6 +1422,7 @@ void msg_interface( msg_styleset *source, ERR_KEYTYPE first_key, ... )
 				if( !msg_inner( source->members[ curkey - 1 ].data.style, &args ) )
 				{
 					/* Error, but how to report it? */
+					#warning "WARNING! msg_interface() in src/err/err.c doesn't log & exit on bad msg_inner() result!\n"
 				}
 				source = (msg_styleset*)0;
 			}
@@ -1263,6 +1442,7 @@ void msg_interface( msg_styleset *source, ERR_KEYTYPE first_key, ... )
 			if( !msg_inner( std_messages->body[ -curkey ], &args ) )
 			{
 				/* Error, but how to report it? */
+				#warning "WARNING! msg_interface() in src/err/err.c doesn't log & exit on bad msg_inner() result!\n"
 			}
 			source = (msg_styleset*)0;
 			
@@ -1272,6 +1452,7 @@ void msg_interface( msg_styleset *source, ERR_KEYTYPE first_key, ... )
 				printf( "\t\tmsg_interface(): Error, this should never happen!\n" );
 			#endif
 			/* ERROR! This should never happen. */
+			#warning "WARNING! msg_interface() in src/err/err.c doesn't log & exit on reaching the unreachable!\n"
 			
 			source = (msg_styleset*)0;
 		}

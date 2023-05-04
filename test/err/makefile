@@ -20,7 +20,7 @@
 
 
 
-basification_extension=/..
+basification_extension=../
 
 
 
@@ -29,15 +29,21 @@ default_rule:
 
 
 
-$(BUILDDIR)/srctest/err/err.o: $(SOURCEDIR)err/err.c
-	$(compileonlyCcommand) $(SOURCEDIR)err/err.c $(BUILDDIR)/srctest/err/err.o
+$(LIBANDRIA4DIR)build/obj/stdmem.o:
+	cd $(LIBANDRIA4DIR) && make sourcecheck
+$(LIBANDRIA4DIR)build/obj/stdmonads.o:
+	cd $(LIBANDRIA4DIR) && make sourcecheck
 
-build-sourcecheck: $(BUILDDIR)/srctest/err/simple_test.exe
+$(TESTBUILDS)err/err.o: $(SOURCEDIR)err/err.c
+	$(compileonlyCcommand) $(SOURCEDIR)err/err.c $(TESTBUILDS)err/err.o
+$(TESTBUILDS)err/simple_test.o: simple_test.c
+	$(compileonlyCcommand) simple_test.c $(TESTBUILDS)err/simple_test.o
 
-$(BUILDDIR)/srctest/err/simple_test.exe: $(BUILDDIR)/srctest/err/err.o simple_test.c
-	$(compileonlyCcommand) simple_test.c $(BUILDDIR)/srctest/err/simple_test.o
-	$(genericcompileCcommand) $(BUILDDIR)/srctest/err/build-simple_test.exe $(BUILDDIR)/srctest/err/err.o $(BUILDDIR)/srctest/err/simple_test.o
+# This is a firewall, so that the associated test execution will always run.
+build-sourcecheck: $(TESTBUILDS)err/simple_test.exe
 
+$(TESTBUILDS)err/simple_test.exe: $(TESTBUILDOBJFILES) $(LIBANDRIA4OBJFILES)
+	$(genericcompileCcommand) $@ $^
 
 clean: 
 	echo "Error: test/err/makefile has not implemented the clean target."
@@ -56,6 +62,6 @@ maintainer-clean:
 check: 
 	echo "Error: test/err/makefile has not implemented the check target."
 
-# Test the source files; unit testing
+# Test the source files; unit testing. Indirect dependency to force this to always run.
 sourcecheck: build-sourcecheck
-	$(BUILDDIR)/srctest/err/build-simple_test.exe
+	$(TESTBUILDS)err/simple_test.exe

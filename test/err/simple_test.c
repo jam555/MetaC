@@ -40,24 +40,73 @@ with this program; if not, write to the:
 
 
 
-static msg_style this_style = (msg_style){ "\tHello, this is a printf-link style message." };
-/* static msg_piece this_piece = (msg_piece); */
+static msg_style
+	plain_style =
+		(msg_style){ "\t\tHello, this is a plain caller message.\n" },
+	char_style =
+		(msg_style){ "\t\tHello, this caller message prints a character: %c ( %i ).\n" },
+	int_style =
+		(msg_style){ "\t\tHello, this caller message prints an integer: %i.\n" },
+	float_style =
+		(msg_style){ "\t\tHello, this caller message prints a float: %f.\n" },
+	voidp_style =
+		(msg_style){ "\t\tHello, this caller message prints a void pointer: %p.\n" },
+	string_style =
+		(msg_style){ "\t\tHello, this caller message prints a string: %s .\n" },
+	percent_style =
+		(msg_style){ "\t\tHello, this caller message prints a percent symbol: %% .\n" };
 static msg_style bad_style = (msg_style){ "\tError, this should be impossible to print!" };
 static msg_piece pieces[] =
 	{
-		{ { .style = &this_style }, 0 },
+		{ { .style = &plain_style }, 0 },
+		
+		{ { .style = &char_style }, 0 },
+		{ { .style = &int_style }, 0 },
+		{ { .style = &float_style }, 0 },
+		{ { .style = &voidp_style }, 0 },
+		{ { .style = &string_style }, 0 },
+		{ { .style = &percent_style }, 0 },
+		
 		{ { .style = &bad_style }, 0 }
 	};
+
+#define PLAIN_MESSAGE() \
+	msg_interface( &this_set, 1 )
+
+#define CHAR_MESSAGE( chara ) \
+	msg_interface( &this_set, 2, (char)( chara ), (int)( chara ) )
+#define INT_MESSAGE( num ) \
+	msg_interface( &this_set, 3, (int)( num ) )
+#define FLOAT_MESSAGE( num ) \
+	msg_interface( &this_set, 4, (float)( num ) )
+#define VOIDP_MESSAGE( voidp ) \
+	msg_interface( &this_set, 5, (void*)( voidp ) )
+#define STRING_MESSAGE( str ) \
+	msg_interface( &this_set, 6, (char*)( str ) )
+#define PERCENT_MESSAGE( ignore ) \
+	msg_interface( &this_set, 7, (int)( ignore ) )
+
+
 
 int main( int argn, char *argc[] )
 {
 	
 	printf( "Simple msg_interface test.\n" );
 	
-	msg_interface( &this_set, 1 );
+	printf( "\n\tTrying a plain caller message.\n" );
+		PLAIN_MESSAGE();
 	
-	printf( "\n\n" );
-	printf( "Test concluded.\n" );
+	printf( "\n\tTrying char, int, float, void pointer, and string, in that order.\n" );
+		CHAR_MESSAGE( 'a' );
+		INT_MESSAGE( 245 );
+		FLOAT_MESSAGE( 13.78 );
+		VOIDP_MESSAGE( &voidp_style );
+		STRING_MESSAGE( "\'This is a test string.\'" );
+	
+	printf( "\n\tTrying percent, with a dummy arg.\n" );
+		PERCENT_MESSAGE( 289 );
+	
+	printf( "\nTest concluded.\n" );
 	
 		/* Note: on error, exit with EXIT_FAILURE instead. */
 	return( EXIT_SUCCESS );

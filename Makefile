@@ -24,6 +24,8 @@
 #  on the command line. The build_tools/*/common.make files provide variables to
 #  handle precisely that.
 
+basification_extension=../
+
 
 
 all: 
@@ -33,13 +35,19 @@ world: all install
 # This should probably be followed by using the preprocessor and/or compiler to
 #  generate localized support files.
 
+faketarget: 
+
 
 # There should eventually be a pre-build option, that builds at least the
 #  preprocessor from C source to iterate to the self-compiling versions.
 build:
 	echo "Error: Makefile has not implemented the build target."
 
-build-sourcecheck:
+build-libandria4: faketarget
+	cd $(LIBANDRIA4DIR) && make sourcecheck
+
+build-sourcecheck: faketarget
+	cd test && $(make_nestedrunfile) makefile build-sourcecheck
 
 
 import:
@@ -93,6 +101,6 @@ check: build
 # Tests.
 
 # Test the source files; unit testing
-sourcecheck: build-sourcecheck
-	echo "Error: Makefile has not implemented the sourcecheck target."
+sourcecheck: build-sourcecheck faketarget
+	cd test && $(make_nestedrunfile) makefile sourcecheck
 # Then run tests.

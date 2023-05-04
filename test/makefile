@@ -20,7 +20,7 @@
 
 
 
-basification_extension=/..
+basification_extension=../
 
 
 
@@ -30,7 +30,8 @@ default_rule:
 
 
 build-sourcecheck:
-	./$(make_runfile) ./err/makefile build-sourcecheck
+	cd input && $(make_nestedrunfile) makefile build-sourcecheck
+	cd err && $(make_nestedrunfile) makefile build-sourcecheck
 
 
 clean: 
@@ -52,4 +53,5 @@ check:
 
 # Test the source files; unit testing
 sourcecheck: build-sourcecheck
-	./$(make_runfile) ./err/makefile sourcecheck
+	cd input && $(make_nestedrunfile) makefile sourcecheck
+	cd err && $(make_nestedrunfile) makefile sourcecheck

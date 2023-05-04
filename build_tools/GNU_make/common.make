@@ -1,29 +1,20 @@
-# LibAndria version 4
-# A C-based general purpose utility library.
-# Copyright (c) 2019 Jared A. Maddox
+# MetaC Preprocessor - A macro processor for preprocessing usage.
+# Copyright (C) 2022 Jared A. Maddox
 # 
-# Permission is hereby granted, free of charge, to any person obtaining a copy of
-# this software and associated documentation files (the "Software"), to deal in
-# the Software without restriction, including without limitation the rights to
-# use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
-# of the Software, and to permit persons to whom the Software is furnished to do
-# so, subject to the following conditions:
+# This program is free software; you can redistribute it and/or modify it
+# under the terms of version 2 of the GNU General Public License as
+# published by the Free Software Foundation.
 # 
-# This grant of rights is subject to two conditions:
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+# FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+# more details.
 # 
-# The above copyright notice and this permission notice shall be included in all
-# copies or substantial portions of the Software.
-# 
-# And:
-# 
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
-
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the:
+#	Free Software Foundation, Inc.,
+#	59 Temple Place, Suite 330,
+#	Boston, MA 02111-1307 USA
 
 
 # A set of common defines for GNU makefiles. Use this as a template for what
@@ -43,7 +34,7 @@
 
 
 
-buildtool_path=buildtools/GNU_make/
+buildtool_path=build_tools/GNU_make/
 
 # Note: not the same as overrides/rootoverride.make . And yes, this IS part
 #  of what other variants must support.
@@ -71,10 +62,17 @@ LDLIBS?=
 MAKEFLAGS?= 
 
 DESTDIR?=
-BUILDDIR?=$(project_base)/build/
-SOURCEDIR?=$(project_base)/src/
-TESTSDIR?=$(project_base)/test/
-IMPORTSDIR?=$(project_base)/external_dependencies/
+BUILDDIR?=$(project_base)build/
+SOURCEDIR?=$(project_base)src/
+TESTSDIR?=$(project_base)test/
+IMPORTSDIR?=$(project_base)external_dependencies/
+
+TESTBUILDS?=$(BUILDDIR)srctest/
+
+LIBANDRIA4DIR?=$(IMPORTSDIR)libandria4/
+
+LIBANDRIA4OBJFILES?=$(LIBANDRIA4DIR)build/obj/stdmem.o $(LIBANDRIA4DIR)build/obj/stdmonads.o
+TESTBUILDOBJFILES?=$(TESTBUILDS)err/err.o $(TESTBUILDS)err/simple_test.o $(TESTBUILDS)input/char2num.o
 
 
 
@@ -101,7 +99,6 @@ docsdest?=$(DESTDIR)$(docsdir)
 createdircommand?=folderbuildfunc () { mkdir $$1 ; } ; folderbuildfunc
 createfilecommand?=filebuildfunc () { touch $$1 ; } ; filebuildfunc
 
-requiredircommand?=folderrequirefunc () { mkdir -p $$1 ; } ; folderrequirefunc
 appendcommand?=fileappendfunc () { echo "$$2" >> $$1 ; } ; fileappendfunc
 truncatecommand?=filetruncatefunc () { : > $$1 ; } ; filetruncatefunc
 
@@ -114,14 +111,20 @@ rmdircommand?=folderremovefunc () { rm -d $$1 ; } ; folderremovefunc
 # Note that both the basification path and extension get merged: together
 #  they'll form the next path.
 make_run?=$(make) \
-	basification_path=$(basification_path)$(basification_extension) \
-	$(make_fileflag) $(project_base)/$(buildtool_path)common.make
+	$(make_fileflag) $(project_base)$(buildtool_path)common.make \
+	basification_path=$(basification_path)$(basification_extension)
 make_runfile?=$(make) \
+	$(make_fileflag) $(project_base)$(buildtool_path)common.make \
 	basification_path=$(basification_path)$(basification_extension) \
-	$(make_fileflag) $(project_base)/$(buildtool_path)common.make \
+	$(make_fileflag)
+make_nestedrun?=$(make) \
+	$(make_fileflag) $(project_base)../$(buildtool_path)common.make \
+	basification_path=$(basification_path)$(basification_extension)
+make_nestedrunfile?=$(make) \
+	$(make_fileflag) $(project_base)../$(buildtool_path)common.make \
+	basification_path=$(basification_path)$(basification_extension) \
 	$(make_fileflag)
 
 # First arg is the source file, second is the destination.
 compileonlyCcommand?=compileonlyCcommandfunc () { $(CC) $$1 -o $$2 -c ; } ; compileonlyCcommandfunc
-# First arg is the output file, all others will be parsed as compiler sees appropriate.
-genericcompileCcommand?=genericcompileCcommandfunc () { arg1=$$1; shift ; $(CC) -o $$arg1 $$@ ; } ; genericcompileCcommandfunc
+genericcompileCcommand?=genericcompileCcommandfunc () { arg1=$$1; shift ; $(CC) $$@ -o $$arg1 ; } ; genericcompileCcommandfunc

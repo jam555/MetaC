@@ -22,7 +22,7 @@
 
 
 
-basification_extension=/..
+basification_extension=../
 
 
 
@@ -31,17 +31,18 @@ default_rule:
 
 
 
-$(BUILDDIR)srctest/input/char2num.o: $(SOURCEDIR)input/char2num.c
-	$(compileonlyCcommand) $(csrcflag) $(SOURCEDIR)input/char2num.c $(BUILDDIR)srctest/input/char2num.o
+# A firewall, to ensure that sourcecheck ALWAYS runs the tests.
+build-sourcecheck: $(TESTBUILDS)input/char2num_test.exe
 
-build-sourcecheck: $(BUILDDIR)srctest/input/char2num_test.exe
 
-$(BUILDDIR)srctest/input/char2num_test.o: char2num_test.c
-	$(genericcompileCcommand) $(BUILDDIR)srctest/input/char2num_test.o char2num_test.c -c
+$(TESTBUILDS)input/char2num.o: $(SOURCEDIR)input/char2num.c
+	$(compileonlyCcommand) $(csrcflag) $(SOURCEDIR)input/char2num.c $(TESTBUILDS)input/char2num.o
 
-$(BUILDDIR)srctest/input/char2num_test.exe: $(BUILDDIR)srctest/input/char2num.o $(BUILDDIR)srctest/input/char2num_test.o
-	ls $(BUILDDIR)srctest/input/
-	$(genericcompileCcommand) $(BUILDDIR)srctest/input/char2num_test.exe $^
+$(TESTBUILDS)input/char2num_test.o: char2num_test.c
+	$(genericcompileCcommand) $(TESTBUILDS)input/char2num_test.o $^ -c
+
+$(TESTBUILDS)input/char2num_test.exe: $(TESTBUILDS)input/char2num.o $(TESTBUILDS)input/char2num_test.o
+	$(genericcompileCcommand) $(TESTBUILDS)input/char2num_test.exe $^
 
 
 clean: 
@@ -61,8 +62,6 @@ maintainer-clean:
 check: 
 	echo "Error: test/input/makefile has not implemented the check target."
 
-c2ntest: $(BUILDDIR)srctest/input/char2num_test.exe
-	$(BUILDDIR)srctest/input/char2num_test.exe
-
 # Test the source files; unit testing
-sourcecheck: build-sourcecheck c2ntest
+sourcecheck: build-sourcecheck
+	$(TESTBUILDS)input/char2num_test.exe

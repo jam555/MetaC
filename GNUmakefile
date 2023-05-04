@@ -24,7 +24,7 @@
 
 # The single dot is intentional: we're intentionally just pointing back to the
 #  directory this file is in.
-basification_path=.
+basification_path=
 basification_extension=
 
 include build_tools/GNU_make/common.make
@@ -36,16 +36,22 @@ include build_tools/GNU_make/common.make
 
 
 all: 
-	./$(make_runfile) Makefile all
+	$(make_runfile) Makefile all
+faketarget: 
 
 
 build:
+	$(make_runfile) Makefile build
 
-build-sourcecheck:
+build-libandria4:
+	$(make_runfile) Makefile build-libandria4
+
+build-sourcecheck: faketarget
+	$(make_runfile) Makefile build-sourcecheck
 
 
 import:
-	./$(make_runfile) Makefile import
+	$(make_runfile) Makefile import
 
 install: 
 # example
@@ -60,7 +66,7 @@ uninstall:
 
 
 clean: 
-	./$(make_runfile) Makefile clean
+	$(make_runfile) Makefile clean
 
 # Clean for distribuition: stricter than just "clean"
 distclean: 
@@ -83,3 +89,4 @@ check:
 
 # Test the source files; unit testing
 sourcecheck: 
+	$(make_runfile) Makefile sourcecheck
