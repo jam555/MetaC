@@ -50,6 +50,10 @@ All sorts of stuff will need to be rechecked to ensure that e.g. line numbers
 	dropping levels of nesting until something that ACTUALLY knows HOW ELSE to
 	react is reached.
 
+common.make:
+	Did we REALLY want to drop "requiredircommand?=folderrequirefunc ()
+	{ mkdir -p $$1 ; } ; folderrequirefunc", or was that an accident?
+
 !!!VITAL NOTE!!! : For the sake of regularity, the execution of macros
 	realistically probably needs to be handled sorta like "freshlines"- in
 	particular, the on_execable() functionality in preproc.c needs to work
