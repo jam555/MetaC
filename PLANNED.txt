@@ -19,12 +19,15 @@ with this program; if not, write to the:
 */
 
 Needed directives:
+	_enddef, _endif, _endset, _endcount /* These should all be INLINE directives, not */
+		/*  freshline, to allow better whitespace control! */
+	
 	_emit_string(^ string ^) /* Converts the string to tokens and immediately outputs them. */
 	
 		/* Inline, the string will be used as if it was a source file. Note that the things */
 		/*  contained inside square brackets are optional. */
 	_include_text(^ string [, dir_ref, file [, line, column ] ] ^)
-		/* dir_ref is a name token as a string, marching one provided on the command line */
+		/* dir_ref is a name token as a string, matching one provided on the command line */
 		/*  and/or in preprocessor configuration files along with a directory path- this */
 		/*  is used to provide a better version of the C preprocessor differentiation */
 		/*  between #include<> and #include""- in MetaCPP, you not only get to use the */
@@ -93,7 +96,7 @@ Needed directives:
 	_floor(^ num ^)
 	_trunc(^ num ^)
 	_round(^ num ^)
-	-isunordered(^ flt_a, flt_b ^)
+	_isunordered(^ flt_a, flt_b ^)
 	
 	_alert(^ msg... ^)
 	_error(^ msg... ^)
