@@ -21,8 +21,10 @@ with this program; if not, write to the:
 	Boston, MA 02111-1307 USA
 */
 	
-	#include "stdmonads.h"
-	#include "headers.h"
+	#include "../../external_dependencies/libandria4/basic/stdmonads.h"
+	#include "../headers.h"
+	
+	#include "source.h"
 	
 	
 	

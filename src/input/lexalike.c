@@ -18,10 +18,7 @@ with this program; if not, write to the:
 	Boston, MA 02111-1307 USA
 */
 
-#include "stdmonads.h"
-#include "headers.h"
-
-#include "../err/inner_err.h"
+#include "lexalike.h"
 
 
 

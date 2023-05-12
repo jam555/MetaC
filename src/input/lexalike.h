@@ -27,10 +27,10 @@ with this program; if not, write to the:
 	
 	
 	
-	#include "stdmonads.h"
-	#include "headers.h"
+	#include "../../external_dependencies/libandria4/basic/stdmonads.h"
+	#include "../headers.h"
 	
-	#include "err/inner_err.h"
+	#include "../err/inner_err.h"
 	
 	
 	
