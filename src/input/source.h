@@ -23,22 +23,12 @@ with this program; if not, write to the:
 	
 	/* input/source.h */
 	
-	#include "headers.h"
+	#include "../headers.h"
+	#include "../basics.h"
 	
 	
 	
 	typedef struct source source;
-	
-	typedef struct refed_pstr
-	{
-		uintptr_t refs;
-		char_pascalarray *text;
-		
-	} refed_pstr;
-		/* For both, positive is success, negative is failure. Note that the */
-		/*  argument must be non-null, and ->refs must be a POSITIVE number. */
-	int refed_pstr_incrrefs( refed_pstr* );
-	int refed_pstr_decrrefs( refed_pstr* );
 	
 	
 	
@@ -57,14 +47,8 @@ with this program; if not, write to the:
 	
 	source* build_source2( char_pascalarray *name, uintmax_t inclusionpoint, const char *opentype );
 	source* build_source( char_pascalarray *name, uintmax_t inclusionpoint );
+	source* push_source( char_pascalarray *path, uintmax_t inclusionpoint );
 	int discard_source( source *src );
-	
-		/* ( token*directiveName --  ) */
-		??? /* Note: this MIGHT need to provide a token* on the stack. I don't */
-		/*  think it SHOULD, but it might. Make certain to review that. */
-		/* Will ultimately result in a call to token_queue_seekFreshline(), */
-		/*  to clear the remainder of the consumed line. */
-	retframe metaC_stdinclude( stackpair *stkp, void *v );
 	
 	
 	??? /* Everything with a "prog" argument is probably using it wrong.  */
