@@ -337,7 +337,10 @@ int discard_source( source *src )
 		
 		if( lib4_stdmemfuncs.dealloc )
 		{
-			return( lib4_stdmemfuncs.dealloc( lib4_stdmemfuncs.data, src ) );
+			libandria4_result res2 = lib4_stdmemfuncs.dealloc( lib4_stdmemfuncs.data, src );
+#define discard_source_ONSUCC( val_ ) return( ( val_ ).val + 1 );
+#define discard_source_ONFAIL( err ) return( ( err ).val - 2 );
+			LIBANDRIA4_RESULT_BODYMATCH( res2, discard_source_ONSUCC, discard_source_ONFAIL )
 		}
 	}
 	
@@ -373,26 +376,26 @@ char_result charin( refed_pstr **refresh_srcname, uintmax_t *prog )
 					NOTESPACE();
 					DATAPTRARG( tmp );
 				
-				if( refresh_srcname && *refresh_srcname )
-				{
-					res = refed_pstr_incrrefs( *refresh_srcname );
-					if( res < 0 )
-					{
-						FAILEDINTFUNC( "refed_pstr_incrrefs", charin, res );
-							NOTESPACE();
-							DATAPTRARG( *refresh_srcname );
-					}
-				}
-				
 				LIB4_CHARRESULT_RETURNFAILURE( LIB4_RESULT_FAILURE_UNDIFFERENTIATED );
 			}
 			
-			if( refresh_srcname )
+			if( sources )
 			{
-				*refresh_srcname = sources->name;
-				prog = sources->base + sources->progress;
+				if( refresh_srcname )
+				{
+					*refresh_srcname = sources->name;
+					*prog = sources->base + sources->progress;
+				}
+				res = fgetc( sources->file );
+				
+			} else {
+				
+				if( refresh_srcname )
+				{
+					*refresh_srcname = (refed_pstr*)0;
+					*prog = 0;
+				}
 			}
-			res = fgetc( sources->file );
 		}
 		if( res == EOF )
 		{
@@ -403,18 +406,7 @@ char_result charin( refed_pstr **refresh_srcname, uintmax_t *prog )
 					/*  call we're dealing with. */
 				DATAPTRARG( sources->file );
 			
-			if( refresh_srcname && *refresh_srcname )
-			{
-				res = refed_pstr_incrrefs( *refresh_srcname );
-				if( res < 0 )
-				{
-					FAILEDINTFUNC( "refed_pstr_incrrefs", charin, res );
-						NOTESPACE();
-						DATAPTRARG( *refresh_srcname );
-				}
-			}
-			
-			LIB4_CHARRESULT_RETURNFAILURE( LIB4_RESULT_FAILURE_UNDIFFERENTIATED );
+			LIB4_CHARRESULT_RETURNFAILURE( LIB4_RESULT_FAILURE_EOF );
 		}
 		
 		++( sources->progress );
@@ -435,7 +427,7 @@ char_result charin( refed_pstr **refresh_srcname, uintmax_t *prog )
 				NOTESPACE();
 				DATAPTRARG( *refresh_srcname );
 			
-			LIB4_CHARRESULT_RETURNFAILURE( LIB4_RESULT_FAILURE_??? );
+			LIB4_CHARRESULT_RETURNFAILURE( LIBANDRIA4_RESULT_FAILURE_LOGICFAULT );
 		}
 	}
 	
