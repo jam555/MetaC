@@ -42,11 +42,11 @@ void charin_onerror( uintptr_t errval, char *prestr )
 	printf( "%s", prestr );
 	switch( errval )
 	{
-		case LIB4_RESULT_FAILURE_DOMAIN:
+		case LIBANDRIA4_RESULT_FAILURE_DOMAIN:
 			printf( "charin() received an illegaly null argument.\n" );
 			break;
 		
-		case LIB4_RESULT_FAILURE_UNDIFFERENTIATED:
+		case LIBANDRIA4_RESULT_FAILURE_UNDIFFERENTIATED:
 			printf( "charin() had a generic failure.\n" );
 			/* discard source failure. */
 			/* EOF escaped discard source measures. */
@@ -56,7 +56,7 @@ void charin_onerror( uintptr_t errval, char *prestr )
 			printf( "charin() detected a refed string reference count below 0 after incrementing.\n" );
 			break;
 		
-		case LIB4_RESULT_FAILURE_EOF:
+		case LIBANDRIA4_RESULT_FAILURE_EOF:
 			printf( "charin() found no sources with remaining characters, character source has run dry.\n" );
 			break;
 		
@@ -100,7 +100,7 @@ void runloop()
 		int res = refed_pstr_decrrefs( prev ); \
 		if( res <= 0 ) { \
 			printf( "\t\t\trefed_pstr_decrrefs() errored with %i.\n\tExiting.\n", res ); \
-			return( EXIT_FAILURE ); } \
+			exit( EXIT_FAILURE ); } \
 		prev = refresh; \
 		refresh = (refed_pstr*)0; \
 		prog = 0; }
@@ -109,15 +109,15 @@ void runloop()
 			/*  successes. Only error out on OTHER returns. Note that this */
 			/*  internally calls charback(), but DOES NOT call charin(). */
 #define main_CHARPEEK_ONFAIL( err ) \
-	if( err.val == LIB4_RESULT_FAILURE_EOF ) { \
+	if( err.val == LIBANDRIA4_RESULT_FAILURE_EOF ) { \
 		if( ires ) { \
 			printf( "\t\t\tcharpeek() encountered and correctly reported EOF.\n" ); } \
 		else { \
 			printf( "\t\t\tcharpeek() encountered but inconsistently reported EOF.\n\tExiting.\n" ); \
-			return( EXIT_FAILURE ); } } \
+			exit( EXIT_FAILURE ); } } \
 	else { \
 		printf( "\t\t\tcharpeek() errored out with %u.\n\tExiting.\n", (unsigned int)( ( err ).val ) ); \
-		return( EXIT_FAILURE ); \
+		exit( EXIT_FAILURE ); \
 	}
 		cres = charpeek( &ires );
 		CHAR_RESULT_BODYMATCH( cres, LIBANDRIA4_OP_SETb, main_CHARPEEK_ONFAIL )
@@ -125,13 +125,13 @@ void runloop()
 		
 #define main_CHARBACK_INFAIL( err ) \
 	charin_onerror( ( err ).val, "\t\t\t" ); \
-	return( EXIT_FAILURE );
+	exit( EXIT_FAILURE );
 		printf( "\t\tTesting push-back capability, pushing \'q\'.\n" );
 		ires = charback( 'q' );
 		if( !ires )
 		{
 			printf( "\t\t\tcharback() reported push failure.\n\tExiting.\n" );
-			return( EXIT_FAILURE );
+			exit( EXIT_FAILURE );
 		}
 		cres = charin( &refresh, &prog );
 		CHAR_RESULT_BODYMATCH( cres, LIBANDRIA4_OP_SETb, main_CHARBACK_INFAIL )
@@ -142,11 +142,11 @@ void runloop()
 		while( loop )
 		{
 #define main_MIDLOOP_INFAIL( err ) \
-	if( ( err ).val == LIB4_RESULT_FAILURE_EOF ) { \
+	if( ( err ).val == LIBANDRIA4_RESULT_FAILURE_EOF ) { \
 		loop = 0; } \
 	else { \
 		charin_onerror( ( err ).val, "\n\t\tLooping failure, exiting.\n" ); \
-		return( EXIT_FAILURE ); }
+		exit( EXIT_FAILURE ); }
 			cres = charin( &refresh, &prog );
 			CHAR_RESULT_BODYMATCH( cres, LIBANDRIA4_OP_SETb, main_MIDLOOP_INFAIL )
 			putchar( b );
@@ -186,7 +186,7 @@ int main( int argn, char *argc[] )
 	char *testfile_name = "test.incl\0";
 	
 	printf( "\t\tpushing %s as a source.\n", testfile_name );
-	char_parrres importname_res = char_parr_strbuild( testfile_name );
+	char_parrres importname_res = char_pascalarray_buildNfill( strlen( testfile_name ), testfile_name );
 	char_pascalarray *a;
 	{
 #define main_STRBUILDFAIL( err ) \
@@ -228,7 +228,7 @@ int main( int argn, char *argc[] )
 	}
 	
 	printf( "\t\tPushing %s as a source to test discard_source().\n", testfile_name );
-	source *src = push_source( a, 0 );
+	src = push_source( a, 0 );
 	if( !src )
 	{
 		printf( "\t\t\tpush_source() failed.\n\tExiting.\n" );
